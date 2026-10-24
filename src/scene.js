@@ -15,17 +15,17 @@ renderer.toneMappingExposure=1.16;
 document.body.appendChild(renderer.domElement);
 renderer.domElement.setAttribute('aria-label','可旋转缩放的自然收回城市街角三维微缩场景');
 renderer.domElement.setAttribute('role','img');
-const camera=new THREE.PerspectiveCamera(33,innerWidth/innerHeight,.1,180);
+const camera=new THREE.PerspectiveCamera(33,innerWidth/innerHeight,.1,300);
 const controls=new OrbitControls(camera,renderer.domElement);
-controls.target.set(0,4.9,0);
+controls.target.set(0,4.1,0);
 controls.enableDamping=true;controls.dampingFactor=.065;
-controls.minDistance=9;controls.maxDistance=60;
+controls.minDistance=9;controls.maxDistance=180;
 controls.maxPolarAngle=Math.PI*.485;controls.minPolarAngle=.13;
 controls.enablePan=true;controls.panSpeed=.7;
 function frame(){
  const aspect=innerWidth/innerHeight;
- const d=aspect<.8?48:aspect<1.2?38:32;
- camera.position.set(d*.68,4.9+d*.49,d*.78);
+ const d=Math.max(38,40/aspect);
+ camera.position.set(d*.68,4.1+d*.49,d*.78);
  camera.lookAt(controls.target);
 }
 frame();
@@ -428,6 +428,6 @@ renderer.setAnimationLoop(ms=>{
  }
  renderer.render(scene,camera);
 });
-addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio,1.8));});
+addEventListener('resize',()=>{const aspect=innerWidth/innerHeight;const factor=Math.max(38,40/aspect)/Math.max(38,40/camera.aspect);camera.position.sub(controls.target).multiplyScalar(factor).add(controls.target);camera.aspect=aspect;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio,1.8));});
 // Keep the composition visible when changing device orientation, without interrupting exploration.
 addEventListener('orientationchange',()=>requestAnimationFrame(frame));
