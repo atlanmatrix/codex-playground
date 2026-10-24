@@ -10,7 +10,8 @@ const pages = [
   {entry: 'src/courtyard.js', template: 'src/courtyard.html', output: 'courtyard/index.html'},
   {entry: 'src/sakura.js', template: 'src/sakura.html', output: 'sakura/index.html'},
   {entry: 'src/rooftop.js', template: 'src/rooftop.html', output: 'rooftop/index.html'},
-  {entry: 'src/rainy.js', template: 'src/rainy.html', output: 'rainy/index.html'}
+  {entry: 'src/rainy.js', template: 'src/rainy.html', output: 'rainy/index.html'},
+  {entry: 'src/onsen.js', template: 'src/onsen.html', output: 'onsen/index.html'}
 ];
 const versions = new Map();
 for (const page of pages) {

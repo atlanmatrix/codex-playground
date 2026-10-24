@@ -10,7 +10,7 @@ import assert from 'node:assert/strict';
 const name=process.argv[2]||'lakeside';
 const width=Number(process.argv[3]||1440),height=Number(process.argv[4]||1000);
 const isPreview=process.argv.includes('--preview'),isReduced=process.argv.includes('--reduced');
-assert(['city','lakeside','courtyard','sakura','rooftop','rainy'].includes(name));
+assert(['city','lakeside','courtyard','sakura','rooftop','rainy','onsen'].includes(name));
 const root=resolve(import.meta.dirname,'..');
 const temp=await mkdtemp(join(tmpdir(),'little-worlds-check-'));
 const realThree=JSON.stringify(pathToFileURL(join(root,'node_modules/three/build/three.module.js')).href);
@@ -38,6 +38,26 @@ try{
  const {scene,camera}=globalThis.rendered;
  const model=name==='city'?scene.children.find(o=>o.isGroup):scene.getObjectByName(`${name}-miniature`);
  assert(model);
+ if(name==='onsen'){
+  const bath=scene.getObjectByName('reflective-mountain-onsen'),steam=scene.getObjectByName('rising-onsen-steam'),tiles=scene.getObjectByName('individual-ceramic-roof-tiles'),leaves=scene.getObjectByName('drifting-onsen-maple-leaves');
+  assert(bath?.isReflector&&steam?.isInstancedMesh&&tiles?.isInstancedMesh&&leaves?.isInstancedMesh);
+  assert(scene.getObjectByName('mountain-ryokan')&&scene.getObjectByName('ryokan-bathhouse-annex')&&scene.getObjectByName('arched-cedar-footbridge'));
+  assert.equal(steam.count,34);assert(tiles.count>1200);assert.equal(leaves.count,26);
+  assert.equal(bath.position.y,.86);
+  const phase=steam.geometry.attributes.phase.array,life=steam.geometry.attributes.life.array;
+  assert(new Set(phase).size===34&&Math.max(...life)-Math.min(...life)>6,'Steam must rise on independent lifetimes');
+  const before=Array.from(leaves.instanceMatrix.array);if(!isPreview)globalThis.frame(4500);
+  const changed=before.some((n,i)=>Math.abs(n-leaves.instanceMatrix.array[i])>.001);
+  assert.equal(changed,!isPreview&&!isReduced);
+  assert(Math.abs(bath.material.uniforms.time.value-(!isPreview&&!isReduced?4.5:0))<1e-8);
+  assert(testControls.minDistance>=23&&testControls.maxPolarAngle<Math.PI/2);
+  const {Raycaster,Vector3}=await import(pathToFileURL(join(root,'node_modules/three/build/three.module.js')));
+  scene.updateMatrixWorld(true);
+  const ray=new Raycaster(new Vector3(3,.70,2.85),new Vector3(0,-1,0));
+  const hits=ray.intersectObject(scene.getObjectByName('onsen-static-landscape'),true).filter(h=>h.object.isMesh&&!h.object.material.transparent);
+  assert(hits.length&&hits[0].point.y<.27,'The bath must have real depth, without terrain crossing the water');
+  console.log(JSON.stringify({roofTiles:tiles.count,steamWisps:steam.count,driftingLeaves:leaves.count,submergedFloor:hits[0].point.y}));
+ }
  if(name==='rainy'){
   const rain=scene.getObjectByName('falling-rain'),ripples=scene.getObjectByName('independent-rain-ripples'),water=scene.getObjectByName('rain-reflecting-puddles'),goods=scene.getObjectByName('store-products');
   assert(rain?.isLineSegments&&water?.isReflector&&ripples?.isInstancedMesh);
@@ -213,7 +233,7 @@ try{
    projected.left=Math.min(projected.left,point.x);projected.right=Math.max(projected.right,point.x);projected.bottom=Math.min(projected.bottom,point.y);projected.top=Math.max(projected.top,point.y);
   }
  });
- assert.equal(invalid,0);assert(instances>(name==='rooftop'?500:name==='rainy'?1000:3000));assert(meshes<260);
+ assert.equal(invalid,0);assert(instances>(name==='rooftop'?500:name==='rainy'?1000:name==='onsen'?2200:3000));assert(meshes<260);
  if(name==='lakeside')assert(minWorldY < -3.0&&minWorldY > -3.1,'The deeper soil and water section must be retained');
  if(process.env.SCENE_SHADER_OUTPUT){
   const shaders=[];const expand=s=>s.replace(/#include <(\w+)>/g,(_,name)=>expand(ShaderChunk[name]));
@@ -241,7 +261,7 @@ try{
   }
  }
  assert.equal(testControls.enabled,!isPreview);
- if(name==='rooftop'||name==='rainy'){
+ if(name==='rooftop'||name==='rainy'||name==='onsen'){
   const before=camera.position.clone(),aspect=camera.aspect;
   for(const [w,h] of [[0,330],[624,0],[0,0]]){
    globalThis.innerWidth=w;globalThis.innerHeight=h;listeners.get('resize')();
