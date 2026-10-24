@@ -10,17 +10,20 @@ import assert from 'node:assert/strict';
 const name=process.argv[2]||'lakeside';
 const width=Number(process.argv[3]||1440),height=Number(process.argv[4]||1000);
 const isPreview=process.argv.includes('--preview'),isReduced=process.argv.includes('--reduced');
-assert(['city','lakeside','courtyard','sakura','rooftop'].includes(name));
+assert(['city','lakeside','courtyard','sakura','rooftop','rainy'].includes(name));
 const root=resolve(import.meta.dirname,'..');
 const temp=await mkdtemp(join(tmpdir(),'little-worlds-check-'));
 const realThree=JSON.stringify(pathToFileURL(join(root,'node_modules/three/build/three.module.js')).href);
-const rendererStub=`export * from ${realThree};export class WebGLRenderer{constructor(){this.shadowMap={};this.domElement={setAttribute(){}}}setPixelRatio(){}setSize(){}setAnimationLoop(f){globalThis.frame=f}render(scene,camera){globalThis.rendered={scene,camera}}}`;
+const rendererStub=`export * from ${realThree};export class WebGLRenderer{constructor(){this.shadowMap={};this.domElement={setAttribute(){}}}setPixelRatio(r){this.ratio=r}getPixelRatio(){return this.ratio||1}setSize(){}setAnimationLoop(f){globalThis.frame=f}render(scene,camera){globalThis.rendered={scene,camera}}}`;
+const composerStub=`export class EffectComposer{constructor(){this.passes=[]}addPass(p){this.passes.push(p)}setSize(){}setPixelRatio(){}render(){const p=this.passes.find(p=>p.scene&&p.camera);globalThis.rendered={scene:p.scene,camera:p.camera}}}`;
 const controlsStub=`import {Vector3} from ${realThree};export class OrbitControls{constructor(){this.target=new Vector3();globalThis.testControls=this}update(){}}`;
 const plugin={name:'browser-io-stub',setup(b){
  b.onResolve({filter:/^three$/},()=>({path:'three',namespace:'stub'}));
  b.onLoad({filter:/.*/,namespace:'stub'},()=>({contents:rendererStub,loader:'js',resolveDir:root}));
  b.onResolve({filter:/OrbitControls\.js$/},()=>({path:'controls',namespace:'controls'}));
  b.onLoad({filter:/.*/,namespace:'controls'},()=>({contents:controlsStub,loader:'js',resolveDir:root}));
+ b.onResolve({filter:/EffectComposer\.js$/},()=>({path:'composer',namespace:'composer'}));
+ b.onLoad({filter:/.*/,namespace:'composer'},()=>({contents:composerStub,loader:'js',resolveDir:root}));
  b.onResolve({filter:/^file:/},a=>({path:a.path,external:true}));
 }};
 await build({entryPoints:[join(root,name==='city'?'src/scene.js':`src/${name}.js`)],outfile:join(temp,'scene.mjs'),bundle:true,platform:'node',format:'esm',plugins:[plugin]});
@@ -35,6 +38,26 @@ try{
  const {scene,camera}=globalThis.rendered;
  const model=name==='city'?scene.children.find(o=>o.isGroup):scene.getObjectByName(`${name}-miniature`);
  assert(model);
+ if(name==='rainy'){
+  const rain=scene.getObjectByName('falling-rain'),ripples=scene.getObjectByName('independent-rain-ripples'),water=scene.getObjectByName('rain-reflecting-puddles'),goods=scene.getObjectByName('store-products');
+  assert(rain?.isLineSegments&&water?.isReflector&&ripples?.isInstancedMesh);
+  assert(goods.count>=400,'The store must have real stocked shelves');
+  assert.equal(ripples.count,96);
+  const p=rain.geometry.attributes.position,f=rain.geometry.attributes.floorY;
+  assert.equal(p.count,(isPreview?1600:3300)*2);
+  let covered=0;
+  for(let i=0;i<p.count;i+=2){
+   const x=p.getX(i),z=p.getZ(i),floor=f.getX(i);
+   assert(Math.abs(x)<9&&Math.abs(z)<9&&Number.isFinite(floor));
+   if(x>-6.6&&x<3.6&&z>-5.6&&z<0){assert(floor>=3.7,'Rain must stop above the roof');covered++;}
+  }
+  assert(covered>100);
+  const phases=ripples.geometry.attributes.phase.array,lives=ripples.geometry.attributes.life.array;
+  assert(new Set(phases).size>90&&Math.max(...lives)-Math.min(...lives)>.6,'Ripples must have independent timing');
+  if(!isPreview){globalThis.frame(2300);assert(Math.abs(rain.material.uniforms.time.value-(isReduced?0:2.3))<1e-8);assert.equal(water.material.uniforms.time.value,rain.material.uniforms.time.value);}
+  assert(testControls.minDistance>=21&&testControls.maxPolarAngle<Math.PI/2);
+  console.log(JSON.stringify({products:goods.count,rainStreaks:p.count/2,ripples:ripples.count,roofProtectedDrops:covered}));
+ }
  if(name==='rooftop'){
   const train=scene.getObjectByName('rooftop-commuter-train'),railway=scene.getObjectByName('roof-railway');
   const shops=['corner-coffee','greengrocer','ramen-counter','cycle-workshop','small-general-store'].map(n=>scene.getObjectByName(n));
@@ -190,7 +213,7 @@ try{
    projected.left=Math.min(projected.left,point.x);projected.right=Math.max(projected.right,point.x);projected.bottom=Math.min(projected.bottom,point.y);projected.top=Math.max(projected.top,point.y);
   }
  });
- assert.equal(invalid,0);assert(instances>(name==='rooftop'?500:3000));assert(meshes<260);
+ assert.equal(invalid,0);assert(instances>(name==='rooftop'?500:name==='rainy'?1000:3000));assert(meshes<260);
  if(name==='lakeside')assert(minWorldY < -3.0&&minWorldY > -3.1,'The deeper soil and water section must be retained');
  if(process.env.SCENE_SHADER_OUTPUT){
   const shaders=[];const expand=s=>s.replace(/#include <(\w+)>/g,(_,name)=>expand(ShaderChunk[name]));
@@ -218,7 +241,7 @@ try{
   }
  }
  assert.equal(testControls.enabled,!isPreview);
- if(name==='rooftop'){
+ if(name==='rooftop'||name==='rainy'){
   const before=camera.position.clone(),aspect=camera.aspect;
   for(const [w,h] of [[0,330],[624,0],[0,0]]){
    globalThis.innerWidth=w;globalThis.innerHeight=h;listeners.get('resize')();

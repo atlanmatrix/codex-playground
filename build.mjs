@@ -9,7 +9,8 @@ const pages = [
   {entry: 'src/lakeside.js', template: 'src/lakeside.html', output: 'lakeside/index.html'},
   {entry: 'src/courtyard.js', template: 'src/courtyard.html', output: 'courtyard/index.html'},
   {entry: 'src/sakura.js', template: 'src/sakura.html', output: 'sakura/index.html'},
-  {entry: 'src/rooftop.js', template: 'src/rooftop.html', output: 'rooftop/index.html'}
+  {entry: 'src/rooftop.js', template: 'src/rooftop.html', output: 'rooftop/index.html'},
+  {entry: 'src/rainy.js', template: 'src/rainy.html', output: 'rainy/index.html'}
 ];
 const versions = new Map();
 for (const page of pages) {
