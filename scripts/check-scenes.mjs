@@ -10,7 +10,7 @@ import assert from 'node:assert/strict';
 const name=process.argv[2]||'lakeside';
 const width=Number(process.argv[3]||1440),height=Number(process.argv[4]||1000);
 const isPreview=process.argv.includes('--preview'),isReduced=process.argv.includes('--reduced');
-assert(['city','lakeside','courtyard','sakura'].includes(name));
+assert(['city','lakeside','courtyard','sakura','rooftop'].includes(name));
 const root=resolve(import.meta.dirname,'..');
 const temp=await mkdtemp(join(tmpdir(),'little-worlds-check-'));
 const realThree=JSON.stringify(pathToFileURL(join(root,'node_modules/three/build/three.module.js')).href);
@@ -35,6 +35,32 @@ try{
  const {scene,camera}=globalThis.rendered;
  const model=name==='city'?scene.children.find(o=>o.isGroup):scene.getObjectByName(`${name}-miniature`);
  assert(model);
+ if(name==='rooftop'){
+  const train=scene.getObjectByName('rooftop-commuter-train'),railway=scene.getObjectByName('roof-railway');
+  const shops=['corner-coffee','greengrocer','ramen-counter','cycle-workshop','small-general-store'].map(n=>scene.getObjectByName(n));
+  const cars=[],wheels=[],clothes=[];
+  model.traverse(o=>{if(o.name==='commuter-car')cars.push(o);if(o.name==='roof-train-wheel')wheels.push(o);if(o.name==='roof-laundry')clothes.push(o)});
+  assert(train&&railway&&shops.every(Boolean));assert.equal(cars.length,2);assert.equal(wheels.length,8);assert.equal(clothes.length,6);
+  assert(testControls.minDistance>=20&&testControls.maxPolarAngle<Math.PI/2);
+  train.traverse(o=>{if(o.isMesh)assert.equal(o.material.clippingPlanes?.length,2)});
+  const initialZ=train.position.z,initialClothes=clothes.map(o=>o.rotation.x);let minZ=initialZ,maxZ=initialZ;
+  if(!isPreview)for(let ms=200;ms<=60000;ms+=200){globalThis.frame(ms);assert(Math.abs(train.position.x+5.05)<1e-6);assert(Math.abs(train.position.y-3.36)<1e-6);minZ=Math.min(minZ,train.position.z);maxZ=Math.max(maxZ,train.position.z);}
+  if(!isPreview&&!isReduced){assert(maxZ-minZ>24);assert(clothes.some((o,i)=>Math.abs(o.rotation.x-initialClothes[i])>.001))}
+  else assert.equal(train.position.z,initialZ);
+  if(!isPreview)globalThis.frame(0);
+  scene.updateMatrixWorld(true);
+  const {Raycaster,Vector3}=await import(pathToFileURL(join(root,'node_modules/three/build/three.module.js')));
+  for(const z of [-7.25,-3.72,-.19,3.34,6.87]){
+   const railRay=new Raycaster(new Vector3(-5.63,4.0,z),new Vector3(0,-1,0));
+   const railHits=railRay.intersectObject(scene.getObjectByName('static-rooftop-street'),true).filter(h=>h.object.isMesh);
+   assert(railHits.length&&Math.abs(railHits[0].point.y-3.78)<.005,'Rail heads must remain on the rooftop track');
+   const slabRay=new Raycaster(new Vector3(-5.05,3.47,z),new Vector3(0,-1,0));
+   const slabHits=slabRay.intersectObject(scene.getObjectByName('static-rooftop-street'),true).filter(h=>h.object.isMesh);
+   assert(slabHits.length&&Math.abs(slabHits[0].point.y-3.44)<.005,'Continuous roof slab must support the track');
+  }
+  for(const wheel of wheels){const p=new Vector3();wheel.getWorldPosition(p);assert(Math.abs(p.y-3.97)<1e-5);assert(Math.min(Math.abs(p.x+5.63),Math.abs(p.x+4.47))<1e-5);}
+  console.log(JSON.stringify({shops:shops.length,cars:cars.length,alignedWheelsets:wheels.length,laundry:clothes.length,trainRange:[minZ,maxZ]}));
+ }
  if(name==='sakura'){
   const train=scene.getObjectByName('local-railcar'),petals=scene.getObjectByName('drifting-cherry-petals');
   const booms=[],crowns=[];model.traverse(o=>{if(o.name==='crossing-boom')booms.push(o);if(o.name==='cherry-blossom-crown')crowns.push(o)});
@@ -140,14 +166,14 @@ try{
  const projected={left:Infinity,right:-Infinity,bottom:Infinity,top:-Infinity};
  model.traverse(o=>{
   if(!o.isMesh)return;
-  if(name==='sakura'){for(let p=o;p&&p!==model;p=p.parent)if(!p.visible)return;}
+  if(name==='sakura'||name==='rooftop'){for(let p=o;p&&p!==model;p=p.parent)if(!p.visible)return;}
   meshes++;if(o.isInstancedMesh)instances+=o.count;
   const p=o.geometry.attributes.position;vertices+=p.count;
   for(const n of o.matrixWorld.elements)if(!Number.isFinite(n))invalid++;
   for(const n of p.array)if(!Number.isFinite(n))invalid++;
   if(o.isInstancedMesh){
    for(const n of o.instanceMatrix.array)if(!Number.isFinite(n))invalid++;
-   if(name==='courtyard'||name==='sakura'){
+   if(name==='courtyard'||name==='sakura'||name==='rooftop'){
     o.geometry.computeBoundingBox();const bounds=o.geometry.boundingBox,im=new Matrix4(),world=new Matrix4();
     for(let i=0;i<o.count;i++){
      o.getMatrixAt(i,im);world.multiplyMatrices(o.matrixWorld,im);
@@ -160,11 +186,11 @@ try{
    return;
   }
   for(let i=0;i<p.count;i++){
-   point.fromBufferAttribute(p,i).applyMatrix4(o.matrixWorld);minWorldY=Math.min(minWorldY,point.y);point.project(camera);
+   point.fromBufferAttribute(p,i).applyMatrix4(o.matrixWorld);minWorldY=Math.min(minWorldY,point.y);if(name==='rooftop'&&o.material.clippingPlanes?.some(p=>p.distanceToPoint(point)<-.0001))continue;point.project(camera);
    projected.left=Math.min(projected.left,point.x);projected.right=Math.max(projected.right,point.x);projected.bottom=Math.min(projected.bottom,point.y);projected.top=Math.max(projected.top,point.y);
   }
  });
- assert.equal(invalid,0);assert(instances>3000);assert(meshes<260);
+ assert.equal(invalid,0);assert(instances>(name==='rooftop'?500:3000));assert(meshes<260);
  if(name==='lakeside')assert(minWorldY < -3.0&&minWorldY > -3.1,'The deeper soil and water section must be retained');
  if(process.env.SCENE_SHADER_OUTPUT){
   const shaders=[];const expand=s=>s.replace(/#include <(\w+)>/g,(_,name)=>expand(ShaderChunk[name]));
