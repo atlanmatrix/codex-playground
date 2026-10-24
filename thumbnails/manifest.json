@@ -53,11 +53,11 @@
     },
     "onsen": {
       "file": "thumbnails/onsen.webp",
-      "source_sha256": "0c6e42ef594dc39cfb6679396df9604ec1642064ccd3228012aac7f8acacfe86",
-      "sha256": "4f0e82fd4bef6d1ad0aa1c73041b395796b927cad3cf70269f07c55c3fffc572",
+      "source_sha256": "2f9790d4cce45ab8a25f3a651ba9bf2d2161c904f7f6e5bc3c31b939f0789e6c",
+      "sha256": "e7507d210a746a7e02e8827d1427935aff58f12248913b914a7d0c50bc14f43a",
       "width": 1280,
       "height": 720,
-      "bytes": 39720
+      "bytes": 44728
     }
   }
 }

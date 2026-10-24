@@ -42,29 +42,40 @@ try{
   const bath=scene.getObjectByName('reflective-mountain-onsen'),steam=scene.getObjectByName('rising-onsen-steam'),tiles=scene.getObjectByName('individual-ceramic-roof-tiles'),leaves=scene.getObjectByName('drifting-onsen-maple-leaves');
   assert(bath?.isReflector&&steam?.isInstancedMesh&&tiles?.isInstancedMesh&&leaves?.isInstancedMesh);
   assert(scene.getObjectByName('mountain-ryokan')&&scene.getObjectByName('ryokan-bathhouse-annex')&&scene.getObjectByName('arched-cedar-footbridge')&&scene.getObjectByName('forest-tea-pavilion'));
-  assert.equal(model.userData.baseSize,24);assert.equal(model.userData.period,isNight?'night':'day');
+  assert.equal(model.userData.baseSize,32);assert.equal(model.userData.period,isNight?'night':'day');
   assert.equal(bath.material.uniforms.night.value,isNight?1:0);
   const warm=[];scene.traverse(o=>{if(o.name==='onsen-warm-light')warm.push(o)});assert(warm.length>=10);
   warm.forEach(light=>assert.equal(light.intensity,isNight?light.userData.nightIntensity:light.userData.dayIntensity));
-  assert.equal(steam.count,34);assert(tiles.count>1400);assert.equal(leaves.count,26);
-  assert.equal(bath.position.y,.86);
+  assert.equal(steam.count,56);assert(tiles.count>2400);assert.equal(leaves.count,26);
+  assert(Math.abs(bath.position.y-2.86)<1e-8);
   const phase=steam.geometry.attributes.phase.array,life=steam.geometry.attributes.life.array;
-  assert(new Set(phase).size===34&&Math.max(...life)-Math.min(...life)>6,'Steam must rise on independent lifetimes');
+  assert(new Set(phase).size===56&&Math.max(...life)-Math.min(...life)>6,'Steam must rise on independent lifetimes');
   const before=Array.from(leaves.instanceMatrix.array);if(!isPreview)globalThis.frame(4500);
   const changed=before.some((n,i)=>Math.abs(n-leaves.instanceMatrix.array[i])>.001);
   assert.equal(changed,!isPreview&&!isReduced);
   assert(Math.abs(bath.material.uniforms.time.value-(!isPreview&&!isReduced?4.5:0))<1e-8);
-  assert(testControls.minDistance>=31&&testControls.maxPolarAngle<Math.PI/2);
+  assert(testControls.minDistance>=42&&testControls.maxPolarAngle<Math.PI/2);
   const {Raycaster,Vector3}=await import(pathToFileURL(join(root,'node_modules/three/build/three.module.js')));
   scene.updateMatrixWorld(true);
-  const ray=new Raycaster(new Vector3(3,.70,2.85),new Vector3(0,-1,0));
+  const ray=new Raycaster(new Vector3(4.5,2.70,5.0),new Vector3(0,-1,0));
   const hits=ray.intersectObject(scene.getObjectByName('onsen-static-landscape'),true).filter(h=>h.object.isMesh&&!h.object.material.transparent);
-  assert(hits.length&&hits[0].point.y<.27,'The bath must have real depth, without terrain crossing the water');
-  for(const [x,z] of [[-11.3,10.5],[11.3,10.5],[10.5,-10.7]]){
+  assert(hits.length&&hits[0].point.y<2.27,'The bath must have real depth, without terrain crossing the water');
+  for(const [x,z] of [[-15.3,14.2],[15.3,14.2],[14.8,-13.7]]){
    const expandedRay=new Raycaster(new Vector3(x,20,z),new Vector3(0,-1,0));
    assert(expandedRay.intersectObject(scene.getObjectByName('onsen-static-landscape'),true).some(h=>h.object.isMesh),'The added perimeter must have actual terrain');
   }
-  console.log(JSON.stringify({baseSize:24,period:model.userData.period,warmLights:warm.length,roofTiles:tiles.count,steamWisps:steam.count,driftingLeaves:leaves.count,submergedFloor:hits[0].point.y}));
+  for(const n of ['hillside-guest-west','hillside-guest-east','mountain-dining-house','mountain-entry-gate'])assert(scene.getObjectByName(n),'New hillside buildings must be present');
+  const terrainY=(x,z)=>new Raycaster(new Vector3(x,40,z),new Vector3(0,-1,0)).intersectObject(scene.getObjectByName('onsen-static-landscape'),true).find(h=>h.object.isMesh&&h.object.material.vertexColors)?.point.y;
+  const upper=terrainY(-1,-13),lower=terrainY(-1,14);
+  assert(Number.isFinite(upper)&&Number.isFinite(lower)&&upper-lower>6,'The terrain must have an actual mountain slope');
+  const g=bath.geometry,pos=g.attributes.position,idx=g.index;let bathArea=0;
+  for(let i=0;i<idx.count;i+=3){const a=idx.getX(i),b=idx.getX(i+1),c=idx.getX(i+2);bathArea+=Math.abs((pos.getX(b)-pos.getX(a))*(pos.getY(c)-pos.getY(a))-(pos.getY(b)-pos.getY(a))*(pos.getX(c)-pos.getX(a)))/2;}
+  assert(bathArea>44&&bathArea<50,'The enlarged spring must have approximately twice its former surface area');
+  model.traverse(o=>{if(o.name==='warm-stone-lantern'||o.name==='cedar-bathing-bucket'){
+   assert(((o.position.x-4.5)/4.5)**2+((o.position.z-5.0)/3.25)**2>1.05,'Lanterns and bathing buckets must stay on the new shore');
+  }});
+  if(isNight){assert(Math.max(...warm.map(l=>l.intensity))<3,'Night lamps must remain dim');assert(warm.every(l=>l.color.r>l.color.g&&l.color.g>l.color.b*2),'Night lamps must be orange-yellow');}
+  console.log(JSON.stringify({baseSize:32,bathArea,terrainDrop:upper-lower,period:model.userData.period,warmLights:warm.length,roofTiles:tiles.count,steamWisps:steam.count,driftingLeaves:leaves.count,submergedFloor:hits[0].point.y}));
  }
  if(name==='rainy'){
   const rain=scene.getObjectByName('falling-rain'),ripples=scene.getObjectByName('independent-rain-ripples'),water=scene.getObjectByName('rain-reflecting-puddles'),goods=scene.getObjectByName('store-products');
