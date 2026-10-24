@@ -10,7 +10,7 @@ import assert from 'node:assert/strict';
 const name=process.argv[2]||'lakeside';
 const width=Number(process.argv[3]||1440),height=Number(process.argv[4]||1000);
 const isPreview=process.argv.includes('--preview'),isReduced=process.argv.includes('--reduced'),isNight=process.argv.includes('--night');
-assert(['city','lakeside','courtyard','sakura','rooftop','rainy','onsen'].includes(name));
+assert(['city','lakeside','courtyard','sakura','rooftop','rainy','onsen','study'].includes(name));
 const root=resolve(import.meta.dirname,'..');
 const temp=await mkdtemp(join(tmpdir(),'little-worlds-check-'));
 const realThree=JSON.stringify(pathToFileURL(join(root,'node_modules/three/build/three.module.js')).href);
@@ -29,7 +29,7 @@ const plugin={name:'browser-io-stub',setup(b){
 await build({entryPoints:[join(root,name==='city'?'src/scene.js':`src/${name}.js`)],outfile:join(temp,'scene.mjs'),bundle:true,platform:'node',format:'esm',plugins:[plugin]});
 globalThis.innerWidth=width;globalThis.innerHeight=height;globalThis.devicePixelRatio=1;
 globalThis.location={search:'?'+new URLSearchParams({...isPreview?{preview:'1'}:{},...isNight?{time:'night'}:{}})};
-globalThis.document={body:{appendChild(){}},createElement(){return{getContext(){return{fillRect(){},strokeRect(){},fillText(){}}}}}};
+globalThis.document={body:{appendChild(){}},createElement(){return{getContext(){return name==='study'?new Proxy({createLinearGradient(){return{addColorStop(){}}}},{get:(o,k)=>k in o?o[k]:()=>{}}):{fillRect(){},strokeRect(){},fillText(){}}}}}};
 globalThis.matchMedia=()=>({matches:isReduced});
 const listeners=new Map();globalThis.addEventListener=(name,handler)=>listeners.set(name,handler);
 try{
@@ -38,6 +38,28 @@ try{
  const {scene,camera}=globalThis.rendered;
  const model=name==='city'?scene.children.find(o=>o.isGroup):scene.getObjectByName(`${name}-miniature`);
  assert(model);
+ if(name==='study'){
+  assert.equal(model.userData.baseSize,32);
+  for(const n of ['wall-of-books','corner-reading-sofa','video-editing-workstation','editing-timeline-monitor','portrait-notes-monitor','ergonomic-editing-chair','open-reading-book','tiny-desk-robot','sleepy-cat-figurine','color-puzzle-cube','video-camera-tripod'])assert(scene.getObjectByName(n),n);
+  const books=scene.getObjectByName('individual-library-books'),keys=scene.getObjectByName('mechanical-keyboard-keys'),sash=scene.getObjectByName('half-open-window-sash');
+  assert(books?.isInstancedMesh&&books.count>380);assert(keys.count>60);assert(sash.rotation.y<-.3&&sash.rotation.y>-.8);
+  const cloths=['breezy-curtain-left','breezy-curtain-right'].map(n=>scene.getObjectByName(n));assert(cloths.every(Boolean));
+  const before=cloths.map(c=>Array.from(c.geometry.attributes.position.array));
+  if(!isPreview)globalThis.frame(2400);
+  cloths.forEach((c,i)=>{
+   const now=c.geometry.attributes.position.array,old=before[i];let hem=0;
+   for(let k=0;k<33*3;k++)assert.equal(now[k],old[k],'Curtain tops must remain attached to the rail');
+   for(let k=now.length-33*3;k<now.length;k++)hem=Math.max(hem,Math.abs(now[k]-old[k]));
+   assert(isPreview||isReduced?hem===0:hem>.08,'The free hem must sway, with static preview and reduced-motion states');
+  });
+  assert(testControls.minDistance>=40&&testControls.maxPolarAngle<Math.PI/2);
+  scene.updateMatrixWorld(true);
+  const {Raycaster,Vector3}=await import(pathToFileURL(join(root,'node_modules/three/build/three.module.js')));
+  for(const [x,z] of [[15.2,14.5],[-14.5,14.5],[14.5,-14.0]]){
+   const ray=new Raycaster(new Vector3(x,14,z),new Vector3(0,-1,0));assert(ray.intersectObject(scene.getObjectByName('study-static-interior'),true).some(h=>h.object.isMesh),'The complete square floor must exist');
+  }
+  console.log(JSON.stringify({baseSize:32,books:books.count,keyboardKeys:keys.count,openWindowRadians:sash.rotation.y,curtains:cloths.length}));
+ }
  if(name==='onsen'){
   const bath=scene.getObjectByName('reflective-mountain-onsen'),steam=scene.getObjectByName('rising-onsen-steam'),tiles=scene.getObjectByName('individual-ceramic-roof-tiles'),leaves=scene.getObjectByName('drifting-onsen-maple-leaves');
   assert(bath?.isReflector&&steam?.isInstancedMesh&&tiles?.isInstancedMesh&&leaves?.isInstancedMesh);
@@ -235,7 +257,7 @@ try{
   for(const n of p.array)if(!Number.isFinite(n))invalid++;
   if(o.isInstancedMesh){
    for(const n of o.instanceMatrix.array)if(!Number.isFinite(n))invalid++;
-   if(name==='courtyard'||name==='sakura'||name==='rooftop'||name==='onsen'){
+   if(name==='courtyard'||name==='sakura'||name==='rooftop'||name==='onsen'||name==='study'){
     o.geometry.computeBoundingBox();const bounds=o.geometry.boundingBox,im=new Matrix4(),world=new Matrix4();
     for(let i=0;i<o.count;i++){
      o.getMatrixAt(i,im);world.multiplyMatrices(o.matrixWorld,im);
@@ -252,7 +274,7 @@ try{
    projected.left=Math.min(projected.left,point.x);projected.right=Math.max(projected.right,point.x);projected.bottom=Math.min(projected.bottom,point.y);projected.top=Math.max(projected.top,point.y);
   }
  });
- assert.equal(invalid,0);assert(instances>(name==='rooftop'?500:name==='rainy'?1000:name==='onsen'?2200:3000));assert(meshes<260);
+ assert.equal(invalid,0);assert(instances>(name==='rooftop'?500:name==='rainy'?1000:name==='onsen'?2200:name==='study'?800:3000));assert(meshes<260);
  if(name==='lakeside')assert(minWorldY < -3.0&&minWorldY > -3.1,'The deeper soil and water section must be retained');
  if(process.env.SCENE_SHADER_OUTPUT){
   const shaders=[];const expand=s=>s.replace(/#include <(\w+)>/g,(_,name)=>expand(ShaderChunk[name]));
@@ -280,7 +302,7 @@ try{
   }
  }
  assert.equal(testControls.enabled,!isPreview);
- if(name==='rooftop'||name==='rainy'||name==='onsen'){
+ if(name==='rooftop'||name==='rainy'||name==='onsen'||name==='study'){
   const before=camera.position.clone(),aspect=camera.aspect;
   for(const [w,h] of [[0,330],[624,0],[0,0]]){
    globalThis.innerWidth=w;globalThis.innerHeight=h;listeners.get('resize')();

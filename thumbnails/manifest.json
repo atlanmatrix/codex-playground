@@ -58,6 +58,14 @@
       "width": 1280,
       "height": 720,
       "bytes": 44728
+    },
+    "study": {
+      "file": "thumbnails/study.webp",
+      "source_sha256": "8431c8ab2dd716a0c01d54a447c7b02f55b8d16fb4dc214747c3a64cdb3444a2",
+      "sha256": "99f9bb19b1de4ac6317bf78da418a0f167c18156544e12672da3b1ade3c673b7",
+      "width": 1280,
+      "height": 720,
+      "bytes": 34184
     }
   }
 }
