@@ -1,4 +1,4 @@
-name: Deploy Hello World to GitHub Pages
+name: Deploy Aoba miniature to GitHub Pages
 
 on:
   push:
