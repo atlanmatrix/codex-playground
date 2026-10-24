@@ -61,11 +61,11 @@
     },
     "study": {
       "file": "thumbnails/study.webp",
-      "source_sha256": "e5669b6e3f2ab15e49b05c068d7b28b00a0adc25e94c2fbcf85ce8ec1f906d2d",
-      "sha256": "a36c0a56c07264afcf880660ee3802095265c8f5716d5019772cd2ce67016b96",
+      "source_sha256": "1607e58948c668286f4b413b6080e08281c8d51fb362acf1be92ed313d5a26bd",
+      "sha256": "8333a39762cf40b79deb2a509b9c30e7ef7a205a46987114952533925a01067e",
       "width": 1280,
       "height": 720,
-      "bytes": 32886
+      "bytes": 32644
     }
   }
 }

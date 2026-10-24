@@ -40,13 +40,28 @@ function instances(g,mat,items,parent=staticParent,shadow=true){const o=new THRE
 function canvasMaterial(width,height,paint,screen=false){const c=document.createElement('canvas');c.width=width;c.height=height;paint(c.getContext('2d'),width,height);const texture=new THREE.CanvasTexture(c);texture.colorSpace=THREE.SRGBColorSpace;return screen?new THREE.MeshBasicMaterial({map:texture,toneMapped:false}):new THREE.MeshToonMaterial({map:texture,gradientMap:ramp})}
 // An intact square floor, with exposed layers of wood along its cut edges.
 box(0,-.43,0,BASE,.86,BASE,m.base,scenery,true);box(0,.13,0,BASE,.26,BASE,m.edge,scenery,true);
-const floorColors=[m.oak,m.oakLight,m.oakDark];
-for(let i=0;i<64;i++)for(let j=0;j<2;j++){const z=-H+.25+i*.5,x=j?8.0:-8.0;box(x,.305,z,15.97,.09,.485,floorColors[(i+j*2)%3]);}
+// Short oak boards have staggered end joints and restrained honey/amber variation.
+const floorColors=['#c99360','#ce9a67','#d19f6d','#c58e5c','#d4a373','#ca9462'].map(color=>toon(color));
+const floorMin=-H+.20,floorMax=H-.20,rowWidth=(floorMax-floorMin)/44,boardLength=4.8;
+box(0,.275,0,BASE-.36,.025,BASE-.36,toon('#98643f'));
+for(let row=0;row<44;row++){
+ const z=floorMin+(row+.5)*rowWidth,offset=(row%3)*boardLength/3;
+ for(let start=floorMin-offset,segment=0;start<floorMax;start+=boardLength,segment++){
+  const left=Math.max(start,floorMin),right=Math.min(start+boardLength,floorMax);
+  if(right-left<.03)continue;
+  const colorIndex=(((row+1)*73856093^(segment+11)*19349663)>>>0)%floorColors.length;
+  box((left+right)/2,.305,z,right-left-.018,.09,rowWidth-.018,floorColors[colorIndex]);
+ }
+}
 for(const x of [-H+.12,H-.12])box(x,.35,0,.18,.09,BASE,m.oakDark);
 for(const z of [-H+.12,H-.12])box(0,.35,z,BASE,.09,.18,m.oakDark);
 const ground=mesh(new THREE.PlaneGeometry(180,180),new THREE.ShadowMaterial({opacity:.14}),0,-.90,0,scene);ground.rotation.x=-Math.PI/2;ground.castShadow=false;
 // Two real walls form an open-front cutaway room. The window is a clear opening.
 box(-15.73,5.75,0,.46,10.8,31.7,m.wallBlue,scenery,true);
+// The right wall is cut low so the sofa can rest against it without hiding the room.
+box(15.73,2.35,-6.55,.46,4.0,10.2,m.wall,scenery,true);
+box(15.73,4.39,-6.55,.50,.08,10.24,m.white,scenery,true);
+box(15.43,.61,-6.55,.16,.25,10.16,m.white);
 // A domestic window sits above desk height, rather than spanning the whole wall.
 const windowOpening={left:1.4,right:10.6,bottom:4.1,top:8.7};
 for(const [left,right] of [[-16,windowOpening.left],[windowOpening.right,16]])box((left+right)/2,5.75,-15.73,right-left,10.8,.46,m.wall,scenery,true);
@@ -90,16 +105,17 @@ for(const x of [-11.7,-9.6,-7.5,-5.4]){box(x,1.1,-13.95,1.95,1.22,.035,m.oakLigh
 for(let i=0;i<35;i++){const x=-12.05+i*.19,hh=R(.48,.83);books.push({p:[x+14.3,1.88+hh*.5,-14.45+3.65],s:[.14,hh,.55],c:pick(spineColors)});labels.push({p:[x+14.3,2.03,-14.165+3.65],s:[.11,.02,.012],c:'#e7ddbf'});}
 instances(geo.box,toon('#ffffff'),books,library).name='individual-library-books';instances(geo.box,toon('#ffffff'),labels,library).name='book-spine-bands';
 // Sofa, cushions and coffee table belong to the translated window-side reading zone.
-const lounge=new THREE.Group();lounge.name='corner-reading-sofa';readingZone.add(lounge);
+const lounge=new THREE.Group();lounge.name='corner-reading-sofa';lounge.rotation.y=-Math.PI/2;lounge.position.set(-11.3,0,-1.0);readingZone.add(lounge);
 for(const x of [-12.7,-5.7])for(const z of [-11.75,-8.82])rod([x,.39,z],[x,.93,z],.09,m.woodDark,lounge);
 soft(-9.20,1.12,-10.2,8.80,.58,4.28,m.sofa,lounge,.23);soft(-9.2,2.61,-11.91,8.85,2.22,.85,m.sofa,lounge,.30);
 for(const x of [-13.17,-5.23])soft(x,1.94,-10.10,.80,1.58,4.05,m.sofa,lounge,.25);
 for(const x of [-11.75,-9.2,-6.65])soft(x,1.66,-9.92,2.42,.63,3.16,m.sofaLight,lounge,.26);
 const pillow=soft(-11.82,2.34,-11.04,1.62,1.45,.47,m.cushion,lounge,.21);pillow.rotation.z=.18;pillow.rotation.x=-.15;
 const pillow2=soft(-6.70,2.30,-11.03,1.56,1.40,.45,m.yellow,lounge,.21);pillow2.rotation.z=-.20;pillow2.rotation.x=-.12;
-soft(-9.1,.409,-6.6,11.0,.055,10.3,m.rug,readingZone,.02);
-for(const x of [-14.34,-3.86])box(x,.443,-6.6,.055,.012,9.85,m.rugEdge);
-for(const z of [-11.48,-1.72])box(-9.1,.443,z,10.48,.012,.055,m.rugEdge);
+soft(-3.7,.409,-10.2,9.0,.055,11.4,m.rug,readingZone,.02);
+for(const x of [-7.96,.56])box(x,.443,-10.2,.045,.012,10.90,m.rugEdge);
+for(const z of [-15.65,-4.75])box(-3.7,.443,z,8.52,.012,.045,m.rugEdge);
+const coffeeZone=new THREE.Group();coffeeZone.name='sofa-coffee-table-zone';coffeeZone.position.set(2.3,0,-5.53);readingZone.add(coffeeZone);staticParent=coffeeZone;
 const table=mesh(new THREE.CylinderGeometry(2.00,1.97,.15,48),m.oakLight,-8.5,1.49,-4.67);table.scale.z=.84;
 for(let i=0;i<3;i++){const a=i*2.094;rod([-8.5+Math.cos(a)*1.03,.43,-4.67+Math.sin(a)*.80],[-8.5+Math.cos(a)*1.35,1.42,-4.67+Math.sin(a)*1.08],.09,m.woodDark);}
 function mug(x,y,z,s=1,parent=staticParent){mesh(new THREE.CylinderGeometry(.19*s,.15*s,.39*s,18,1,true),m.white,x,y+.195*s,z,parent);mesh(new THREE.CircleGeometry(.154*s,20),m.woodDark,x,y+.364*s,z,parent).rotation.x=-Math.PI/2;const handle=ring(x+.21*s,y+.21*s,z,.13*s,.035*s,m.white,parent);handle.rotation.y=Math.PI/2;return handle;}
@@ -201,7 +217,7 @@ soft(0,2.82,1.16,2.13,.42,.21,m.sofaLight,chair,.10);soft(0,4.93,1.08,1.51,.52,.
 for(const side of [-1,1]){rod([side*1.08,1.93,-.12],[side*1.08,2.99,-.12],.055,m.dark,chair);soft(side*1.17,3.07,-.17,.39,.15,1.50,m.dark,chair,.07);}
 soft(4.3,.406,.12,8.3,.055,6.4,m.rugEdge,workZone,.02);for(const z of [-2.82,3.06])box(4.3,.441,z,7.82,.008,.035,m.rug,workZone);
 // An open book has a real curved page surface, cover thickness and printed lines.
-const readingBook=new THREE.Group();readingBook.name='open-reading-book';readingBook.position.set(-8.74,1.59,-4.56);readingBook.rotation.y=.20;readingZone.add(readingBook);
+const readingBook=new THREE.Group();readingBook.name='open-reading-book';readingBook.position.set(-8.74,1.59,-4.56);readingBook.rotation.y=.20;coffeeZone.add(readingBook);
 for(const side of [-1,1]){
  const pts=[],idx=[];for(let j=0;j<=18;j++)for(let i=0;i<=12;i++){const u=i/12,t=j/18;pts.push(side*u*.70,.03+Math.sin(u*Math.PI*.85)*.09,-.88+t*1.76);if(i<12&&j<18){const a=j*13+i;idx.push(a,a+1,a+13,a+1,a+14,a+13)}}
  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pts,3));g.setIndex(idx);g.computeVertexNormals();const mat=m.paper.clone();mat.side=THREE.DoubleSide;mesh(g,mat,0,0,0,readingBook);
@@ -214,14 +230,14 @@ for(let j=0;j<=22;j++)for(let i=0;i<=12;i++){
  const u=i/12,t=j/22,x=-12.70+u*2.0,z=-11.45+t*3.3,y=t<.65?2.03+.035*Math.sin(u*22.):2.03-(t-.65)/.35*1.05;
  blanketPos.push(x,y+Math.sin(t*5.+u*9.)*.04,z);if(i<12&&j<22){const a=j*13+i;blanketIdx.push(a,a+1,a+13,a+1,a+14,a+13)}
 }
-const blanketG=new THREE.BufferGeometry();blanketG.setAttribute('position',new THREE.Float32BufferAttribute(blanketPos,3));blanketG.setIndex(blanketIdx);blanketG.computeVertexNormals();const blanketMat=toon('#d6ba88',{side:THREE.DoubleSide});mesh(blanketG,blanketMat,0,0,0,readingZone);
-for(let i=0;i<12;i++)rod([-12.65+i*.17,1.02,-8.13],[-12.65+i*.17,.83,-8.09],.012,m.cream,readingZone);
+const blanketG=new THREE.BufferGeometry();blanketG.setAttribute('position',new THREE.Float32BufferAttribute(blanketPos,3));blanketG.setIndex(blanketIdx);blanketG.computeVertexNormals();const blanketMat=toon('#d6ba88',{side:THREE.DoubleSide});mesh(blanketG,blanketMat,0,0,0,lounge);
+for(let i=0;i<12;i++)rod([-12.65+i*.17,1.02,-8.13],[-12.65+i*.17,.83,-8.09],.012,m.cream,lounge);
 // A floor lamp and leafy pots balance the hard edges of the editing equipment.
 function pot(x,y,z,r=.55,height=.70,parent=staticParent){mesh(new THREE.CylinderGeometry(r,r*.77,height,20),m.pot,x,y+height*.5,z,parent);mesh(new THREE.CylinderGeometry(r*.91,r*.91,.035,20),m.soil,x,y+height,z,parent);return y+height;}
 const plantHeads=[];
 function plant(x,y,z,size=1,parent=staticParent){const top=pot(x,y,z,size*.45,size*.62,parent),g=new THREE.Group();g.name='swaying-study-plant';g.position.set(x,top,z);model.add(g);for(let i=0;i<8;i++){const a=i/8*6.28,h=size*R(.9,2.0),r=size*R(.32,.68),end=[Math.cos(a)*r,h,Math.sin(a)*r];rod([0,0,0],end,.018*size,m.leaf,g);const leaf=ell(end[0]*1.13,h+.05,end[2]*1.13,size*.23,size*.10,size*.48,i%2?m.leaf:m.leafLight,g);leaf.rotation.set(.35,a,.25*Math.sin(a));rod([end[0],h+.065,end[2]],[end[0]+Math.sin(a)*size*.25,h+.10,end[2]+Math.cos(a)*size*.30],.006*size,m.sage,g);}plantHeads.push({g,phase:R(0,6.28)});return g;}
 plant(13.0,.40,9.0,1.70);plant(.80,.40,-9.15,1.28);plant(-13.95,9.85,3.7,.47);plant(9.85,4.10,-14.95,.40);plant(-13.20,3.45,-12.73,.35);
-staticParent=readingZone;
+const readingLamp=new THREE.Group();readingLamp.name='sofa-reading-lamp';readingLamp.position.set(9.23,0,-7.46);readingZone.add(readingLamp);staticParent=readingLamp;
 mesh(new THREE.CylinderGeometry(.58,.67,.12,28),m.woodDark,-13.58,.45,-7.74);rod([-13.58,.50,-7.74],[-13.58,6.96,-7.74],.055,m.steel);const shade=mesh(new THREE.CylinderGeometry(.70,.95,1.12,32,1,true),m.cream,-13.58,6.84,-7.74);ell(-13.58,6.36,-7.74,.48,.04,.48,m.glow);
 staticParent=scenery;
 // Window-sill rocket and Saturn model; a small framed print and a film camera tripod.
@@ -250,7 +266,7 @@ for(let i=0;i<4;i++)soft(-.42,1.55+i*.12,.03,1.08,.10,.86,i%2?m.cream:m.blue,car
 for(const x of [-.62,.62]){const reel=mesh(new THREE.CylinderGeometry(.41,.41,.11,32),m.metal,x,2.47,0,cart);for(let j=0;j<6;j++){const a=j/6*6.28;mesh(new THREE.CylinderGeometry(.085,.085,.014,14),m.dark,x+Math.cos(a)*.25,2.533,Math.sin(a)*.25,cart);}mesh(new THREE.CylinderGeometry(.095,.095,.03,18),m.wood,x,2.545,0,cart);}
 rod([-1.15,2.32,-.72],[-1.15,2.85,-.72],.045,m.steel,cart);rod([1.15,2.32,-.72],[1.15,2.85,-.72],.045,m.steel,cart);rod([-1.15,2.85,-.72],[1.15,2.85,-.72],.045,m.steel,cart);
 // Warm little lights stay subtle in the sunlit room.
-for(const [x,y,z,power] of [[-13.22,5.17,-8.37,1.8],[.72,6.2,-4.09,1.1]]){const light=new THREE.PointLight('#ffe1af',power,7,1.5);light.position.set(x,y,z);scene.add(light);}
+for(const [x,y,z,power] of [[-13.22,5.17,-8.37,1.8],[9.95,6.2,-11.55,1.1]]){const light=new THREE.PointLight('#ffe1af',power,7,1.5);light.position.set(x,y,z);scene.add(light);}
 // One complete bay is an open figurine cabinet, with separate display plinths.
 const collection=new THREE.Group();collection.name='figurine-display-cabinet';scenery.add(collection);
 const figureKinds=['robot','astronaut','cat','rabbit','dinosaur','rocket','bear','duck','mushroom','ghost','mecha','penguin'];
