@@ -69,9 +69,16 @@ function flowers(x,y,z,n=8,s=.35){grass(x,y,z,s);for(let i=0;i<n;i++){const dx=R
 function ivy(points,flowersOn=false){curve(points,.026,M.moss);for(let i=0;i<points.length-1;i++){const a=V(...points[i]),b=V(...points[i+1]);const count=Math.ceil(a.distanceTo(b)*12);for(let j=0;j<count;j++){const p=a.clone().lerp(b,j/count);leaf(p.x+R(-.13,.13),p.y+R(-.12,.12),p.z+R(-.12,.12),R(.15,.3));if(flowersOn&&rnd()>.72)instance('rock',pick(flowerMats.slice(0,2)),[p.x+.12,p.y,p.z+.1],[.12,.09,.13])}}}
 
 // The square cutaway base: asphalt, aggregate, concrete, rebar, hanging roots.
-box(0,-.64,0,16,1.2,16,M.deepsoil,model,true);
-box(0,-.2,0,16,.34,16,M.concrete,model,true);
-box(0,.005,0,16,.17,16,M.asphalt,model,true);
+// Adjacent strata share a boundary, never a vertical interval. Overlapping
+// equal-width boxes leave coplanar sidewalls that flicker while orbiting.
+const baseStrata=[
+ {bottom:-1.24,top:-.37,material:M.deepsoil},
+ {bottom:-.37,top:-.08,material:M.concrete},
+ {bottom:-.08,top:.09,material:M.asphalt}
+];
+for(const {bottom,top,material} of baseStrata){
+ box(0,(bottom+top)/2,0,16,top-bottom,16,material,model,true);
+}
 box(-2,.12,-2.1,11,.25,10.6,M.edge,model,true);
 const ground=mesh(new THREE.PlaneGeometry(200,200),new THREE.ShadowMaterial({opacity:.14}),0,-1.36,0,scene);ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;
 for(let i=0;i<170;i++){const side=Math.floor(R(0,4)),a=R(-7.8,7.8);const x=side<2?a:(side===2?-8.01:8.01),z=side<2?(side===0?8.01:-8.01):a;instance('rock',pick([M.broken,M.edge,M.soil]),[x,R(-1.1,-.23),z],[R(.07,.24),R(.04,.12),R(.06,.2)],[R(0,3),R(0,3),R(0,3)]);if(i%9===0){const end=[x*.99,-1.2,z*.99];curve([[x,.04,z],[x*1.006,-.4,z*1.006],end],.04,M.root)}}
@@ -90,8 +97,9 @@ for(let level=0;level<4;level++){
  const y=.49+level*2.42;
  poly(floorShape,y,.2,level===3?M.broken:M.concrete,model,[[-1.4,-2.1,level===0?.9:1.2]]);
  // Pale slab lip, exposed broken beams and protruding reinforcement.
- box(-4.4,y-.03,1.6,4.05,.2,.17,M.edge,model,true);
- box(-6.4,y-.02,-2,.19,.24,7.2,M.edge,model,true);
+ // Inset the trim ends so they do not duplicate the slab end faces.
+ box(-4.32,y-.03,1.6,3.95,.2,.17,M.edge,model,true);
+ box(-6.4,y-.02,-2,.19,.24,6.98,M.edge,model,true);
  if(level>0){for(let i=0;i<9;i++){const x=R(-1.6,1.4),z=1.0-R(0,.7);rod([x,y-.07,z],[x+R(-.13,.13),y-.05,z+R(.25,.65)],.014,M.rust)}
  for(let j=0;j<7;j++)ell(R(-1.9,1.2),y-.12,R(.1,1),R(.08,.2),.12,R(.08,.2),M.broken,model,geometries.rock)}
  if(level===3)continue;
