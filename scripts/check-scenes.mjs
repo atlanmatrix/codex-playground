@@ -52,6 +52,21 @@ try{
    for(let k=now.length-33*3;k<now.length;k++)hem=Math.max(hem,Math.abs(now[k]-old[k]));
    assert(isPreview||isReduced?hem===0:hem>.08,'The free hem must sway, with static preview and reduced-motion states');
   });
+  const hands=['clock-hour-hand','clock-minute-hand','clock-second-hand'].map(n=>scene.getObjectByName(n));
+  assert(hands.every(Boolean),'The wall clock needs three separate moving hands');
+  if(!isPreview){
+   const DeviceDate=globalThis.Date;let deviceTime;
+   try{
+    globalThis.Date=class extends DeviceDate{constructor(...args){super(...(args.length?args:[deviceTime]))}static now(){return deviceTime}};
+    // Local device time, including fractions, midnight rollover and time corrections.
+    for(const [i,parts] of [[0,[10,8,30,500]],[1,[10,8,31,0]],[2,[23,59,59,900]],[3,[0,0,0,100]],[4,[4,20,0,0]]]){
+     deviceTime=new DeviceDate(2026,9,24,...parts).getTime();globalThis.frame(5000+i*1000);
+     const [h,m,s,ms]=parts,seconds=s+ms/1000,minutes=m+seconds/60;
+     const expected=[-(h%12+minutes/60)*Math.PI/6,-minutes*Math.PI/30,-seconds*Math.PI/30];
+     hands.forEach((hand,k)=>assert(Math.abs(hand.rotation.z-expected[k])<1e-10,'Clock hands must follow device wall time, including reduced motion'));
+    }
+   }finally{globalThis.Date=DeviceDate}
+  }
   assert(testControls.minDistance>=40&&testControls.maxPolarAngle<Math.PI/2);
   scene.updateMatrixWorld(true);
   const {Raycaster,Vector3}=await import(pathToFileURL(join(root,'node_modules/three/build/three.module.js')));
