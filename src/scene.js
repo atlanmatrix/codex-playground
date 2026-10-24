@@ -2,10 +2,12 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
+const isPreview = new URLSearchParams(location.search).has('preview');
+
 // Aoba: a complete, deterministic miniature. All detail is geometry or painted canvas.
 const scene = new THREE.Scene();
 const renderer = new THREE.WebGLRenderer({antialias:true,alpha:true,powerPreference:'high-performance'});
-renderer.setPixelRatio(Math.min(devicePixelRatio,1.8));
+renderer.setPixelRatio(Math.min(devicePixelRatio,isPreview?.85:1.8));
 renderer.setSize(innerWidth,innerHeight);
 renderer.shadowMap.enabled=true;
 renderer.shadowMap.type=THREE.PCFSoftShadowMap;
@@ -21,7 +23,7 @@ controls.target.set(0,4.1,0);
 controls.enableDamping=true;controls.dampingFactor=.065;
 controls.minDistance=9;controls.maxDistance=180;
 controls.maxPolarAngle=Math.PI*.485;controls.minPolarAngle=.13;
-controls.enablePan=true;controls.panSpeed=.7;
+controls.enablePan=true;controls.enabled=!isPreview;controls.panSpeed=.7;
 function frame(){
  const aspect=innerWidth/innerHeight;
  const d=Math.max(38,40/aspect);
@@ -32,7 +34,7 @@ frame();
 scene.add(new THREE.HemisphereLight(0xf5fff3,0x60756a,2.25));
 const sun=new THREE.DirectionalLight(0xffedb0,4.0);
 sun.position.set(-8,21,12);sun.castShadow=true;
-sun.shadow.mapSize.set(2048,2048);
+sun.shadow.mapSize.set(isPreview?1024:2048,isPreview?1024:2048);
 Object.assign(sun.shadow.camera,{left:-13,right:13,top:15,bottom:-12,near:.5,far:55});
 sun.shadow.normalBias=.035;sun.shadow.bias=-.00015;sun.shadow.radius=3;scene.add(sun);
 const fill=new THREE.DirectionalLight(0xaee7df,1.05);fill.position.set(10,9,-8);scene.add(fill);
@@ -423,7 +425,7 @@ for(let i=0;i<90;i++){motePos[i*3]=R(-7,7);motePos[i*3+1]=R(.5,11);motePos[i*3+2
 moteGeo.setAttribute('position',new THREE.BufferAttribute(motePos,3));
 const motes=new THREE.Points(moteGeo,new THREE.PointsMaterial({color:0xfff3b4,size:.035,transparent:true,opacity:.65,depthWrite:false}));model.add(motes);
 let previous=0;const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
-renderer.setAnimationLoop(ms=>{
+function renderFrame(ms){
  const t=ms*.001,dt=Math.min(t-previous,.05);previous=t;
  controls.update();
  if(!reduced){
@@ -435,7 +437,8 @@ renderer.setAnimationLoop(ms=>{
   for(let i=0;i<90;i++){motePos[i*3+1]+=dt*.025;if(motePos[i*3+1]>11.5)motePos[i*3+1]=.5}moteGeo.attributes.position.needsUpdate=true;
  }
  renderer.render(scene,camera);
-});
-addEventListener('resize',()=>{const aspect=innerWidth/innerHeight;const factor=Math.max(38,40/aspect)/Math.max(38,40/camera.aspect);camera.position.sub(controls.target).multiplyScalar(factor).add(controls.target);camera.aspect=aspect;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio,1.8));});
+}
+if(isPreview){renderFrame(0)}else{renderer.setAnimationLoop(renderFrame)}
+addEventListener('resize',()=>{const aspect=innerWidth/innerHeight;const factor=Math.max(38,40/aspect)/Math.max(38,40/camera.aspect);camera.position.sub(controls.target).multiplyScalar(factor).add(controls.target);camera.aspect=aspect;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio,isPreview?.85:1.8));if(isPreview)renderFrame(0);});
 // Keep the composition visible when changing device orientation, without interrupting exploration.
 addEventListener('orientationchange',()=>requestAnimationFrame(frame));

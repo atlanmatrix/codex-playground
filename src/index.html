@@ -2,15 +2,29 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=5">
-<meta name="theme-color" content="#e6eada">
-<meta name="description" content="青葉 · 被自然收回的城市街角。一座可自由旋转、缩放探索的 Three.js 动画风格微缩景观。">
-<title>青葉 — A corner reclaimed</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#edf0e7">
+<meta name="description" content="两处可以自由旋转探索的动画风格微缩景观：被自然收回的城市街角，与柳荫下的湖畔午睡。">
+<title>小景 · 一隅风景，一段慢时光</title>
 <style>
-*{box-sizing:border-box}html,body{width:100%;height:100%;margin:0;overflow:hidden}body{background:radial-gradient(ellipse at 47% 36%,#f6f3df 0%,#e8eddf 52%,#cadbd1 100%)}canvas{display:block;width:100%;height:100%;outline:none;touch-action:none;cursor:grab}canvas:active{cursor:grabbing}
+:root{font-family:"PingFang SC","Microsoft YaHei",sans-serif;color:#294a40;background:#edf0e7;font-synthesis:none}*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 16% 0%,#fffdf1,transparent 58%),#edf0e7;min-height:100svh}a{color:inherit}.wrap{max-width:1260px;margin:auto;padding:42px 54px 30px}.brand{display:flex;align-items:center;gap:12px;font-size:16px;font-weight:600;letter-spacing:.22em}.brand svg{width:27px;height:27px}.brand span{font-family:Georgia,serif;font-size:10px;font-weight:400;letter-spacing:.18em;color:#7c8f80;border-left:1px solid #cbd4c7;padding-left:13px;margin-left:2px}.intro{padding:64px 0 40px}.eyebrow{font-size:10px;letter-spacing:.29em;color:#85927a;margin:0 0 19px}.intro h1{font-family:"Songti SC","Noto Serif CJK SC",serif;font-size:clamp(30px,4.2vw,49px);font-weight:500;letter-spacing:.08em;line-height:1.4;margin:0 0 16px}.intro p:last-child{font-size:13px;letter-spacing:.05em;color:#798b7d;line-height:1.9;margin:0}.scenes{display:grid;grid-template-columns:1fr 1fr;gap:27px}.card{border-radius:5px;background:#fafbf5;text-decoration:none;overflow:hidden;box-shadow:0 7px 26px #456b4910;transition:transform .3s,box-shadow .3s;display:block;outline-offset:6px}.card:hover{transform:translateY(-5px);box-shadow:0 16px 36px #456b4922}.card:focus-visible{outline:2px solid #739578}.preview{height:330px;position:relative;overflow:hidden;background:#e5ebdb}.preview.lake{background:#e6f0e9}.preview iframe{border:0;display:block;width:100%;height:100%;pointer-events:none;user-select:none}.card-copy{padding:25px 29px 28px;position:relative;border-top:1px solid #e6ebdf}.number{font-family:Georgia,serif;color:#9fae95;font-size:11px;letter-spacing:.12em}.card h2{font-family:"Songti SC","Noto Serif CJK SC",serif;font-size:23px;font-weight:500;letter-spacing:.055em;margin:10px 35px 11px 0}.card p{font-size:12px;color:#85917f;letter-spacing:.04em;line-height:1.9;margin:0}.enter{position:absolute;right:29px;top:43px;width:32px;height:32px;border:1px solid #cbd5c3;border-radius:50%;display:grid;place-items:center;color:#64806b;transition:background .2s}.card:hover .enter{background:#e6ecdf}.enter svg{width:14px;height:14px}.footer{display:flex;justify-content:space-between;gap:20px;padding-top:34px;color:#8b9985;font-size:10px;letter-spacing:.12em;line-height:1.8}.footer span:last-child{font-family:Georgia,serif;letter-spacing:.16em}@media(min-width:1500px){.wrap{padding-top:56px}.intro{padding-top:85px}.preview{height:380px}}@media(max-width:760px){.wrap{padding:29px 23px 25px}.intro{padding:48px 0 28px}.scenes{grid-template-columns:1fr;gap:24px}.preview{height:310px}.card-copy{padding:23px}.card h2{font-size:22px}.footer{padding-top:26px}.brand span{font-size:9px}.enter{right:24px}}@media(prefers-reduced-motion:reduce){.card{transition:none}}
 </style>
 </head>
 <body>
-<script>/* SCENE */</script>
+<main class="wrap">
+<header class="brand"><svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M6 22 16 27 26 22V12L16 7 6 12Z" stroke="#5c7f61" stroke-width="1.25"/><path d="m6 12 10 5 10-5M16 17v10M16 17V5" stroke="#5c7f61" stroke-width="1.25"/><path d="M16 11c-5 0-7-3-6-6 4 0 6 2 6 6Zm0-3c0-4 3-6 7-5 0 4-3 6-7 5Z" fill="#9daf82"/></svg>小景<span>LITTLE WORLDS</span></header>
+<section class="intro"><p class="eyebrow">A SMALL PLACE TO SLOW DOWN</p><h1>一隅风景，一段慢时光。</h1><p>选一处喜欢的风景，走进微小而安静的世界。</p></section>
+<section class="scenes" aria-label="选择微缩场景">
+<a class="card" href="./city/" aria-label="进入被自然收回的城市街角">
+<div class="preview"><iframe src="./city/?preview=1" title="城市街角三维预览" tabindex="-1" aria-hidden="true" loading="lazy" inert></iframe></div>
+<div class="card-copy"><span class="number">01 / AOBA</span><h2>被自然收回的城市街角</h2><p>榕树穿过旧楼，绿意沿着时光的裂缝生长。</p><span class="enter" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none"><path d="M4 10h12m-5-5 5 5-5 5" stroke="currentColor" stroke-width="1.3"/></svg></span></div>
+</a>
+<a class="card" href="./lakeside/" aria-label="进入柳荫下的湖畔午睡">
+<div class="preview lake"><iframe src="./lakeside/?preview=1" title="柳荫湖畔三维预览" tabindex="-1" aria-hidden="true" loading="lazy" inert></iframe></div>
+<div class="card-copy"><span class="number">02 / SUMMER SIESTA</span><h2>柳荫下的湖畔午睡</h2><p>柳梢轻拂湖面，一只橘猫睡过了整个午后。</p><span class="enter" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none"><path d="M4 10h12m-5-5 5 5-5 5" stroke="currentColor" stroke-width="1.3"/></svg></span></div>
+</a>
+</section>
+<footer class="footer"><span>进入场景后，拖拽旋转 · 滚轮或双指缩放</span><span>STAY A LITTLE LONGER.</span></footer>
+</main>
 </body>
 </html>

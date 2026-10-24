@@ -1,12 +1,17 @@
 {
-  "name": "aoba-reclaimed-corner",
+  "name": "little-worlds",
   "version": "1.0.0",
   "private": true,
   "type": "module",
   "scripts": {
     "build": "node build.mjs",
-    "dev": "python -m http.server 4173"
+    "dev": "python -m http.server 4173",
+    "check": "node scripts/check-scenes.mjs city 1440 1000 && node scripts/check-scenes.mjs lakeside 1440 1000 && node scripts/check-scenes.mjs lakeside 390 844 && node scripts/check-scenes.mjs lakeside 520 330 --preview && node scripts/check-scenes.mjs city 520 330 --preview && node scripts/check-scenes.mjs lakeside 1440 1000 --reduced"
   },
-  "dependencies": { "three": "0.180.0" },
-  "devDependencies": { "esbuild": "0.25.11" }
+  "dependencies": {
+    "three": "0.180.0"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.11"
+  }
 }

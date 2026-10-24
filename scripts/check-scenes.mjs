@@ -1,0 +1,108 @@
+// Exercise real Three.js geometry and animation on Node, stubbing only browser I/O.
+// This is not a browser or GPU rendering test.
+import { build } from 'esbuild';
+import { readFile, writeFile, mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
+import assert from 'node:assert/strict';
+
+const name=process.argv[2]||'lakeside';
+const width=Number(process.argv[3]||1440),height=Number(process.argv[4]||1000);
+const isPreview=process.argv.includes('--preview'),isReduced=process.argv.includes('--reduced');
+assert(['city','lakeside'].includes(name));
+const root=resolve(import.meta.dirname,'..');
+const temp=await mkdtemp(join(tmpdir(),'little-worlds-check-'));
+const realThree=JSON.stringify(pathToFileURL(join(root,'node_modules/three/build/three.module.js')).href);
+const rendererStub=`export * from ${realThree};export class WebGLRenderer{constructor(){this.shadowMap={};this.domElement={setAttribute(){}}}setPixelRatio(){}setSize(){}setAnimationLoop(f){globalThis.frame=f}render(scene,camera){globalThis.rendered={scene,camera}}}`;
+const controlsStub=`import {Vector3} from ${realThree};export class OrbitControls{constructor(){this.target=new Vector3();globalThis.testControls=this}update(){}}`;
+const plugin={name:'browser-io-stub',setup(b){
+ b.onResolve({filter:/^three$/},()=>({path:'three',namespace:'stub'}));
+ b.onLoad({filter:/.*/,namespace:'stub'},()=>({contents:rendererStub,loader:'js',resolveDir:root}));
+ b.onResolve({filter:/OrbitControls\.js$/},()=>({path:'controls',namespace:'controls'}));
+ b.onLoad({filter:/.*/,namespace:'controls'},()=>({contents:controlsStub,loader:'js',resolveDir:root}));
+ b.onResolve({filter:/^file:/},a=>({path:a.path,external:true}));
+}};
+await build({entryPoints:[join(root,name==='city'?'src/scene.js':'src/lakeside.js')],outfile:join(temp,'scene.mjs'),bundle:true,platform:'node',format:'esm',plugins:[plugin]});
+globalThis.innerWidth=width;globalThis.innerHeight=height;globalThis.devicePixelRatio=1;
+globalThis.location={search:isPreview?'?preview=1':''};
+globalThis.document={body:{appendChild(){}},createElement(){return{getContext(){return{fillRect(){},strokeRect(){},fillText(){}}}}}};
+globalThis.matchMedia=()=>({matches:isReduced});
+const listeners=new Map();globalThis.addEventListener=(name,handler)=>listeners.set(name,handler);
+try{
+ await import(pathToFileURL(join(temp,'scene.mjs')));
+ if(!isPreview)globalThis.frame(0);
+ const {scene,camera}=globalThis.rendered;
+ const model=name==='city'?scene.children.find(o=>o.isGroup):scene.getObjectByName('lakeside-miniature');
+ assert(model);
+ if(name==='lakeside'){
+  const belly=scene.getObjectByName('breathing-belly');
+  const ears=['left-ear','right-ear'].map(n=>scene.getObjectByName(n));
+  assert(belly&&ears.every(Boolean));
+  assert(testControls.minDistance>16&&testControls.maxPolarAngle<Math.PI/2);
+  const events=[];let active=[false,false],smallest=1,largest=1;
+  if(!isPreview){
+   for(let ms=20;ms<=90000;ms+=20){
+    globalThis.frame(ms);smallest=Math.min(smallest,belly.scale.y);largest=Math.max(largest,belly.scale.y);
+    ears.forEach((e,i)=>{const moving=Math.abs(e.rotation.z-(i===0?-.19:.19))>.0001;if(moving&&!active[i])events.push({t:ms/1000,i});active[i]=moving});
+   }
+  }
+  if(!isPreview&&!isReduced){
+   assert(smallest<.99&&largest>1.01,'Breathing must remain subtle and continuous');
+   assert(events.length>=14&&events.length<50,'Ears should twitch intermittently');
+   // Separate two twitches belonging to a follow-up flick from new events.
+   const onsets=events.filter((e,i)=>i===0||e.t-events[i-1].t>1);
+   for(let i=1;i<onsets.length;i++){const dt=onsets[i].t-onsets[i-1].t;assert(dt>=2.98&&dt<=6.04,`Ear interval ${dt}`)}
+   assert(!events.some((e,i)=>i>0&&e.i!==events[i-1].i&&e.t===events[i-1].t),'Ears must not twitch in synchrony');
+  }else assert.equal(belly.scale.y,1);
+  const water=scene.getObjectByName('reflective-lake');assert(water?.isReflector);
+  const g=water.geometry,p=g.attributes.position,idx=g.index;let area=0;
+  for(let i=0;i<idx.count;i+=3){const ids=[idx.getX(i),idx.getX(i+1),idx.getX(i+2)];const [a,b,c]=ids.map(i=>[p.getX(i),p.getY(i)]);area+=Math.abs((b[0]-a[0])*(c[1]-a[1])-(b[1]-a[1])*(c[0]-a[0]))/2;}
+  assert(area/256>.73&&area/256<.77,`Lake fraction ${area/256}`);
+  console.log(JSON.stringify({lakeFraction:Number((area/256).toFixed(3)),breathing:[smallest,largest],earTwitches:events.length}));
+ }
+ scene.updateMatrixWorld(true);camera.updateMatrixWorld(true);
+ const {Vector3,ShaderChunk}=await import(pathToFileURL(join(root,'node_modules/three/build/three.module.js')));
+ const point=new Vector3();let meshes=0,instances=0,vertices=0,invalid=0;
+ const projected={left:Infinity,right:-Infinity,bottom:Infinity,top:-Infinity};
+ model.traverse(o=>{
+  if(!o.isMesh)return;meshes++;if(o.isInstancedMesh)instances+=o.count;
+  const p=o.geometry.attributes.position;vertices+=p.count;
+  for(const n of o.matrixWorld.elements)if(!Number.isFinite(n))invalid++;
+  for(const n of p.array)if(!Number.isFinite(n))invalid++;
+  if(o.isInstancedMesh){for(const n of o.instanceMatrix.array)if(!Number.isFinite(n))invalid++;return}
+  for(let i=0;i<p.count;i++){
+   point.fromBufferAttribute(p,i).applyMatrix4(o.matrixWorld).project(camera);
+   projected.left=Math.min(projected.left,point.x);projected.right=Math.max(projected.right,point.x);projected.bottom=Math.min(projected.bottom,point.y);projected.top=Math.max(projected.top,point.y);
+  }
+ });
+ assert.equal(invalid,0);assert(instances>3000);assert(meshes<260);
+ if(process.env.SCENE_SHADER_OUTPUT){
+  const shaders=[];const expand=s=>s.replace(/#include <(\w+)>/g,(_,name)=>expand(ShaderChunk[name]));
+  model.traverse(o=>{if(o.material?.isShaderMaterial)shaders.push({vertex:expand(o.material.vertexShader),fragment:expand(o.material.fragmentShader)})});
+  await writeFile(process.env.SCENE_SHADER_OUTPUT,JSON.stringify(shaders));
+ }
+ assert(Object.values(projected).every(n=>Math.abs(n)<.98),`Camera crops the scene: ${JSON.stringify(projected)}`);
+ if(name==='city'){
+  const planes=new Map(['x:-8','x:8','z:-8','z:8'].map(k=>[k,new Map()]));
+  const triangle=[new Vector3(),new Vector3(),new Vector3()];
+  model.traverse(o=>{
+   if(!o.isMesh||o.isInstancedMesh||o.material.transparent)return;
+   const g=o.geometry,p=g.attributes.position,idx=g.index,n=idx?idx.count:p.count;
+   for(let i=0;i<n;i+=3){
+    triangle.forEach((v,j)=>v.fromBufferAttribute(p,idx?idx.getX(i+j):i+j).applyMatrix4(o.matrixWorld));
+    const lo=Math.min(...triangle.map(v=>v.y)),hi=Math.max(...triangle.map(v=>v.y));
+    if(lo < -1.241 || hi > .091 || hi-lo < .01)continue;
+    for(const [key,faces] of planes){const [axis,plane]=key.split(':');if(triangle.every(v=>Math.abs(v[axis]-Number(plane))<1e-5)){const interval=[lo,hi].map(v=>Number(v.toFixed(5)));faces.set(interval.join(':'),interval)}}
+   }
+  });
+  for(const [plane,faces] of planes){
+   const intervals=[...faces.values()].sort((a,b)=>a[0]-b[0]);assert.equal(intervals.length,3);
+   for(let i=1;i<intervals.length;i++)assert(Math.abs(intervals[i][0]-intervals[i-1][1])<1e-5,`${plane}: overlapping strata`);
+  }
+ }
+ assert.equal(testControls.enabled,!isPreview);
+ // A narrower viewport must still frame the model on a direct load or resize.
+ globalThis.innerWidth=390;globalThis.innerHeight=844;listeners.get('resize')();
+ console.log(JSON.stringify({scene:name,width,height,preview:isPreview,reduced:isReduced,meshes,instances,vertices,projected}));
+}finally{await rm(temp,{recursive:true,force:true})}
