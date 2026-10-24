@@ -18,6 +18,9 @@ const sun=new THREE.DirectionalLight('#fff1cb',3.15);sun.position.set(5,26,-21);
 const fill=new THREE.DirectionalLight('#d4e9e8',.72);fill.position.set(14,15,12);scene.add(fill);
 const model=new THREE.Group();model.name='study-miniature';model.userData.baseSize=BASE;scene.add(model);
 const scenery=new THREE.Group();scenery.name='study-static-interior';model.add(scenery);
+let staticParent=scenery;
+const readingZone=new THREE.Group();readingZone.name='window-reading-zone';readingZone.position.set(14.3,0,3.65);scenery.add(readingZone);
+const workZone=new THREE.Group();workZone.name='library-editing-zone';workZone.position.set(-12.8,0,-3.65);scenery.add(workZone);
 let seed=765391;const random=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296},R=(a,b)=>a+random()*(b-a),pick=a=>a[Math.floor(random()*a.length)],v=(x,y,z)=>new THREE.Vector3(x,y,z);
 const ramp=new THREE.DataTexture(new Uint8Array([93,143,193,229,255]),5,1,THREE.RedFormat);ramp.minFilter=ramp.magFilter=THREE.NearestFilter;ramp.needsUpdate=true;
 const toon=(color,extra={})=>new THREE.MeshToonMaterial({color,gradientMap:ramp,...extra});
@@ -25,15 +28,15 @@ const m={base:toon('#9a856e'),edge:toon('#c6b394'),oak:toon('#c8a67b'),oakLight:
 const edgeMat=new THREE.LineBasicMaterial({color:'#56675e',transparent:true,opacity:.33,depthWrite:false});
 const glass=new THREE.MeshBasicMaterial({color:'#bddde0',transparent:true,opacity:.14,depthWrite:false,side:THREE.DoubleSide});
 const geo={box:new THREE.BoxGeometry(1,1,1),sphere:new THREE.SphereGeometry(1,16,10),rock:new THREE.IcosahedronGeometry(1,1)};
-function mesh(g,mat,x=0,y=0,z=0,parent=scenery){const o=new THREE.Mesh(g,mat);o.position.set(x,y,z);o.castShadow=true;o.receiveShadow=true;parent.add(o);return o}
-function box(x,y,z,w,h,d,mat,parent=scenery,outline=false){const o=mesh(geo.box,mat,x,y,z,parent);o.scale.set(w,h,d);if(outline){const l=new THREE.LineSegments(new THREE.EdgesGeometry(geo.box),edgeMat);l.scale.setScalar(1.0015);o.add(l)}return o}
-function soft(x,y,z,w,h,d,mat,parent=scenery,r=.14){return mesh(new RoundedBoxGeometry(w,h,d,2,Math.min(r,w*.2,h*.4,d*.2)),mat,x,y,z,parent)}
-function ell(x,y,z,sx,sy,sz,mat,parent=scenery){const o=mesh(geo.sphere,mat,x,y,z,parent);o.scale.set(sx,sy,sz);return o}
-function rod(a,b,r,mat,parent=scenery,rTop=r){const from=v(...a),to=v(...b),delta=to.clone().sub(from);const o=mesh(new THREE.CylinderGeometry(rTop,r,delta.length(),10),mat,0,0,0,parent);o.position.copy(from.add(to).multiplyScalar(.5));o.quaternion.setFromUnitVectors(v(0,1,0),delta.normalize());return o}
-function tube(ps,r,mat,parent=scenery,n=22){return mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(ps.map(p=>v(...p))),n,r,6,false),mat,0,0,0,parent)}
-function ring(x,y,z,r,t,mat,parent=scenery){return mesh(new THREE.TorusGeometry(r,t,7,32),mat,x,y,z,parent)}
+function mesh(g,mat,x=0,y=0,z=0,parent=staticParent){const o=new THREE.Mesh(g,mat);o.position.set(x,y,z);o.castShadow=true;o.receiveShadow=true;parent.add(o);return o}
+function box(x,y,z,w,h,d,mat,parent=staticParent,outline=false){const o=mesh(geo.box,mat,x,y,z,parent);o.scale.set(w,h,d);if(outline){const l=new THREE.LineSegments(new THREE.EdgesGeometry(geo.box),edgeMat);l.scale.setScalar(1.0015);o.add(l)}return o}
+function soft(x,y,z,w,h,d,mat,parent=staticParent,r=.14){return mesh(new RoundedBoxGeometry(w,h,d,2,Math.min(r,w*.2,h*.4,d*.2)),mat,x,y,z,parent)}
+function ell(x,y,z,sx,sy,sz,mat,parent=staticParent){const o=mesh(geo.sphere,mat,x,y,z,parent);o.scale.set(sx,sy,sz);return o}
+function rod(a,b,r,mat,parent=staticParent,rTop=r){const from=v(...a),to=v(...b),delta=to.clone().sub(from);const o=mesh(new THREE.CylinderGeometry(rTop,r,delta.length(),10),mat,0,0,0,parent);o.position.copy(from.add(to).multiplyScalar(.5));o.quaternion.setFromUnitVectors(v(0,1,0),delta.normalize());return o}
+function tube(ps,r,mat,parent=staticParent,n=22){return mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(ps.map(p=>v(...p))),n,r,6,false),mat,0,0,0,parent)}
+function ring(x,y,z,r,t,mat,parent=staticParent){return mesh(new THREE.TorusGeometry(r,t,7,32),mat,x,y,z,parent)}
 const dummy=new THREE.Object3D();
-function instances(g,mat,items,parent=scenery,shadow=true){const o=new THREE.InstancedMesh(g,mat,items.length);items.forEach((a,i)=>{dummy.position.set(...a.p);dummy.scale.set(...(a.s||[1,1,1]));dummy.rotation.set(...(a.r||[0,0,0]));dummy.updateMatrix();o.setMatrixAt(i,dummy.matrix);if(a.c)o.setColorAt(i,new THREE.Color(a.c))});o.castShadow=shadow;o.receiveShadow=true;parent.add(o);return o}
+function instances(g,mat,items,parent=staticParent,shadow=true){const o=new THREE.InstancedMesh(g,mat,items.length);items.forEach((a,i)=>{dummy.position.set(...a.p);dummy.scale.set(...(a.s||[1,1,1]));dummy.rotation.set(...(a.r||[0,0,0]));dummy.updateMatrix();o.setMatrixAt(i,dummy.matrix);if(a.c)o.setColorAt(i,new THREE.Color(a.c))});o.castShadow=shadow;o.receiveShadow=true;parent.add(o);return o}
 function canvasMaterial(width,height,paint,screen=false){const c=document.createElement('canvas');c.width=width;c.height=height;paint(c.getContext('2d'),width,height);const texture=new THREE.CanvasTexture(c);texture.colorSpace=THREE.SRGBColorSpace;return screen?new THREE.MeshBasicMaterial({map:texture,toneMapped:false}):new THREE.MeshToonMaterial({map:texture,gradientMap:ramp})}
 // An intact square floor, with exposed layers of wood along its cut edges.
 box(0,-.43,0,BASE,.86,BASE,m.base,scenery,true);box(0,.13,0,BASE,.26,BASE,m.edge,scenery,true);
@@ -70,6 +73,7 @@ for(let bay=0;bay<4;bay++){
  for(let row=0;row<7;row++){
   const base=.72+row*1.31;
   for(let k=0;k<16;k++){
+   if(bay===2)continue;
    if((bay===1&&row===4&&k>9)||(bay===3&&row===2&&k<6))continue;
    const zz=z-1.94+k*.252,hh=R(.68,1.12),th=R(.14,.22),col=pick(spineColors);
    books.push({p:[-14.25,base+hh/2,zz],s:[.95,hh,th],c:col});
@@ -78,26 +82,29 @@ for(let bay=0;bay<4;bay++){
  }
  for(const dz of [-1.03,1.03]){box(-13.62,.99,z+dz,.035,.43,1.95,m.oak,library);rod([-13.57,1.02,z+dz-.18],[-13.57,1.02,z+dz+.18],.025,m.woodDark,library);}
 }
+// The reading furnishings move together into the former editing corner.
+staticParent=readingZone;
 // A low cabinet and magazine stacks belong to the reading corner.
-soft(-8.65,1.10,-14.53,8.40,1.50,1.10,m.wood,scenery,.09);
+soft(-8.65,1.10,-14.53,8.40,1.50,1.10,m.wood,readingZone,.09);
 for(const x of [-11.7,-9.6,-7.5,-5.4]){box(x,1.1,-13.95,1.95,1.22,.035,m.oakLight);ring(x,1.1,-13.912,.045,.013,m.woodDark);}
-for(let i=0;i<35;i++){const x=-12.05+i*.19,hh=R(.48,.83);books.push({p:[x,1.88+hh*.5,-14.45],s:[.14,hh,.55],c:pick(spineColors)});labels.push({p:[x,2.03,-14.165],s:[.11,.02,.012],c:'#e7ddbf'});}
+for(let i=0;i<35;i++){const x=-12.05+i*.19,hh=R(.48,.83);books.push({p:[x+14.3,1.88+hh*.5,-14.45+3.65],s:[.14,hh,.55],c:pick(spineColors)});labels.push({p:[x+14.3,2.03,-14.165+3.65],s:[.11,.02,.012],c:'#e7ddbf'});}
 instances(geo.box,toon('#ffffff'),books,library).name='individual-library-books';instances(geo.box,toon('#ffffff'),labels,library).name='book-spine-bands';
-// Sofa, soft cushions and a quiet coffee table occupy the back-left corner.
-const lounge=new THREE.Group();lounge.name='corner-reading-sofa';scenery.add(lounge);
+// Sofa, cushions and coffee table belong to the translated window-side reading zone.
+const lounge=new THREE.Group();lounge.name='corner-reading-sofa';readingZone.add(lounge);
 for(const x of [-12.7,-5.7])for(const z of [-11.75,-8.82])rod([x,.39,z],[x,.93,z],.09,m.woodDark,lounge);
 soft(-9.20,1.12,-10.2,8.80,.58,4.28,m.sofa,lounge,.23);soft(-9.2,2.61,-11.91,8.85,2.22,.85,m.sofa,lounge,.30);
 for(const x of [-13.17,-5.23])soft(x,1.94,-10.10,.80,1.58,4.05,m.sofa,lounge,.25);
 for(const x of [-11.75,-9.2,-6.65])soft(x,1.66,-9.92,2.42,.63,3.16,m.sofaLight,lounge,.26);
 const pillow=soft(-11.82,2.34,-11.04,1.62,1.45,.47,m.cushion,lounge,.21);pillow.rotation.z=.18;pillow.rotation.x=-.15;
 const pillow2=soft(-6.70,2.30,-11.03,1.56,1.40,.45,m.yellow,lounge,.21);pillow2.rotation.z=-.20;pillow2.rotation.x=-.12;
-soft(-9.1,.409,-6.6,11.0,.055,10.3,m.rug,scenery,.02);
+soft(-9.1,.409,-6.6,11.0,.055,10.3,m.rug,readingZone,.02);
 for(const x of [-14.34,-3.86])box(x,.443,-6.6,.055,.012,9.85,m.rugEdge);
 for(const z of [-11.48,-1.72])box(-9.1,.443,z,10.48,.012,.055,m.rugEdge);
 const table=mesh(new THREE.CylinderGeometry(2.00,1.97,.15,48),m.oakLight,-8.5,1.49,-4.67);table.scale.z=.84;
 for(let i=0;i<3;i++){const a=i*2.094;rod([-8.5+Math.cos(a)*1.03,.43,-4.67+Math.sin(a)*.80],[-8.5+Math.cos(a)*1.35,1.42,-4.67+Math.sin(a)*1.08],.09,m.woodDark);}
-function mug(x,y,z,s=1,parent=scenery){mesh(new THREE.CylinderGeometry(.19*s,.15*s,.39*s,18,1,true),m.white,x,y+.195*s,z,parent);mesh(new THREE.CircleGeometry(.154*s,20),m.woodDark,x,y+.364*s,z,parent).rotation.x=-Math.PI/2;const handle=ring(x+.21*s,y+.21*s,z,.13*s,.035*s,m.white,parent);handle.rotation.y=Math.PI/2;return handle;}
+function mug(x,y,z,s=1,parent=staticParent){mesh(new THREE.CylinderGeometry(.19*s,.15*s,.39*s,18,1,true),m.white,x,y+.195*s,z,parent);mesh(new THREE.CircleGeometry(.154*s,20),m.woodDark,x,y+.364*s,z,parent).rotation.x=-Math.PI/2;const handle=ring(x+.21*s,y+.21*s,z,.13*s,.035*s,m.white,parent);handle.rotation.y=Math.PI/2;return handle;}
 mug(-7.39,1.59,-4.8,.9);mesh(new THREE.CylinderGeometry(.36,.36,.025,24),m.wood,-7.39,1.585,-4.8);
+staticParent=scenery;
 // A warm graphic print and a physical clock decorate the solid wall.
 const art=canvasMaterial(600,420,(ctx,w,h)=>{ctx.fillStyle='#e9dfc5';ctx.fillRect(0,0,w,h);ctx.fillStyle='#d6b575';ctx.beginPath();ctx.arc(397,118,55,0,Math.PI*2);ctx.fill();ctx.fillStyle='#91aaa2';ctx.beginPath();ctx.moveTo(0,h);ctx.lineTo(230,128);ctx.lineTo(442,h);ctx.fill();ctx.fillStyle='#628f8d';ctx.beginPath();ctx.moveTo(200,h);ctx.lineTo(430,183);ctx.lineTo(600,h);ctx.fill();});
 box(-8.7,7.14,-15.36,7.6,5.32,.12,m.woodDark,scenery,true);box(-8.7,7.14,-15.273,7.23,4.95,.02,art);
@@ -112,7 +119,7 @@ function updateClock(now){
  hourHand.rotation.z=-hours*Math.PI/6;minuteHand.rotation.z=-minutes*Math.PI/30;secondHand.rotation.z=-seconds*Math.PI/30;
 }
 // The edit suite: a broad birch desk, under-desk storage, a cable tray and a PC.
-const desk=new THREE.Group();desk.name='video-editing-workstation';scenery.add(desk);
+const desk=new THREE.Group();desk.name='video-editing-workstation';workZone.add(desk);
 soft(5.1,3.27,-6.55,13.30,.34,6.60,m.oakLight,desk,.11);
 for(const x of [-.84,11.04]){box(x,1.83,-6.55,.16,2.78,4.76,m.dark,desk);box(x,.45,-6.55,1.12,.16,4.94,m.dark,desk);box(x,3.02,-6.55,.80,.16,4.60,m.dark,desk);}
 soft(-.07,1.73,-6.63,2.06,2.68,4.27,m.cream,desk,.10);
@@ -184,7 +191,7 @@ ell(0,.22,0,.46,.25,.29,m.orange,cat);ell(-.29,.36,.0,.25,.23,.23,m.yellow,cat);
 for(const x of [-.08,.11,.30]){const stripe=box(x,.448,0,.033,.016,.31,m.red,cat);stripe.rotation.z=.08;}
 const cube=new THREE.Group();cube.name='color-puzzle-cube';cube.position.set(8.95,3.73,-7.14);cube.rotation.y=.30;desk.add(cube);box(0,0,0,.53,.53,.53,m.dark,cube);for(let i=0;i<3;i++)for(let j=0;j<3;j++){box(-.17+i*.17,.273,-.17+j*.17,.145,.015,.145,pick([m.white,m.yellow,m.orange]),cube);box(-.17+i*.17,-.17+j*.17,.274,.145,.145,.016,pick([m.teal,m.sage,m.red]),cube);}
 // The ergonomic chair faces the desk. Mesh slats, lumbar support and five casters.
-const chair=new THREE.Group();chair.name='ergonomic-editing-chair';chair.position.set(4.22,.38,-.05);chair.rotation.y=-.17;scenery.add(chair);
+const chair=new THREE.Group();chair.name='ergonomic-editing-chair';chair.position.set(4.22,.38,-.05);chair.rotation.y=-.17;workZone.add(chair);
 rod([0,.25,0],[0,1.95,0],.13,m.steel,chair);for(let i=0;i<5;i++){const a=i/5*6.283;rod([0,.35,0],[Math.cos(a)*1.53,.16,Math.sin(a)*1.53],.075,m.dark,chair);const wheel=mesh(new THREE.CylinderGeometry(.19,.19,.20,14),m.rubber,Math.cos(a)*1.54,.11,Math.sin(a)*1.54,chair);wheel.rotation.x=Math.PI/2;wheel.rotation.z=a;}
 soft(0,2.07,0,2.62,.40,2.40,m.sage,chair,.20);rod([-.83,1.88,.71],[-.83,4.64,1.03],.075,m.dark,chair);rod([.83,1.88,.71],[.83,4.64,1.03],.075,m.dark,chair);
 const chairBack=soft(0,3.51,1.02,2.42,2.67,.22,toon('#50686d',{transparent:true,opacity:.25,depthWrite:false}),chair,.16);chairBack.rotation.x=-.10;
@@ -192,9 +199,9 @@ for(let i=0;i<11;i++)box(-1.04+i*.208,3.56,.876,.052,2.28,.027,m.sage,chair);
 for(let j=0;j<10;j++)box(0,2.47+j*.236,.855,2.18,.025,.027,m.steel,chair);
 soft(0,2.82,1.16,2.13,.42,.21,m.sofaLight,chair,.10);soft(0,4.93,1.08,1.51,.52,.33,m.dark,chair,.13);
 for(const side of [-1,1]){rod([side*1.08,1.93,-.12],[side*1.08,2.99,-.12],.055,m.dark,chair);soft(side*1.17,3.07,-.17,.39,.15,1.50,m.dark,chair,.07);}
-soft(4.3,.406,.12,8.3,.055,6.4,m.rugEdge,scenery,.02);for(const z of [-2.82,3.06])box(4.3,.441,z,7.82,.008,.035,m.rug);
+soft(4.3,.406,.12,8.3,.055,6.4,m.rugEdge,workZone,.02);for(const z of [-2.82,3.06])box(4.3,.441,z,7.82,.008,.035,m.rug,workZone);
 // An open book has a real curved page surface, cover thickness and printed lines.
-const readingBook=new THREE.Group();readingBook.name='open-reading-book';readingBook.position.set(-8.74,1.59,-4.56);readingBook.rotation.y=.20;scenery.add(readingBook);
+const readingBook=new THREE.Group();readingBook.name='open-reading-book';readingBook.position.set(-8.74,1.59,-4.56);readingBook.rotation.y=.20;readingZone.add(readingBook);
 for(const side of [-1,1]){
  const pts=[],idx=[];for(let j=0;j<=18;j++)for(let i=0;i<=12;i++){const u=i/12,t=j/18;pts.push(side*u*.70,.03+Math.sin(u*Math.PI*.85)*.09,-.88+t*1.76);if(i<12&&j<18){const a=j*13+i;idx.push(a,a+1,a+13,a+1,a+14,a+13)}}
  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pts,3));g.setIndex(idx);g.computeVertexNormals();const mat=m.paper.clone();mat.side=THREE.DoubleSide;mesh(g,mat,0,0,0,readingBook);
@@ -207,14 +214,16 @@ for(let j=0;j<=22;j++)for(let i=0;i<=12;i++){
  const u=i/12,t=j/22,x=-12.70+u*2.0,z=-11.45+t*3.3,y=t<.65?2.03+.035*Math.sin(u*22.):2.03-(t-.65)/.35*1.05;
  blanketPos.push(x,y+Math.sin(t*5.+u*9.)*.04,z);if(i<12&&j<22){const a=j*13+i;blanketIdx.push(a,a+1,a+13,a+1,a+14,a+13)}
 }
-const blanketG=new THREE.BufferGeometry();blanketG.setAttribute('position',new THREE.Float32BufferAttribute(blanketPos,3));blanketG.setIndex(blanketIdx);blanketG.computeVertexNormals();const blanketMat=toon('#d6ba88',{side:THREE.DoubleSide});mesh(blanketG,blanketMat);
-for(let i=0;i<12;i++)rod([-12.65+i*.17,1.02,-8.13],[-12.65+i*.17,.83,-8.09],.012,m.cream);
+const blanketG=new THREE.BufferGeometry();blanketG.setAttribute('position',new THREE.Float32BufferAttribute(blanketPos,3));blanketG.setIndex(blanketIdx);blanketG.computeVertexNormals();const blanketMat=toon('#d6ba88',{side:THREE.DoubleSide});mesh(blanketG,blanketMat,0,0,0,readingZone);
+for(let i=0;i<12;i++)rod([-12.65+i*.17,1.02,-8.13],[-12.65+i*.17,.83,-8.09],.012,m.cream,readingZone);
 // A floor lamp and leafy pots balance the hard edges of the editing equipment.
-function pot(x,y,z,r=.55,height=.70,parent=scenery){mesh(new THREE.CylinderGeometry(r,r*.77,height,20),m.pot,x,y+height*.5,z,parent);mesh(new THREE.CylinderGeometry(r*.91,r*.91,.035,20),m.soil,x,y+height,z,parent);return y+height;}
+function pot(x,y,z,r=.55,height=.70,parent=staticParent){mesh(new THREE.CylinderGeometry(r,r*.77,height,20),m.pot,x,y+height*.5,z,parent);mesh(new THREE.CylinderGeometry(r*.91,r*.91,.035,20),m.soil,x,y+height,z,parent);return y+height;}
 const plantHeads=[];
-function plant(x,y,z,size=1,parent=scenery){const top=pot(x,y,z,size*.45,size*.62,parent),g=new THREE.Group();g.name='swaying-study-plant';g.position.set(x,top,z);model.add(g);for(let i=0;i<8;i++){const a=i/8*6.28,h=size*R(.9,2.0),r=size*R(.32,.68),end=[Math.cos(a)*r,h,Math.sin(a)*r];rod([0,0,0],end,.018*size,m.leaf,g);const leaf=ell(end[0]*1.13,h+.05,end[2]*1.13,size*.23,size*.10,size*.48,i%2?m.leaf:m.leafLight,g);leaf.rotation.set(.35,a,.25*Math.sin(a));rod([end[0],h+.065,end[2]],[end[0]+Math.sin(a)*size*.25,h+.10,end[2]+Math.cos(a)*size*.30],.006*size,m.sage,g);}plantHeads.push({g,phase:R(0,6.28)});return g;}
-plant(13.0,.40,9.0,1.70);plant(-13.5,.40,-12.8,1.28);plant(-13.95,9.85,3.7,.47);plant(9.85,4.10,-14.95,.40);plant(-.40,3.45,-9.08,.35);
+function plant(x,y,z,size=1,parent=staticParent){const top=pot(x,y,z,size*.45,size*.62,parent),g=new THREE.Group();g.name='swaying-study-plant';g.position.set(x,top,z);model.add(g);for(let i=0;i<8;i++){const a=i/8*6.28,h=size*R(.9,2.0),r=size*R(.32,.68),end=[Math.cos(a)*r,h,Math.sin(a)*r];rod([0,0,0],end,.018*size,m.leaf,g);const leaf=ell(end[0]*1.13,h+.05,end[2]*1.13,size*.23,size*.10,size*.48,i%2?m.leaf:m.leafLight,g);leaf.rotation.set(.35,a,.25*Math.sin(a));rod([end[0],h+.065,end[2]],[end[0]+Math.sin(a)*size*.25,h+.10,end[2]+Math.cos(a)*size*.30],.006*size,m.sage,g);}plantHeads.push({g,phase:R(0,6.28)});return g;}
+plant(13.0,.40,9.0,1.70);plant(.80,.40,-9.15,1.28);plant(-13.95,9.85,3.7,.47);plant(9.85,4.10,-14.95,.40);plant(-13.20,3.45,-12.73,.35);
+staticParent=readingZone;
 mesh(new THREE.CylinderGeometry(.58,.67,.12,28),m.woodDark,-13.58,.45,-7.74);rod([-13.58,.50,-7.74],[-13.58,6.96,-7.74],.055,m.steel);const shade=mesh(new THREE.CylinderGeometry(.70,.95,1.12,32,1,true),m.cream,-13.58,6.84,-7.74);ell(-13.58,6.36,-7.74,.48,.04,.48,m.glow);
+staticParent=scenery;
 // Window-sill rocket and Saturn model; a small framed print and a film camera tripod.
 const planet=new THREE.Group();planet.name='saturn-window-toy';planet.position.set(8.20,4.12,-14.85);planet.scale.setScalar(.80);scenery.add(planet);
 rod([0,.02,0],[0,.45,0],.025,m.woodDark,planet);mesh(new THREE.CylinderGeometry(.31,.31,.06,24),m.wood,0,.04,0,planet);ell(0,.73,0,.35,.35,.35,m.yellow,planet);const saturnRing=ring(0,.73,0,.54,.035,m.orange,planet);saturnRing.rotation.set(1.05,.2,.2);
@@ -241,7 +250,72 @@ for(let i=0;i<4;i++)soft(-.42,1.55+i*.12,.03,1.08,.10,.86,i%2?m.cream:m.blue,car
 for(const x of [-.62,.62]){const reel=mesh(new THREE.CylinderGeometry(.41,.41,.11,32),m.metal,x,2.47,0,cart);for(let j=0;j<6;j++){const a=j/6*6.28;mesh(new THREE.CylinderGeometry(.085,.085,.014,14),m.dark,x+Math.cos(a)*.25,2.533,Math.sin(a)*.25,cart);}mesh(new THREE.CylinderGeometry(.095,.095,.03,18),m.wood,x,2.545,0,cart);}
 rod([-1.15,2.32,-.72],[-1.15,2.85,-.72],.045,m.steel,cart);rod([1.15,2.32,-.72],[1.15,2.85,-.72],.045,m.steel,cart);rod([-1.15,2.85,-.72],[1.15,2.85,-.72],.045,m.steel,cart);
 // Warm little lights stay subtle in the sunlit room.
-for(const [x,y,z,power] of [[-.42,5.17,-4.72,1.8],[-13.58,6.2,-7.74,1.1]]){const light=new THREE.PointLight('#ffe1af',power,7,1.5);light.position.set(x,y,z);scene.add(light);}
+for(const [x,y,z,power] of [[-13.22,5.17,-8.37,1.8],[.72,6.2,-4.09,1.1]]){const light=new THREE.PointLight('#ffe1af',power,7,1.5);light.position.set(x,y,z);scene.add(light);}
+// One complete bay is an open figurine cabinet, with separate display plinths.
+const collection=new THREE.Group();collection.name='figurine-display-cabinet';scenery.add(collection);
+const figureKinds=['robot','astronaut','cat','rabbit','dinosaur','rocket','bear','duck','mushroom','ghost','mecha','penguin'];
+function figurine(kind,x,y,z,index){
+ const g=new THREE.Group();g.name=`shelf-figurine-${kind}-${index}`;g.position.set(x,y,z);g.rotation.y=Math.PI/2;collection.add(g);
+ const accent=[m.teal,m.orange,m.blue,m.red,m.sage,m.yellow][index%6];
+ mesh(new THREE.CylinderGeometry(.28,.30,.055,20),m.woodDark,0,.025,0,g);
+ if(kind==='robot'||kind==='mecha'){
+  soft(0,.38,0,.31,.34,.24,accent,g,.04);soft(0,.72,0,.42,.31,.28,m.cream,g,.045);
+  for(const a of [-1,1]){box(a*.13,.13,0,.12,.16,.19,m.dark,g);rod([a*.21,.50,0],[a*.28,.28,.02],.045,accent,g);ell(a*.105,.76,.15,.045,.045,.018,m.teal,g);}
+  box(0,.64,.15,.14,.025,.015,m.dark,g);rod([0,.9,0],[0,1.04,0],.012,m.steel,g);ell(0,1.055,0,.04,.04,.04,m.red,g);
+  if(kind==='mecha'){for(const a of [-1,1]){box(a*.31,.51,-.04,.15,.30,.17,m.blue,g);rod([a*.10,.93,0],[a*.25,1.06,0],.018,m.yellow,g);}}
+ }else if(kind==='astronaut'){
+  ell(0,.39,0,.23,.28,.18,m.white,g);ell(0,.78,0,.28,.27,.26,m.white,g);ell(0,.80,.211,.21,.16,.07,m.teal,g);box(0,.45,.18,.17,.15,.045,m.blue,g);
+  for(const a of [-1,1]){soft(a*.14,.13,.04,.18,.18,.28,m.cream,g,.04);rod([a*.2,.56,0],[a*.32,.34,.03],.065,m.white,g);}box(0,.44,-.19,.32,.39,.16,m.metal,g);
+ }else if(kind==='rocket'){
+  mesh(new THREE.CylinderGeometry(.16,.16,.57,16),m.white,0,.44,0,g);mesh(new THREE.ConeGeometry(.16,.29,16),accent,0,.87,0,g);ell(0,.51,.16,.085,.085,.025,m.blue,g);
+  for(const a of [-1,1]){const fin=box(a*.18,.23,0,.12,.30,.16,accent,g);fin.rotation.z=-a*.22;}
+ }else if(kind==='mushroom'){
+  ell(0,.29,0,.13,.25,.13,m.cream,g);ell(0,.58,0,.34,.19,.30,m.red,g);for(const [a,b] of [[-.14,.06],[.08,.18],[.17,-.08],[-.04,-.15]])ell(a,.735,b,.048,.018,.045,m.white,g);
+ }else if(kind==='ghost'){
+  ell(0,.49,0,.28,.41,.23,m.white,g);for(const a of [-1,1]){ell(a*.28,.42,0,.15,.07,.08,m.white,g);ell(a*.09,.63,.205,.034,.055,.014,m.dark,g);}ell(0,.46,.225,.04,.05,.012,m.red,g);
+ }else if(kind==='dinosaur'){
+  ell(0,.36,0,.22,.28,.20,m.sage,g);ell(.10,.69,.07,.22,.22,.23,m.leaf,g);ell(.12,.66,.23,.16,.09,.13,m.sage,g);tube([[0,.30,-.12],[-.03,.23,-.37],[-.19,.23,-.48]],.075,m.leaf,g);
+  for(const a of [-1,1]){ell(a*.15,.13,.06,.11,.10,.17,m.sage,g);ell(a*.16+.06,.76,.22,.025,.03,.015,m.ink,g);}for(let k=0;k<3;k++)mesh(new THREE.ConeGeometry(.07,.15,3),m.yellow,-.02,.49-k*.09,-.16-k*.08,g);
+ }else{
+  const fur=kind==='cat'?m.orange:kind==='rabbit'?m.white:kind==='bear'?m.wood:kind==='penguin'?m.ink:m.yellow;
+  ell(0,.35,0,.24,.28,.20,fur,g);ell(0,.69,.01,.27,.24,.23,fur,g);ell(0,.37,.17,.16,.20,.065,m.cream,g);
+  for(const a of [-1,1]){ell(a*.13,.13,.08,.11,.085,.15,kind==='penguin'?m.orange:fur,g);ell(a*.093,.74,.22,.031,.038,.014,m.ink,g);}
+  if(kind==='rabbit')for(const a of [-1,1]){ell(a*.14,1.00,0,.08,.25,.07,m.white,g);ell(a*.14,1.01,.06,.035,.17,.01,m.red,g);}
+  if(kind==='cat'){for(const a of [-1,1])mesh(new THREE.ConeGeometry(.11,.22,3),fur,a*.17,.94,.01,g);tube([[.18,.28,-.12],[.35,.20,-.23],[.36,.43,-.17]],.045,fur,g);}
+  if(kind==='bear')for(const a of [-1,1])ell(a*.21,.88,0,.11,.11,.075,fur,g);
+  if(kind==='duck'||kind==='penguin')ell(0,.64,.27,.11,.045,.085,m.orange,g);else ell(0,.63,.24,.075,.045,.025,m.cream,g);
+ }
+}
+for(let row=1;row<7;row++){
+ const y=.72+row*1.31;
+ for(let j=0;j<3;j++){const i=(row-1)*3+j;figurine(figureKinds[i%figureKinds.length],-14.10,y,5.98+(j-1)*1.20,i);}
+ box(-13.72,y+1.12,5.98,.025,.025,3.94,m.glow,collection);
+}
+// Different leaf silhouettes and hanging stems make a small cabinet-top garden.
+const topGarden=new THREE.Group();topGarden.name='bookcase-top-garden';scenery.add(topGarden);
+function topPlant(kind,z,index){
+ const x=-14.40,y=9.96,g=new THREE.Group();g.name=`bookcase-plant-${kind}-${index}`;g.position.set(x,y,z);topGarden.add(g);
+ const container=[m.pot,m.teal,m.cream,m.red][index%4];mesh(new THREE.CylinderGeometry(.39,.30,.49,20),container,0,.245,0,g);mesh(new THREE.CylinderGeometry(.35,.35,.025,20),m.soil,0,.50,0,g);
+ if(kind==='snake'){
+  for(let k=0;k<7;k++){const a=k*2.4,hh=.85+(k%3)*.27,xx=Math.cos(a)*.23,zz=Math.sin(a)*.23;const blade=mesh(new THREE.ConeGeometry(.115,hh,4),k%2?m.leaf:m.sage,xx,.49+hh*.5,zz,g);blade.scale.z=.40;blade.rotation.z=Math.cos(a)*.12;rod([xx,.57,zz],[xx+Math.cos(a)*.09,.49+hh*.93,zz],.009,m.yellow,g);}
+ }else if(kind==='succulent'){
+  for(let row=0;row<3;row++)for(let k=0;k<9;k++){const a=k/9*6.28+row*.3,r=.25-row*.065;const leaf=ell(Math.cos(a)*r,.59+row*.13,Math.sin(a)*r,.11,.09,.28-row*.05,row%2?m.sage:m.leafLight,g);leaf.rotation.set(-.25-row*.15,a,.08);}
+ }else if(kind==='cactus'){
+  mesh(new THREE.CapsuleGeometry(.21,.68,4,12),m.leaf,0,1.02,0,g);for(const a of [-1,1]){rod([a*.16,.91,0],[a*.37,.91,0],.09,m.leaf,g);rod([a*.37,.91,0],[a*.37,1.18+(a+1)*.08,0],.09,m.leaf,g);}
+  for(let k=0;k<24;k++){const a=k*2.4;ell(Math.cos(a)*.21,.63+(k%8)*.105,Math.sin(a)*.21,.014,.018,.014,m.cream,g);}for(let k=0;k<5;k++){const a=k*1.256;ell(Math.cos(a)*.07,1.57,Math.sin(a)*.07,.07,.035,.05,m.red,g);}
+ }else if(kind==='fern'){
+  for(let k=0;k<9;k++){const a=k/9*6.28,tip=[Math.cos(a)*.74,1.0+(k%3)*.13,Math.sin(a)*.74];tube([[0,.51,0],[tip[0]*.5,1.29,tip[2]*.5],tip],.012,m.leaf,g,10);for(let j=1;j<7;j++){const t=j/7;for(const side of [-1,1]){const xx=tip[0]*t+Math.sin(a)*.15*side,zz=tip[2]*t-Math.cos(a)*.15*side;const leaf=ell(xx,.53+Math.sin(t*2.3)*.65,zz,.045,.025,.17*(1-t*.65),j%2?m.leafLight:m.leaf,g);leaf.rotation.y=a+side*.6;}}}
+ }else if(kind==='pothos'){
+  for(let k=0;k<4;k++){const dz=(k-1.5)*.18,ps=[[0,.54,dz],[.52,.72,dz],[.87,.23,dz],[.95,-.55-k*.15,dz+.12],[1.03,-1.36-k*.14,dz+.25]];tube(ps,.015,m.leaf,g,16);for(let j=0;j<9;j++){const t=j/8;const leaf=ell(.22+Math.min(t*1.8,.78)+(j%2)*.11,.75-t*(2.1+k*.13),dz+(j%2?.14:-.10),.15,.075,.21,j%2?m.leafLight:m.leaf,g);leaf.rotation.set(.35,j*.8,-.35);}}
+ }else{
+  for(let k=0;k<7;k++){const a=k*2.4,hh=.83+(k%3)*.26,xx=Math.cos(a)*.40,zz=Math.sin(a)*.40;rod([0,.49,0],[xx,hh,zz],.017,m.leaf,g);
+   const shape=new THREE.Shape();shape.moveTo(0,-.35);shape.bezierCurveTo(-.42,-.12,-.42,.23,-.16,.38);shape.lineTo(-.12,.12);shape.lineTo(-.06,.43);shape.quadraticCurveTo(0,.52,.09,.41);shape.lineTo(.10,.13);shape.lineTo(.21,.34);shape.bezierCurveTo(.42,.13,.38,-.12,0,-.35);
+   const leaf=mesh(new THREE.ShapeGeometry(shape),toon(k%2?'#8fb28a':'#679a79',{side:THREE.DoubleSide}),xx,hh+.19,zz,g);leaf.rotation.set(-.6,a,.10);rod([xx,hh-.07,zz],[xx,hh+.57,zz],.008,m.sage,g);
+  }
+ }
+}
+[['pothos',-4.05],['monstera',-1.8],['fern',.75],['snake',3.3],['succulent',5.8],['cactus',7.75],['fern',9.4],['pothos',11.6]].forEach(([kind,z],i)=>topPlant(kind,z,i));
+
 // Merge fixed meshes by material; books and keycaps remain instanced.
 scenery.updateMatrixWorld(true);const batches=new Map(),lineParts=[],remove=[];
 scenery.traverse(o=>{if(o.isLineSegments){lineParts.push(o.geometry.clone().applyMatrix4(o.matrixWorld));remove.push(o);return}if(!o.isMesh||o.isInstancedMesh||o.material.transparent)return;const key=o.material.uuid;if(!batches.has(key))batches.set(key,{mat:o.material,gs:[]});const g=o.geometry.clone().applyMatrix4(o.matrixWorld);if(!g.attributes.uv)g.setAttribute('uv',new THREE.Float32BufferAttribute(new Float32Array(g.attributes.position.count*2),2));batches.get(key).gs.push(g);remove.push(o);});

@@ -42,7 +42,15 @@ try{
   assert.equal(model.userData.baseSize,32);
   for(const n of ['wall-of-books','corner-reading-sofa','video-editing-workstation','editing-timeline-monitor','portrait-notes-monitor','ergonomic-editing-chair','open-reading-book','tiny-desk-robot','sleepy-cat-figurine','color-puzzle-cube','video-camera-tripod'])assert(scene.getObjectByName(n),n);
   const books=scene.getObjectByName('individual-library-books'),keys=scene.getObjectByName('mechanical-keyboard-keys'),sash=scene.getObjectByName('half-open-window-sash');
-  assert(books?.isInstancedMesh&&books.count>380);assert(keys.count>60);assert(sash.rotation.y<-.3&&sash.rotation.y>-.8);
+  assert(books?.isInstancedMesh&&books.count>300);assert(keys.count>60);assert(sash.rotation.y<-.3&&sash.rotation.y>-.8);
+  const collection=scene.getObjectByName('figurine-display-cabinet'),garden=scene.getObjectByName('bookcase-top-garden');
+  assert(collection?.children.filter(o=>o.name.startsWith('shelf-figurine-')).length===18);
+  assert(new Set(collection.children.filter(o=>o.name.startsWith('shelf-figurine-')).map(o=>o.name.split('-')[2])).size>=10,'The cabinet must contain different kinds of figurines');
+  assert(garden?.children.length===8&&new Set(garden.children.map(o=>o.name.split('-')[2])).size===6);
+  scene.updateMatrixWorld(true);
+  const monitorPosition=scene.getObjectByName('editing-timeline-monitor').getWorldPosition(scene.position.clone());
+  const readingPosition=scene.getObjectByName('open-reading-book').getWorldPosition(scene.position.clone());
+  assert(monitorPosition.x<0&&readingPosition.x>0,'Editing and reading furniture must swap sides');
   const cloths=['breezy-curtain-left','breezy-curtain-right'].map(n=>scene.getObjectByName(n));assert(cloths.every(Boolean));
   const before=cloths.map(c=>Array.from(c.geometry.attributes.position.array));
   if(!isPreview)globalThis.frame(2400);
