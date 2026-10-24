@@ -29,9 +29,13 @@ const plugin={name:'browser-io-stub',setup(b){
 await build({entryPoints:[join(root,name==='city'?'src/scene.js':`src/${name}.js`)],outfile:join(temp,'scene.mjs'),bundle:true,platform:'node',format:'esm',plugins:[plugin]});
 globalThis.innerWidth=width;globalThis.innerHeight=height;globalThis.devicePixelRatio=1;
 globalThis.location={search:'?'+new URLSearchParams({...isPreview?{preview:'1'}:{},...isNight?{time:'night'}:{}})};
-globalThis.document={body:{appendChild(){}},createElement(){return{getContext(){return name==='study'?new Proxy({createLinearGradient(){return{addColorStop(){}}}},{get:(o,k)=>k in o?o[k]:()=>{}}):{fillRect(){},strokeRect(){},fillText(){}}}}}};
+const periodButtons=['auto','day','night'].map(time=>({dataset:{time},attributes:{},handlers:{},setAttribute(k,v){this.attributes[k]=v},addEventListener(k,fn){this.handlers[k]=fn}}));
+const periodSwitch={hidden:true},periodStatus={};
+globalThis.document={body:{appendChild(){},dataset:{},style:{setProperty(){}}},querySelector(selector){return name==='study'?(selector==='.period-switch'?periodSwitch:periodStatus):null},querySelectorAll(){return name==='study'?periodButtons:[]},createElement(){return{getContext(){return name==='study'?new Proxy({createLinearGradient(){return{addColorStop(){}}}},{get:(o,k)=>k in o?o[k]:()=>{}}):{fillRect(){},strokeRect(){},fillText(){}}}}}};
 globalThis.matchMedia=()=>({matches:isReduced});
 const listeners=new Map();globalThis.addEventListener=(name,handler)=>listeners.set(name,handler);
+const HostDate=globalThis.Date;
+if(name==='study'){const midday=new HostDate(2026,9,24,12).getTime();globalThis.Date=class extends HostDate{constructor(...args){super(...(args.length?args:[midday]))}static now(){return midday}};}
 try{
  await import(pathToFileURL(join(temp,'scene.mjs')));
  if(!isPreview)globalThis.frame(0);
@@ -42,7 +46,10 @@ try{
   assert.equal(model.userData.baseSize,32);
   for(const n of ['wall-of-books','corner-reading-sofa','video-editing-workstation','editing-timeline-monitor','portrait-notes-monitor','ergonomic-editing-chair','open-reading-book','tiny-desk-robot','sleepy-cat-figurine','color-puzzle-cube','video-camera-tripod'])assert(scene.getObjectByName(n),n);
   const books=scene.getObjectByName('individual-library-books'),keys=scene.getObjectByName('mechanical-keyboard-keys'),sash=scene.getObjectByName('half-open-window-sash');
-  assert(books?.isInstancedMesh&&books.count>300);assert(keys.count>60);assert(sash.rotation.y<-.3&&sash.rotation.y>-.8);
+  assert(books?.isInstancedMesh&&books.count>300);assert(keys.count>60);assert(isNight?Math.abs(sash.rotation.y)<1e-10:sash.rotation.y<-.3&&sash.rotation.y>-.8);
+  assert.equal(model.userData.period,isNight?'night':'day');assert.equal(model.userData.periodMode,isNight?'night':'auto');
+  assert.equal(periodSwitch.hidden,isPreview);
+  assert.equal(scene.getObjectByName('study-desk-lamp').intensity,isNight?9:0);
   const collection=scene.getObjectByName('figurine-display-cabinet'),garden=scene.getObjectByName('bookcase-top-garden');
   assert(collection?.children.filter(o=>o.name.startsWith('shelf-figurine-')).length===18);
   assert(new Set(collection.children.filter(o=>o.name.startsWith('shelf-figurine-')).map(o=>o.name.split('-')[2])).size>=10,'The cabinet must contain different kinds of figurines');
@@ -58,7 +65,7 @@ try{
    const now=c.geometry.attributes.position.array,old=before[i];let hem=0;
    for(let k=0;k<33*3;k++)assert.equal(now[k],old[k],'Curtain tops must remain attached to the rail');
    for(let k=now.length-33*3;k<now.length;k++)hem=Math.max(hem,Math.abs(now[k]-old[k]));
-   assert(isPreview||isReduced?hem===0:hem>.08,'The free hem must sway, with static preview and reduced-motion states');
+   assert(isPreview||isReduced?hem===0:isNight?hem>0&&hem<.08:hem>.08,'Open curtains should sway, closed curtains should be stiller, and previews/reduced motion should settle');
   });
   const hands=['clock-hour-hand','clock-minute-hand','clock-second-hand'].map(n=>scene.getObjectByName(n));
   assert(hands.every(Boolean),'The wall clock needs three separate moving hands');
@@ -73,6 +80,30 @@ try{
      const expected=[-(h%12+minutes/60)*Math.PI/6,-minutes*Math.PI/30,-seconds*Math.PI/30];
      hands.forEach((hand,k)=>assert(Math.abs(hand.rotation.z-expected[k])<1e-10,'Clock hands must follow device wall time, including reduced motion'));
     }
+   }finally{globalThis.Date=DeviceDate}
+  }
+  if(!isPreview){
+   const DeviceDate=globalThis.Date;let deviceTime,frameMs=12000;
+   const button=mode=>periodButtons.find(b=>b.dataset.time===mode);
+   const click=mode=>button(mode).handlers.click({stopPropagation(){}});
+   const settle=()=>{for(let i=0;i<20;i++)globalThis.frame(frameMs+=100);};
+   try{
+    globalThis.Date=class extends HostDate{constructor(...args){super(...(args.length?args:[deviceTime]))}static now(){return deviceTime}};
+    const setTime=(h,m=0,s=0,ms=0)=>deviceTime=new HostDate(2026,9,24,h,m,s,ms).getTime();
+    setTime(12);click('auto');settle();
+    for(const [hour,minute,second,millisecond,period] of [[5,59,59,999,'night'],[6,0,0,0,'day'],[17,59,59,999,'day'],[18,0,0,0,'night']]){
+     setTime(hour,minute,second,millisecond);settle();assert.equal(model.userData.period,period);assert.equal(model.userData.periodMode,'auto');
+     assert(Math.abs(model.userData.nightBlend-(period==='night'?1:0))<1e-8);
+     assert.equal(scene.getObjectByName('study-desk-lamp').intensity,period==='night'?9:0);
+     assert(Math.abs(sash.rotation.y-(period==='night'?0:-.46))<1e-8);
+     const left=cloths[0].geometry.attributes.position,right=cloths[1].geometry.attributes.position;
+     assert(period==='night'?left.getX(32)>right.getX(0):left.getX(32)<right.getX(0),'Closed curtain panels must overlap at their center seam');
+    }
+    setTime(12);click('night');settle();assert.equal(model.userData.period,'night');
+    setTime(7);settle();assert.equal(model.userData.period,'night','Manual night must survive daytime');
+    setTime(23);click('day');settle();assert.equal(model.userData.period,'day','Manual day must override night time');
+    click('auto');settle();assert.equal(model.userData.period,'night','Auto must resume following device local time');
+    setTime(12);click(isNight?'night':'auto');settle();
    }finally{globalThis.Date=DeviceDate}
   }
   assert(testControls.minDistance>=40&&testControls.maxPolarAngle<Math.PI/2);
@@ -338,4 +369,4 @@ try{
  // A narrower viewport must still frame the model on a direct load or resize.
  globalThis.innerWidth=390;globalThis.innerHeight=844;listeners.get('resize')();
  console.log(JSON.stringify({scene:name,width,height,preview:isPreview,reduced:isReduced,meshes,instances,vertices,projected}));
-}finally{await rm(temp,{recursive:true,force:true})}
+}finally{globalThis.Date=HostDate;await rm(temp,{recursive:true,force:true})}

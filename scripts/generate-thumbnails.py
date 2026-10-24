@@ -81,7 +81,7 @@ def main():
                 page.on('pageerror', lambda error: errors.append(str(error)))
                 page.on('console', lambda message: errors.append(message.text) if message.type == 'error' else None)
                 try:
-                    page.goto(f'{ORIGIN}/{scene}/?preview=1', wait_until='load', timeout=60000)
+                    page.goto(f'{ORIGIN}/{scene}/?preview=1' + ('&time=day' if scene == 'study' else ''), wait_until='load', timeout=60000)
                     page.locator('canvas').wait_for(state='visible')
                     page.evaluate('document.fonts.ready')
                     page.wait_for_timeout(250)

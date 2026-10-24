@@ -4,7 +4,9 @@ import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 import {RoundedBoxGeometry} from 'three/addons/geometries/RoundedBoxGeometry.js';
 import {DEFAULT_BASE_SIZE} from './scene-defaults.js';
 
-const preview=new URLSearchParams(location.search).has('preview'),reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const params=new URLSearchParams(location.search),preview=params.has('preview'),reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
+let periodMode=['day','night'].includes(params.get('time'))?params.get('time'):'auto';
+const localPeriod=date=>date.getHours()>=6&&date.getHours()<18?'day':'night';
 const BASE=DEFAULT_BASE_SIZE,H=BASE/2,iw=Math.max(1,innerWidth),ih=Math.max(1,innerHeight);
 const scene=new THREE.Scene(),renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,powerPreference:'high-performance'});
 renderer.setPixelRatio(Math.min(devicePixelRatio,preview?.85:1.6));renderer.setSize(iw,ih);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=.99;
@@ -13,7 +15,7 @@ document.body.appendChild(renderer.domElement);renderer.domElement.setAttribute(
 const camera=new THREE.PerspectiveCamera(33,iw/ih,.4,420),controls=new OrbitControls(camera,renderer.domElement);
 controls.target.set(0,3.6,0);controls.enableDamping=!reduced;controls.dampingFactor=.065;controls.enabled=!preview;controls.enablePan=false;controls.minDistance=40;controls.maxDistance=300;controls.minPolarAngle=.22;controls.maxPolarAngle=Math.PI*.445;
 const fit=a=>Math.max(BASE*1.875,BASE*2.16/a),distance=fit(camera.aspect);camera.position.set(distance*.64,3.6+distance*.73,distance*.88);camera.lookAt(controls.target);
-scene.add(new THREE.HemisphereLight('#e9f4f0','#ac977d',1.85));
+const skyLight=new THREE.HemisphereLight('#e9f4f0','#ac977d',1.85);scene.add(skyLight);
 const sun=new THREE.DirectionalLight('#fff1cb',3.15);sun.position.set(5,26,-21);sun.castShadow=true;sun.shadow.mapSize.set(preview?1024:2048,preview?1024:2048);Object.assign(sun.shadow.camera,{left:-24,right:24,top:25,bottom:-23,near:.5,far:80});sun.shadow.normalBias=.025;sun.shadow.bias=-.00012;sun.shadow.radius=2;scene.add(sun);
 const fill=new THREE.DirectionalLight('#d4e9e8',.72);fill.position.set(14,15,12);scene.add(fill);
 const model=new THREE.Group();model.name='study-miniature';model.userData.baseSize=BASE;scene.add(model);
@@ -25,6 +27,7 @@ let seed=765391;const random=()=>{seed=(seed*1664525+1013904223)>>>0;return seed
 const ramp=new THREE.DataTexture(new Uint8Array([93,143,193,229,255]),5,1,THREE.RedFormat);ramp.minFilter=ramp.magFilter=THREE.NearestFilter;ramp.needsUpdate=true;
 const toon=(color,extra={})=>new THREE.MeshToonMaterial({color,gradientMap:ramp,...extra});
 const m={base:toon('#9a856e'),edge:toon('#c6b394'),oak:toon('#c8a67b'),oakLight:toon('#d9bd93'),oakDark:toon('#ad8d68'),wood:toon('#ad8a60'),woodDark:toon('#7c6551'),wall:toon('#e9e5d6'),wallBlue:toon('#cbdcda'),white:toon('#ece8d7'),cream:toon('#ddd3b9'),dark:toon('#45585c'),ink:toon('#293c45'),steel:toon('#889c9c'),metal:toon('#b7bcb0'),sage:toon('#89a99a'),sofa:toon('#91aba0'),sofaLight:toon('#afc3ae'),cushion:toon('#c4cfb2'),rug:toon('#d5cbb5'),rugEdge:toon('#b6b49e'),teal:toon('#628f94'),blue:toon('#839fae'),yellow:toon('#dcba6d'),orange:toon('#c98e59'),red:toon('#b67865'),paper:toon('#efead8'),paperEdge:toon('#c8c5b1'),rubber:toon('#35474b'),leaf:toon('#679a79'),leafLight:toon('#8fb28a'),soil:toon('#756b51'),pot:toon('#d5c2a0'),glow:new THREE.MeshBasicMaterial({color:'#fff1bc',toneMapped:false})};
+const deskBulb=new THREE.MeshBasicMaterial({color:'#d7c9a8',toneMapped:false});
 const edgeMat=new THREE.LineBasicMaterial({color:'#56675e',transparent:true,opacity:.33,depthWrite:false});
 const glass=new THREE.MeshBasicMaterial({color:'#bddde0',transparent:true,opacity:.14,depthWrite:false,side:THREE.DoubleSide});
 const geo={box:new THREE.BoxGeometry(1,1,1),sphere:new THREE.SphereGeometry(1,16,10),rock:new THREE.IcosahedronGeometry(1,1)};
@@ -72,7 +75,7 @@ for(const x of [-15.73,15.73])box(x,5.75,-15.40,.18,10.8,.18,m.cream);
 for(const x of [1.4,10.6])box(x,6.4,-15.37,.16,4.76,.22,m.white,scenery,true);
 for(const y of [4.1,8.7])box(6,y,-15.37,9.36,.16,.22,m.white,scenery,true);
 soft(6,3.99,-14.93,9.85,.18,1.05,m.oakLight,scenery,.07);
-const openSash=new THREE.Group();openSash.name='half-open-window-sash';openSash.position.set(1.52,6.4,-15.25);openSash.rotation.y=-.46;scenery.add(openSash);
+const openSash=new THREE.Group();openSash.name='half-open-window-sash';openSash.position.set(1.52,6.4,-15.25);openSash.rotation.y=-.46;model.add(openSash);
 function sash(cx,width,parent){for(const x of [cx-width/2,cx+width/2])box(x,0,0,.095,4.40,.10,m.white,parent);for(const y of [-2.20,0,2.20])box(cx,y,0,width,.095,.10,m.white,parent);box(cx,0,0,.05,4.4,.105,m.white,parent);const pane=box(cx,0,-.015,width-.12,4.28,.018,glass,parent);pane.castShadow=false;rod([cx+width/2-.20,-.25,.10],[cx+width/2-.20,.16,.10],.030,m.steel,parent);}
 sash(2.19,4.38,openSash);const fixed=new THREE.Group();fixed.position.set(8.30,6.4,-15.25);scenery.add(fixed);sash(0,4.38,fixed);
 for(const y of [4.35,6.4,8.45]){const hinge=mesh(new THREE.CylinderGeometry(.05,.05,.20,10),m.metal,1.52,y,-15.20);hinge.castShadow=false;}
@@ -196,7 +199,7 @@ soft(-1.01,4.62,-8.82,1.70,.97,.08,m.ink,desk,.025);const clapper=box(-.99,5.18,
 for(let i=0;i<4;i++)box(-1.02,4.29+i*.19,-8.764,1.45,.014,.01,m.white,desk);
 mug(7.42,3.45,-7.05,.90,desk);
 // A daylight desk lamp with a jointed arm and a shallow conical shade.
-ell(-.55,3.48,-3.97,.42,.055,.34,m.sage,desk);rod([-.55,3.50,-3.97],[-1.04,4.77,-4.44],.045,m.steel,desk);rod([-1.04,4.77,-4.44],[-.42,5.62,-4.72],.045,m.steel,desk);const lamp=mesh(new THREE.ConeGeometry(.53,.37,24,1,true),m.sage,-.42,5.47,-4.72,desk);lamp.rotation.z=.25;ell(-.42,5.30,-4.72,.32,.035,.32,m.glow,desk);
+ell(-.55,3.48,-3.97,.42,.055,.34,m.sage,desk);rod([-.55,3.50,-3.97],[-1.04,4.77,-4.44],.045,m.steel,desk);rod([-1.04,4.77,-4.44],[-.42,5.62,-4.72],.045,m.steel,desk);const lamp=mesh(new THREE.ConeGeometry(.53,.37,24,1,true),m.sage,-.42,5.47,-4.72,desk);lamp.rotation.z=.25;ell(-.42,5.30,-4.72,.32,.035,.32,deskBulb,desk);
 // Three playful desk companions: an articulated robot, an orange cat and a cube.
 const robot=new THREE.Group();robot.name='tiny-desk-robot';robot.position.set(10.87,3.45,-4.43);desk.add(robot);
 soft(0,.46,0,.46,.51,.34,m.orange,robot,.055);soft(0,.95,0,.62,.44,.39,m.cream,robot,.06);for(const x of [-.15,.15])ell(x,.99,.212,.056,.064,.018,m.ink,robot);box(0,.84,.213,.16,.022,.012,m.orange,robot);
@@ -265,8 +268,11 @@ for(let i=0;i<6;i++){const b=box(-.86+i*.29,.95,0,.22,.93,1.10,pick([m.sage,m.te
 for(let i=0;i<4;i++)soft(-.42,1.55+i*.12,.03,1.08,.10,.86,i%2?m.cream:m.blue,cart,.025);
 for(const x of [-.62,.62]){const reel=mesh(new THREE.CylinderGeometry(.41,.41,.11,32),m.metal,x,2.47,0,cart);for(let j=0;j<6;j++){const a=j/6*6.28;mesh(new THREE.CylinderGeometry(.085,.085,.014,14),m.dark,x+Math.cos(a)*.25,2.533,Math.sin(a)*.25,cart);}mesh(new THREE.CylinderGeometry(.095,.095,.03,18),m.wood,x,2.545,0,cart);}
 rod([-1.15,2.32,-.72],[-1.15,2.85,-.72],.045,m.steel,cart);rod([1.15,2.32,-.72],[1.15,2.85,-.72],.045,m.steel,cart);rod([-1.15,2.85,-.72],[1.15,2.85,-.72],.045,m.steel,cart);
-// Warm little lights stay subtle in the sunlit room.
-for(const [x,y,z,power] of [[-13.22,5.17,-8.37,1.8],[9.95,6.2,-11.55,1.1]]){const light=new THREE.PointLight('#ffe1af',power,7,1.5);light.position.set(x,y,z);scene.add(light);}
+// Actual warm light sources beneath the desk shade and beside the sofa.
+const deskLight=new THREE.PointLight('#ffbb68',0,14,1.45);deskLight.name='study-desk-lamp';deskLight.position.set(-13.22,5.17,-8.37);scene.add(deskLight);
+const deskSpot=new THREE.SpotLight('#ffc27b',0,25,.87,.72,1.55);deskSpot.name='study-desk-light-pool';deskSpot.position.set(-13.22,5.24,-8.37);deskSpot.target.position.set(-9.2,3.38,-10.3);scene.add(deskSpot,deskSpot.target);deskSpot.shadow.mapSize.set(preview?512:1024,preview?512:1024);deskSpot.shadow.bias=-.0002;deskSpot.shadow.normalBias=.018;
+const readingLight=new THREE.PointLight('#ffbe76',0,16,1.35);readingLight.name='study-reading-lamp';readingLight.position.set(9.95,6.2,-11.55);scene.add(readingLight);
+const screenLight=new THREE.PointLight('#9bc9db',0,8,1.7);screenLight.position.set(-8.5,5.15,-11.5);scene.add(screenLight);
 // One complete bay is an open figurine cabinet, with separate display plinths.
 const collection=new THREE.Group();collection.name='figurine-display-cabinet';scenery.add(collection);
 const figureKinds=['robot','astronaut','cat','rabbit','dinosaur','rocket','bear','duck','mushroom','ghost','mecha','penguin'];
@@ -343,23 +349,66 @@ function curtain(name,startX,width,phase){
  const cols=32,rows=48,ps=[],uv=[],idx=[];for(let j=0;j<=rows;j++)for(let i=0;i<=cols;i++){ps.push(0,0,0);uv.push(i/cols,1-j/rows);if(i<cols&&j<rows){const a=j*(cols+1)+i;idx.push(a,a+1,a+cols+1,a+1,a+cols+2,a+cols+1)}}
  const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(ps,3));geometry.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));geometry.setIndex(idx);
  const material=toon('#f5f0dc',{side:THREE.DoubleSide,transparent:true,opacity:.79,depthWrite:false});const cloth=mesh(geometry,material,0,0,0,model);cloth.name=name;cloth.renderOrder=2;cloth.castShadow=false;cloth.frustumCulled=false;
- curtains.push({cloth,startX,width,phase,cols,rows,height:5.03,topY:9.01});
- for(let i=0;i<10;i++){const x=startX+i*width/9;const r=ring(x,9.12,-14.43,.078,.016,m.metal,model);r.rotation.y=Math.PI/2;}
+ const rings=[];for(let i=0;i<10;i++){const x=startX+i*width/9;const r=ring(x,9.12,-14.43,.078,.016,m.metal,model);r.rotation.y=Math.PI/2;rings.push(r);}
+ curtains.push({cloth,startX,width,phase,cols,rows,height:5.03,topY:9.01,rings});
 }
 curtain('breezy-curtain-left',.86,1.93,.0);curtain('breezy-curtain-right',9.18,1.96,1.7);
+let nightBlend=0,nightTarget=0,curtainClose=0,atmosphereDirty=true;
+const blendColor=(material,day,night,a)=>material.color.lerpColors(day,night,a);
+const colors={skyDay:new THREE.Color('#e9f4f0'),skyNight:new THREE.Color('#6c85b4'),groundDay:new THREE.Color('#ac977d'),groundNight:new THREE.Color('#4d4450'),sunDay:new THREE.Color('#fff1cb'),sunNight:new THREE.Color('#8da5dc'),fillDay:new THREE.Color('#d4e9e8'),fillNight:new THREE.Color('#96acd2'),bulbDay:new THREE.Color('#d7c9a8'),bulbNight:new THREE.Color('#ffd28a'),ledDay:new THREE.Color('#ded5bd'),ledNight:new THREE.Color('#dcb17a'),glassDay:new THREE.Color('#bddde0'),glassNight:new THREE.Color('#526481'),screenDay:new THREE.Color('#ffffff'),screenNight:new THREE.Color('#9eaba9')};
+function applyAtmosphere(amount){
+ const a=THREE.MathUtils.smoothstep(amount,0,1);
+ skyLight.color.lerpColors(colors.skyDay,colors.skyNight,a);skyLight.groundColor.lerpColors(colors.groundDay,colors.groundNight,a);skyLight.intensity=THREE.MathUtils.lerp(1.85,.30,a);
+ sun.color.lerpColors(colors.sunDay,colors.sunNight,a);sun.intensity=THREE.MathUtils.lerp(3.15,.11,a);sun.castShadow=amount<.999;
+ fill.color.lerpColors(colors.fillDay,colors.fillNight,a);fill.intensity=THREE.MathUtils.lerp(.72,.13,a);
+ deskLight.intensity=9.0*a;deskSpot.intensity=37*a;deskSpot.castShadow=amount>.01;readingLight.intensity=6.2*a;screenLight.intensity=.9*a;
+ blendColor(deskBulb,colors.bulbDay,colors.bulbNight,a);blendColor(m.glow,colors.ledDay,colors.ledNight,a);blendColor(glass,colors.glassDay,colors.glassNight,a);
+ for(const screen of [editingScreen,portraitScreen])blendColor(screen,colors.screenDay,colors.screenNight,a);
+ openSash.rotation.y=-.46*(1-THREE.MathUtils.smoothstep(amount,0,.48));
+ curtainClose=THREE.MathUtils.smoothstep(amount,.40,1);
+ curtains.forEach(({cloth})=>cloth.material.opacity=THREE.MathUtils.lerp(.79,.98,curtainClose));
+ ground.material.opacity=.14*(1-a);model.userData.nightBlend=amount;model.userData.curtainClose=curtainClose;document.body.style?.setProperty('--night',String(a));renderer.shadowMap.needsUpdate=true;
+}
+const periodSwitch=document.querySelector?.('.period-switch');if(periodSwitch)periodSwitch.hidden=preview;
+const periodButtons=[...(document.querySelectorAll?.('.period-switch button')||[])],periodStatus=document.querySelector?.('.period-status');
+function syncPeriod(now,immediate=false){
+ const period=periodMode==='auto'?localPeriod(now):periodMode,target=period==='night'?1:0;
+ const changed=model.userData.period!==period||model.userData.periodMode!==periodMode;
+ model.userData.period=period;model.userData.periodMode=periodMode;nightTarget=target;
+ if(changed){
+  renderer.domElement.setAttribute('aria-label',`${period==='night'?'暖灯夜晚':'明亮日间'}书房，拖拽旋转，滚轮或双指缩放`);
+  if(document.body.dataset){document.body.dataset.period=period;document.body.dataset.periodMode=periodMode;}
+  periodButtons.forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.time===periodMode)));
+  if(periodStatus)periodStatus.textContent=`${periodMode==='auto'?'自动跟随本地时间':'手动'}：${period==='night'?'夜晚':'白天'}`;
+  atmosphereDirty=true;
+ }
+ if(immediate||(reduced&&(changed||nightBlend!==nightTarget))){nightBlend=nightTarget;applyAtmosphere(nightBlend);}
+}
+periodButtons.forEach(button=>button.addEventListener('click',event=>{event.stopPropagation();periodMode=button.dataset.time;syncPeriod(new Date());}));
 function animate(t){
- for(const {cloth,startX,width,phase,cols,rows,height,topY} of curtains){const p=cloth.geometry.attributes.position;for(let j=0;j<=rows;j++)for(let i=0;i<=cols;i++){const u=i/cols,w=j/rows,free=w*w,k=j*(cols+1)+i;const fold=Math.cos(u*Math.PI*12.)*(.125+w*.04);p.setXYZ(k,startX+u*width+Math.sin(t*.86+phase+w*2.1+u*1.8)*free*.34,topY-w*height+Math.sin(t*.72+phase+u*3.5)*free*.055,-14.39+fold+Math.sin(t*.73+phase+u*3.0+w*1.5)*Math.pow(w,1.7)*.47);}p.needsUpdate=true;cloth.geometry.computeVertexNormals();}
+ curtains.forEach(({cloth,startX,width,phase,cols,rows,height,topY,rings},panel)=>{
+  const start=THREE.MathUtils.lerp(startX,panel===0?.86:5.89,curtainClose),span=THREE.MathUtils.lerp(width,panel===0?5.30:5.25,curtainClose),wind=1-curtainClose*.94;
+  const p=cloth.geometry.attributes.position;
+  for(let j=0;j<=rows;j++)for(let i=0;i<=cols;i++){
+   const u=i/cols,w=j/rows,free=w*w,k=j*(cols+1)+i,fold=Math.cos(u*Math.PI*12.)*(.125+w*.04);
+   p.setXYZ(k,start+u*span+Math.sin(t*.86+phase+w*2.1+u*1.8)*free*.34*wind,topY-w*height+Math.sin(t*.72+phase+u*3.5)*free*.055*wind,THREE.MathUtils.lerp(-14.39,-14.12,curtainClose)+fold+Math.sin(t*.73+phase+u*3.0+w*1.5)*Math.pow(w,1.7)*.47*wind);
+  }
+  rings.forEach((r,i)=>r.position.x=start+i*span/9);p.needsUpdate=true;cloth.geometry.computeVertexNormals();
+ });
  plantHeads.forEach(({g,phase})=>{g.rotation.z=Math.sin(t*.55+phase)*.014;g.rotation.x=Math.sin(t*.39+phase)*.009;});
 }
-animate(0);let start=null,lastMs=-Infinity,renderedOnce=false,lastClockTick=-1;
+syncPeriod(new Date(),true);animate(0);let start=null,lastMs=-Infinity,renderedOnce=false,lastClockTick=-1;
 const lastPosition=new THREE.Vector3(),lastQuaternion=new THREE.Quaternion();
 function renderFrame(ms){
  if(start===null)start=ms;controls.update();
  if(!preview&&renderedOnce&&ms-lastMs<32)return;
- const now=new Date(),clockTick=Math.floor(now.getTime()/100);
- // In reduced-motion mode, redraw the clock at 10 Hz and camera input immediately.
- if(reduced&&renderedOnce&&clockTick===lastClockTick&&lastPosition.distanceToSquared(camera.position)<1e-12&&Math.abs(lastQuaternion.dot(camera.quaternion))>1-1e-12)return;
- lastMs=ms;if(!preview&&!reduced)animate((ms-start)*.001);updateClock(now);renderer.render(scene,camera);
+ const now=new Date(),clockTick=Math.floor(now.getTime()/100);syncPeriod(now);
+ const changing=Math.abs(nightBlend-nightTarget)>.00001;
+ if(reduced&&renderedOnce&&!atmosphereDirty&&!changing&&clockTick===lastClockTick&&lastPosition.distanceToSquared(camera.position)<1e-12&&Math.abs(lastQuaternion.dot(camera.quaternion))>1-1e-12)return;
+ const dt=Number.isFinite(lastMs)?Math.min(Math.max((ms-lastMs)*.001,0),.12):0;lastMs=ms;
+ if(changing){const step=dt/1.35;nightBlend+=Math.sign(nightTarget-nightBlend)*Math.min(Math.abs(nightTarget-nightBlend),step);applyAtmosphere(nightBlend);}
+ if(!preview&&(!reduced||atmosphereDirty||changing))animate(reduced?0:(ms-start)*.001);
+ updateClock(now);renderer.render(scene,camera);atmosphereDirty=false;
  lastClockTick=clockTick;lastPosition.copy(camera.position);lastQuaternion.copy(camera.quaternion);renderedOnce=true;
 }
 if(preview)renderFrame(0);else renderer.setAnimationLoop(renderFrame);
