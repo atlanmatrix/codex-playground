@@ -218,6 +218,16 @@ try{
   }
  }
  assert.equal(testControls.enabled,!isPreview);
+ if(name==='rooftop'){
+  const before=camera.position.clone(),aspect=camera.aspect;
+  for(const [w,h] of [[0,330],[624,0],[0,0]]){
+   globalThis.innerWidth=w;globalThis.innerHeight=h;listeners.get('resize')();
+   assert(camera.position.equals(before)&&camera.aspect===aspect,'Collapsed previews must preserve the last valid camera');
+  }
+  globalThis.innerWidth=624;globalThis.innerHeight=330;listeners.get('resize')();
+  assert(camera.position.toArray().every(Number.isFinite),'The preview camera must recover after becoming visible');
+  assert.equal(camera.aspect,624/330);
+ }
  // A narrower viewport must still frame the model on a direct load or resize.
  globalThis.innerWidth=390;globalThis.innerHeight=844;listeners.get('resize')();
  console.log(JSON.stringify({scene:name,width,height,preview:isPreview,reduced:isReduced,meshes,instances,vertices,projected}));

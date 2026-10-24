@@ -5,13 +5,14 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 const preview=new URLSearchParams(location.search).has('preview');
 const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
 const scene=new THREE.Scene();
+const initialWidth=Math.max(1,innerWidth),initialHeight=Math.max(1,innerHeight);
 const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,powerPreference:'high-performance'});
-renderer.setPixelRatio(Math.min(devicePixelRatio,preview?.85:1.8));renderer.setSize(innerWidth,innerHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio,preview?.85:1.8));renderer.setSize(initialWidth,initialHeight);
 renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.localClippingEnabled=true;
 renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.04;
 document.body.appendChild(renderer.domElement);
 renderer.domElement.setAttribute('role','img');renderer.domElement.setAttribute('aria-label','铁路从商铺房顶通过的日式微缩街道，可以拖拽旋转缩放');
-const camera=new THREE.PerspectiveCamera(33,innerWidth/innerHeight,.35,270);
+const camera=new THREE.PerspectiveCamera(33,initialWidth/initialHeight,.35,270);
 const controls=new OrbitControls(camera,renderer.domElement);
 controls.target.set(0,2.0,0);controls.enableDamping=true;controls.dampingFactor=.065;controls.enabled=!preview;controls.enablePan=false;
 controls.minDistance=20;controls.maxDistance=170;controls.minPolarAngle=.22;controls.maxPolarAngle=Math.PI*.44;
@@ -434,4 +435,11 @@ animate(0);
 let start=null;
 function renderFrame(ms){if(start===null)start=ms;controls.update();if(!preview&&!reduced)animate((ms-start)*.001);renderer.render(scene,camera);}
 if(preview){renderFrame(0)}else{renderer.setAnimationLoop(renderFrame)}
-addEventListener('resize',()=>{const aspect=innerWidth/innerHeight,factor=fit(aspect)/fit(camera.aspect);camera.position.sub(controls.target).multiplyScalar(factor).add(controls.target);camera.aspect=aspect;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio,preview?.85:1.8));if(preview)renderFrame(0);});
+addEventListener('resize',()=>{
+ // Lazy iframes can temporarily collapse during layout or capture. Preserve the
+ // last valid camera so a zero width cannot introduce Infinity/NaN into it.
+ if(innerWidth<1||innerHeight<1)return;
+ const aspect=innerWidth/innerHeight,factor=fit(aspect)/fit(camera.aspect);
+ camera.position.sub(controls.target).multiplyScalar(factor).add(controls.target);camera.aspect=aspect;camera.updateProjectionMatrix();
+ renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio,preview?.85:1.8));if(preview)renderFrame(0);
+});
