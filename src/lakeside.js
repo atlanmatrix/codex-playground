@@ -17,12 +17,12 @@ renderer.domElement.setAttribute('role','img');
 renderer.domElement.setAttribute('aria-label','柳荫下的湖畔午睡，可以拖拽旋转和缩放的三维微缩景观');
 const camera=new THREE.PerspectiveCamera(33,innerWidth/innerHeight,.35,240);
 const controls=new OrbitControls(camera,renderer.domElement);
-controls.target.set(-.7,1.4,0);controls.enabled=!preview;
+controls.target.set(-.7,0,0);controls.enabled=!preview;
 controls.enableDamping=true;controls.dampingFactor=.065;controls.enablePan=false;
 controls.minDistance=17;controls.maxDistance=160;
 controls.minPolarAngle=.22;controls.maxPolarAngle=Math.PI*.445;
-const fitDistance=aspect=>Math.max(34,36/aspect);
-function frame(){const d=fitDistance(camera.aspect);camera.position.set(d*.66,1.4+d*.62,d*.73);camera.lookAt(controls.target)}
+const fitDistance=aspect=>Math.max(36,37/aspect);
+function frame(){const d=fitDistance(camera.aspect);camera.position.set(d*.66,d*.62,d*.73);camera.lookAt(controls.target)}
 frame();
 scene.add(new THREE.HemisphereLight(0xf1fcff,0x819663,2.0));
 const sun=new THREE.DirectionalLight(0xffefc5,3.1);sun.position.set(-5,16,9);sun.castShadow=true;
@@ -40,6 +40,9 @@ const toon=(color,extra={})=>new THREE.MeshToonMaterial({color,gradientMap:ramp,
 const m={soil:toon('#8e7550'),deep:toon('#6d684d'),sand:toon('#d4c59a'),stone:toon('#c6cab1'),stone2:toon('#9eada5'),trunk:toon('#8f8261'),bark:toon('#b0a17c'),twig:toon('#829258'),wood:toon('#c2a575'),woodDark:toon('#a38759'),woodLight:toon('#dbc398'),cushion:toon('#f0e4c5'),cushionEdge:toon('#d6cba9'),paper:toon('#fff4d9'),paperEdge:toon('#e2d4b2'),cover:toon('#a89165'),orange:toon('#eda347'),lightOrange:toon('#f4bc68'),stripe:toon('#bb7136'),cream:toon('#fae0ab'),pink:toon('#d79787'),ink:toon('#735347')};
 const leafMats=['#64a36a','#86bc73','#afd08a'].map(c=>toon(c,{side:THREE.DoubleSide}));
 const grassMats=['#7ead62','#96bb6b','#b1cd7d'].map(c=>toon(c,{side:THREE.DoubleSide}));
+const foliageMaterial=toon('#ffffff',{side:THREE.DoubleSide});
+const seatingArea=(x,z)=>x>-6.5&&x<-3.5&&z>.3&&z<2.5;
+const bridgeArea=(x,z)=>x>shoreX(-.8)-1.2&&x<shoreX(-.8)+.8&&z>-1.65&&z<.05;
 const geo={box:new THREE.BoxGeometry(1,1,1),sphere:new THREE.SphereGeometry(1,24,16),stone:new THREE.IcosahedronGeometry(1,1),leaf:new THREE.BufferGeometry(),grass:new THREE.BufferGeometry()};
 geo.leaf.setAttribute('position',new THREE.Float32BufferAttribute([0,0,0,-.03,-.12,.012,0,-.34,0,0,0,0,0,-.34,0,.032,-.12,.012],3));geo.leaf.computeVertexNormals();
 geo.grass.setAttribute('position',new THREE.Float32BufferAttribute([-.023,0,0,.023,0,0,.04,.19,.015,-.023,0,0,.04,.19,.015,0,.2,.015,0,.2,.015,.04,.19,.015,.09,.4,.01],3));geo.grass.computeVertexNormals();
@@ -49,13 +52,17 @@ function ell(x,y,z,sx,sy,sz,material,parent=scenery){const o=mesh(geo.sphere,mat
 function tube(points,r,material,parent=scenery,segments=24){const c=new THREE.CatmullRomCurve3(points.map(p=>Array.isArray(p)?v(...p):p));return mesh(new THREE.TubeGeometry(c,segments,r,6,false),material,0,0,0,parent)}
 function rod(a,b,r,material,parent=scenery,rTop=r){const from=v(...a),to=v(...b),delta=to.clone().sub(from);const o=mesh(new THREE.CylinderGeometry(rTop,r,delta.length(),8),material,0,0,0,parent);o.position.copy(from.add(to).multiplyScalar(.5));o.quaternion.setFromUnitVectors(v(0,1,0),delta.normalize());return o}
 const dummy=new THREE.Object3D();
-function instances(g,material,items,parent=scenery,shadow=true){const o=new THREE.InstancedMesh(g,material,items.length);for(let i=0;i<items.length;i++){const a=items[i];dummy.position.set(...a.p);dummy.scale.set(...(a.s||[1,1,1]));dummy.rotation.set(...(a.r||[0,0,0]));dummy.updateMatrix();o.setMatrixAt(i,dummy.matrix)}o.castShadow=shadow;o.receiveShadow=true;parent.add(o);return o}
-const shoreX=z=>-4.02+.48*Math.sin(z*.48)+.19*Math.cos(z*.91);
+function instances(g,material,items,parent=scenery,shadow=true){const o=new THREE.InstancedMesh(g,material,items.length);for(let i=0;i<items.length;i++){const a=items[i];dummy.position.set(...a.p);dummy.scale.set(...(a.s||[1,1,1]));dummy.rotation.set(...(a.r||[0,0,0]));dummy.updateMatrix();o.setMatrixAt(i,dummy.matrix);if(a.color)o.setColorAt(i,a.color)}o.castShadow=shadow;o.receiveShadow=true;parent.add(o);return o}
+const WATER_LEVEL=.16,BASE_BOTTOM=-3.05,SECTION_FLOOR=-2.77;
+// The bank crosses the square diagonally while retaining roughly 75% water.
+const shoreX=z=>-4.02+.38*z+.38*Math.sin(z*.55)+.10*Math.cos(z*.91);
+const shoreSlope=z=>.38+.209*Math.cos(z*.55)-.091*Math.sin(z*.91);
+const bedY=(x,z)=>.07-THREE.MathUtils.smoothstep((x-shoreX(z))/(8-shoreX(z)),0,.30)*2.70;
 const landY=(x,z)=>{const t=THREE.MathUtils.clamp((shoreX(z)-x)/3.7,0,1);return .19+.39*Math.sin(t*1.5)+.045*Math.sin(z*1.4+x)*Math.sin(t*Math.PI)};
 function geometryGrid(nx,nz,position,color){const ps=[],cs=[],ix=[];for(let j=0;j<=nz;j++)for(let i=0;i<=nx;i++){const p=position(i/nx,j/nz);ps.push(...p);if(color)cs.push(...color(p,i/nx,j/nz))}for(let j=0;j<nz;j++)for(let i=0;i<nx;i++){const a=j*(nx+1)+i,b=a+1,c=a+nx+1,d=c+1;ix.push(a,c,b,b,c,d)}const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(ps,3));if(color)g.setAttribute('color',new THREE.Float32BufferAttribute(cs,3));g.setIndex(ix);g.computeVertexNormals();return g}
-function sideStrip(points,material,bottom=-1.14){const ps=[],ix=[];for(const p of points)ps.push(p[0],p[1],p[2],p[0],bottom,p[2]);for(let i=0;i<points.length-1;i++){const a=i*2;ix.push(a,a+1,a+2,a+1,a+3,a+2)}const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(ps,3));g.setIndex(ix);g.computeVertexNormals();const o=mesh(g,material);o.material.side=THREE.DoubleSide;return o}
+function sideStrip(points,material,bottom=SECTION_FLOOR){const ps=[],ix=[];for(const p of points)ps.push(p[0],p[1],p[2],p[0],bottom,p[2]);for(let i=0;i<points.length-1;i++){const a=i*2;ix.push(a,a+1,a+2,a+1,a+3,a+2)}const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(ps,3));g.setIndex(ix);g.computeVertexNormals();const o=mesh(g,material);o.material.side=THREE.DoubleSide;return o}
 // The base has one structural bottom; soil and water occupy separate footprints.
-box(0,-1.25,0,16,.22,16,m.deep);
+box(0,(BASE_BOTTOM+SECTION_FLOOR)/2,0,16,SECTION_FLOOR-BASE_BOTTOM,16,m.deep);
 const turfColor=new THREE.Color();
 const terrain=geometryGrid(24,80,(u,w)=>{const z=-8+16*w,x=THREE.MathUtils.lerp(-8,shoreX(z),u);return[x,landY(x,z),z]},(p,u)=>{turfColor.set('#8caf69').lerp(new THREE.Color('#bbcc84'),Math.max(0,1-u)*.35+.06*Math.sin(p[2]*2));return turfColor.toArray()});
 mesh(terrain,toon('#ffffff',{vertexColors:true}));
@@ -63,96 +70,141 @@ const landLeft=[],landFront=[],landBack=[];
 for(let i=0;i<=80;i++){const z=-8+i*.2;landLeft.push([-8,landY(-8,z),z])}
 for(let i=0;i<=24;i++){for(const [z,list] of [[8,landFront],[-8,landBack]]){const x=THREE.MathUtils.lerp(-8,shoreX(z),i/24);list.push([x,landY(x,z),z])}}
 sideStrip(landLeft,m.soil);sideStrip(landFront,m.soil);sideStrip(landBack,m.soil);
-const bed=geometryGrid(75,80,(u,w)=>{const z=-8+16*w,x=THREE.MathUtils.lerp(shoreX(z),8,u);const depth=THREE.MathUtils.smoothstep(u,0,.30);return[x,.07-depth*1.16,z]},(p,u)=>{const c=new THREE.Color('#dbcfa8').lerp(new THREE.Color('#387f8e'),THREE.MathUtils.smoothstep(u,0,.45));return c.toArray()});
+const bed=geometryGrid(75,80,(u,w)=>{const z=-8+16*w,x=THREE.MathUtils.lerp(shoreX(z),8,u);return[x,bedY(x,z),z]},(p,u)=>{const c=new THREE.Color('#dbcfa8').lerp(new THREE.Color('#387f8e'),THREE.MathUtils.smoothstep(u,0,.45));return c.toArray()});
 mesh(bed,toon('#ffffff',{vertexColors:true}));
-const waterSide=new THREE.ShaderMaterial({side:THREE.DoubleSide,vertexShader:`varying float h;varying vec3 p;void main(){h=position.y;p=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,fragmentShader:`varying float h;varying vec3 p;void main(){float f=smoothstep(-1.14,.16,h);vec3 c=mix(vec3(.16,.43,.49),vec3(.40,.76,.78),f);c+=.018*sin(p.x*3.+p.z*2.);gl_FragColor=vec4(c,1.);}`});
-sideStrip([[8,.16,-8],[8,.16,8]],waterSide);
-for(const z of [-8,8]){const pts=[];for(let i=0;i<=60;i++)pts.push([THREE.MathUtils.lerp(shoreX(z),8,i/60),.16,z]);sideStrip(pts,waterSide)}
-const ground=mesh(new THREE.PlaneGeometry(150,150),new THREE.ShadowMaterial({opacity:.13}),0,-1.39,0,scene);ground.rotation.x=-Math.PI/2;ground.castShadow=false;
+const waterSide=new THREE.ShaderMaterial({side:THREE.DoubleSide,transparent:true,depthWrite:false,vertexShader:`varying float h;varying vec3 p;void main(){h=position.y;p=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,fragmentShader:`varying float h;varying vec3 p;void main(){float f=smoothstep(-2.77,.16,h);vec3 c=mix(vec3(.16,.43,.49),vec3(.40,.76,.78),f);c+=.018*sin(p.x*3.+p.z*2.);gl_FragColor=vec4(c,mix(.82,.48,f));}`});
+const waterSections=[sideStrip([[8,.16,-8],[8,.16,8]],waterSide)];
+for(const z of [-8,8]){const pts=[];for(let i=0;i<=60;i++)pts.push([THREE.MathUtils.lerp(shoreX(z),8,i/60),.16,z]);waterSections.push(sideStrip(pts,waterSide))}
+for(const section of waterSections){section.name='lake-cutaway-water';section.castShadow=false;section.receiveShadow=false;section.renderOrder=2;}
+const ground=mesh(new THREE.PlaneGeometry(150,150),new THREE.ShadowMaterial({opacity:.13}),0,BASE_BOTTOM-.04,0,scene);ground.rotation.x=-Math.PI/2;ground.castShadow=false;
 // Embedded aggregate and exposed willow roots on the soil section.
 const stones=[[],[]];
-for(let i=0;i<120;i++){const front=random()>.5,z=front?8.012:-8.012,x=R(-7.9,shoreX(z)-.1);stones[i%2].push({p:[x,R(-1.04,.12),z],s:[R(.04,.12),R(.025,.08),R(.035,.08)],r:[R(0,3),R(0,3),R(0,3)]});}
-for(let i=0;i<90;i++)stones[i%2].push({p:[-8.012,R(-1.04,.25),R(-7.85,7.85)],s:[R(.04,.1),R(.03,.08),R(.04,.13)],r:[R(0,3),R(0,3),R(0,3)]});
+for(let i=0;i<120;i++){const front=random()>.5,z=front?8.012:-8.012,x=R(-7.9,shoreX(z)-.1);stones[i%2].push({p:[x,R(-2.64,.12),z],s:[R(.04,.12),R(.025,.08),R(.035,.08)],r:[R(0,3),R(0,3),R(0,3)]});}
+for(let i=0;i<90;i++)stones[i%2].push({p:[-8.012,R(-2.64,.25),R(-7.85,7.85)],s:[R(.04,.1),R(.03,.08),R(.04,.13)],r:[R(0,3),R(0,3),R(0,3)]});
 for(let i=0;i<2;i++)instances(geo.stone,i?m.stone:m.stone2,stones[i]);
-for(let i=0;i<13;i++){const z=R(-7.7,7.7);tube([[-7.8,.1,z],[-8.025,-.3,z+.1],[-8.035,-.65,z+.28],[-8.02,-1.05,z+.17]],R(.018,.04),m.trunk)}
+for(let i=0;i<13;i++){const z=R(-7.7,7.7);tube([[-7.8,.1,z],[-8.025,-.65,z+.1],[-8.035,-1.65,z+.28],[-8.02,-2.55,z+.17]],R(.018,.04),m.trunk)}
 // Actual pebbles beneath the translucent shallows, plus emergent shoreline stones.
 const pebbleBatches=[[],[],[]];
-for(let i=0;i<200;i++){const z=R(-7.8,7.8),d=R(.05,1.38),x=shoreX(z)+d;const u=d/(8-shoreX(z)),y=.07-THREE.MathUtils.smoothstep(u,0,.30)*1.16;pebbleBatches[i%3].push({p:[x,y+.035,z],s:[R(.04,.16),R(.025,.065),R(.05,.17)],r:[R(-.3,.3),R(0,6.28),R(-.3,.3)]})}
+for(let i=0;i<200;i++){const z=R(-7.8,7.8),d=R(.05,1.38),x=shoreX(z)+d;const y=bedY(x,z);pebbleBatches[i%3].push({p:[x,y+.035,z],s:[R(.04,.16),R(.025,.065),R(.05,.17)],r:[R(-.3,.3),R(0,6.28),R(-.3,.3)]})}
 for(let i=0;i<3;i++)instances(geo.stone,[m.stone,m.stone2,m.sand][i],pebbleBatches[i]);
 for(let i=0;i<28;i++){const z=R(-7.8,7.8),x=shoreX(z)-R(.03,.24),s=R(.07,.18);ell(x,landY(x,z)+.03,z,s,s*.55,s*.8,i%2?m.stone:m.stone2)}
 
 // A planar reflection of the real willows, broken by independent wave trains.
-const waterShape=new THREE.Shape();waterShape.moveTo(8,8);waterShape.lineTo(8,-8);for(let i=80;i>=0;i--){const z=-8+i*.2;waterShape.lineTo(shoreX(z),-z)}waterShape.closePath();
+const waterGeometry=geometryGrid(96,96,(u,w)=>{const z=-8+16*w;return[THREE.MathUtils.lerp(shoreX(z),8,u),0,z]});
+waterGeometry.rotateX(Math.PI/2);
 const waterUniforms={time:{value:0},color:{value:new THREE.Color('#8acfd0')},tDiffuse:{value:null},textureMatrix:{value:new THREE.Matrix4()}};
-const water=new Reflector(new THREE.ShapeGeometry(waterShape),{
+const water=new Reflector(waterGeometry,{
  textureWidth:preview?512:1024,textureHeight:preview?512:1024,clipBias:.002,
  shader:{uniforms:waterUniforms,
- vertexShader:`uniform mat4 textureMatrix;varying vec4 mirrorCoord;varying vec3 worldP;void main(){vec4 wp=modelMatrix*vec4(position,1.);worldP=wp.xyz;mirrorCoord=textureMatrix*vec4(position,1.);gl_Position=projectionMatrix*viewMatrix*wp;}`,
+ vertexShader:`uniform float time;uniform mat4 textureMatrix;varying vec4 mirrorCoord;varying vec3 worldP;
+ float shore(float z){return -4.02+.38*z+.38*sin(z*.55)+.10*cos(z*.91);}
+ void main(){vec4 wp=modelMatrix*vec4(position,1.);float edge=min(min(8.-abs(wp.x),8.-abs(wp.z)),wp.x-shore(wp.z));float fade=smoothstep(0.,.6,edge);wp.y+=fade*(sin(wp.x*3.2+wp.z*1.7+time*.72)*.025+sin(wp.x*-2.1+wp.z*3.6-time*.60)*.014);worldP=wp.xyz;mirrorCoord=textureMatrix*vec4(position,1.);gl_Position=projectionMatrix*viewMatrix*wp;}`,
  fragmentShader:`uniform float time;uniform vec3 color;uniform sampler2D tDiffuse;varying vec4 mirrorCoord;varying vec3 worldP;
- float shore(float z){return -4.02+.48*sin(z*.48)+.19*cos(z*.91);}
- float waves(vec2 p){return sin(dot(p,vec2(1.4,.72))*5.2+time*.58)*.45+sin(dot(p,vec2(-.64,1.18))*8.1-time*.72)*.28+sin(dot(p,vec2(1.12,-.9))*13.3+time*.39)*.14+sin(length(p-vec2(-2.,2.))*7.-time*.8)*.13;}
- void main(){vec2 p=worldP.xz;float d=max(0.,p.x-shore(p.y));float depth=smoothstep(0.,4.7,d);float w=waves(p);vec2 slope=vec2(waves(p+vec2(.025,0.))-w,waves(p+vec2(0.,.025))-w);vec2 uv=mirrorCoord.xy/mirrorCoord.w+slope*.028;vec4 reflection=texture2D(tDiffuse,clamp(uv,.001,.999));vec3 sky=mix(vec3(.64,.85,.90),vec3(.91,.95,.86),.4+.22*sin(p.y*.23+p.x*.1));vec3 reflected=mix(sky,reflection.rgb,reflection.a);vec3 base=mix(vec3(.48,.79,.72),vec3(.16,.54,.69),depth);vec3 c=mix(base,reflected,.24+.13*depth);float thread=smoothstep(.62,.91,w)*.032;c+=vec3(thread*.65,thread,thread);float band=exp(-pow((d-1.9-p.y*.11)/1.15,2.))*smoothstep(-7.,-3.,p.y)*(1.-smoothstep(4.8,8.,p.y));float fleck=smoothstep(.50,.83,waves(p*vec2(1.5,2.6)+vec2(time*.07,0.)));float fine=smoothstep(.05,.29,sin(p.x*32.+p.y*19.+w*3.7+time*.9));float glint=band*fleck*fine;c=mix(c,vec3(1.,.88,.53),glint*.70);c+=vec3(1.,.91,.67)*glint*.09;gl_FragColor=vec4(c,mix(.32,.93,depth));
+ float shore(float z){return -4.02+.38*z+.38*sin(z*.55)+.10*cos(z*.91);}
+ float waves(vec2 p){return sin(dot(p,vec2(.9,.43))*3.7+time*.72)*.48+sin(dot(p,vec2(-.64,1.18))*5.8-time*.60)*.29+sin(dot(p,vec2(1.12,-.9))*11.3+time*.45)*.14+sin(length(p-vec2(-2.,2.))*6.-time*.85)*.09;}
+ void main(){
+  vec2 p=worldP.xz;float d=max(0.,p.x-shore(p.y));float depth=smoothstep(0.,4.7,d);float w=waves(p);
+  vec2 slope=vec2(waves(p+vec2(.025,0.))-w,waves(p+vec2(0.,.025))-w);
+  vec2 uv=mirrorCoord.xy/mirrorCoord.w+slope*.060;
+  vec4 reflection=texture2D(tDiffuse,clamp(uv,.001,.999));
+  vec3 sky=mix(vec3(.64,.85,.90),vec3(.91,.95,.86),.4+.22*sin(p.y*.23+p.x*.1));
+  vec3 reflected=mix(sky,reflection.rgb,reflection.a);
+  vec3 base=mix(vec3(.48,.79,.72),vec3(.16,.54,.69),depth);
+  vec3 c=mix(base,reflected,.20+.10*depth);
+  float crest=pow(max(0.,sin(dot(p,vec2(.74,.53))*7.3+w*1.3-time*.95)),10.);
+  float crossCrest=pow(max(0.,sin(dot(p,vec2(-.55,1.1))*5.1-w*.7+time*.63)),16.);
+  c+=vec3(.075,.13,.12)*crest+vec3(.035,.07,.065)*crossCrest;
+  c-=vec3(.012,.027,.020)*(w*.5+.5);
+  float band=exp(-pow((d-1.9-p.y*.11)/1.15,2.))*smoothstep(-7.,-3.,p.y)*(1.-smoothstep(4.8,8.,p.y));
+  float fleck=smoothstep(.43,.80,waves(p*vec2(1.5,2.6)+vec2(time*.07,0.)));
+  float fine=smoothstep(.05,.29,sin(p.x*32.+p.y*19.+w*3.7+time*.9));float glint=band*fleck*fine;
+  c=mix(c,vec3(1.,.88,.53),glint*.72);c+=vec3(1.,.91,.67)*glint*.10;
+  // Keep the water translucent enough to reveal swimming fish at every depth.
+  gl_FragColor=vec4(c,mix(.26,.62,depth));
 #include <tonemapping_fragment>
 #include <colorspace_fragment>
 }`}
+
 });
 water.name='reflective-lake';water.rotation.x=-Math.PI/2;water.position.y=.16;
 water.material.transparent=true;water.material.depthWrite=false;water.renderOrder=3;water.castShadow=false;water.receiveShadow=false;model.add(water);
 
 // Grass patches bend independently; their shallow pivots keep roots planted.
 const grassPatches=[];
-for(let k=0;k<18;k++){
- const z=-7.6+k*.88,x=(-8+shoreX(z))/2;
+for(let k=0;k<26;k++){
+ const z=-7.65+k*.61,x=(-8+shoreX(z))/2;
  const patch=new THREE.Group();patch.position.set(x,landY(x,z),z);patch.name='breeze-grass';model.add(patch);
  const batches=[[],[],[]];
- for(let i=0;i<64;i++){
-  const pz=z+R(-.43,.43);if(Math.abs(pz)>7.88)continue;
+ for(let i=0;i<85;i++){
+  const pz=z+R(-.30,.30);if(Math.abs(pz)>7.88)continue;
   const px=R(-7.9,shoreX(pz)-.04);
   // Leave the chaise's footprint open and legible.
-  if(px>-7.5&&px<-3.8&&pz>-1.1&&pz<1.85)continue;
+  if(seatingArea(px,pz)||bridgeArea(px,pz))continue;
   for(let j=0;j<3;j++)batches[i%3].push({p:[px-x,landY(px,pz)-patch.position.y,pz-z],s:[R(.65,1.15),R(.4,1.0),1],r:[0,R(0,6.28),R(-.18,.18)]});
  }
- for(let i=0;i<3;i++)if(batches[i].length)instances(geo.grass,grassMats[i],batches[i],patch,false);
+ const coloredGrass=batches.flatMap((items,i)=>items.map(a=>({...a,color:grassMats[i].color})));
+ if(coloredGrass.length)instances(geo.grass,foliageMaterial,coloredGrass,patch,false);
  grassPatches.push({g:patch,phase:R(0,6.28)});
 }
 const flowerMats=['#f5e8ae','#e5ebd4','#d8b5c7'].map(c=>toon(c));
 const flowerBatches=flowerMats.map(()=>[]);
-for(let i=0;i<70;i++){
+for(let i=0;i<180;i++){
  const z=R(-7.7,7.7),x=R(-7.8,shoreX(z)-.2);
- if(x>-7.5&&x<-3.8&&z>-1.1&&z<1.85)continue;
+ if(seatingArea(x,z)||bridgeArea(x,z))continue;
  const y=landY(x,z),h=R(.12,.28);rod([x,y,z],[x+.015,y+h,z],.008,m.twig);
  for(let j=0;j<5;j++){const a=j/5*6.28;flowerBatches[i%3].push({p:[x+Math.cos(a)*.035,y+h,z+Math.sin(a)*.035],s:[.04,.017,.04]})}
 }
 flowerBatches.forEach((items,i)=>instances(geo.stone,flowerMats[i],items));
-// A small amount of submerged ribbon grass is visible through shallow water.
-for(let i=0;i<18;i++){
+// Low flowering ground cover and occasional reeds enrich the diagonal bank.
+const shrubs=[];
+for(let i=0;i<48;i++){
+ const z=R(-7.7,7.7),x=R(-7.8,shoreX(z)-.22);
+ if(seatingArea(x,z)||bridgeArea(x,z))continue;
+ for(let j=0;j<5;j++){
+  const px=x+R(-.15,.15),pz=z+R(-.15,.15),r=R(.10,.23);
+  shrubs.push({p:[px,landY(px,pz)+r*.6,pz],s:[r,r*.8,r],color:pick(leafMats).color});
+ }
+}
+instances(geo.sphere,foliageMaterial,shrubs);
+for(let i=0;i<20;i++){
+ const z=R(-7.6,7.6),x=shoreX(z)-R(.02,.14);
+ if(bridgeArea(x,z))continue;
+ for(let j=0;j<3;j++){
+  const h=R(.35,.72),px=x+R(-.06,.06),pz=z+R(-.1,.1),y=landY(px,pz);
+  tube([[px,y,pz],[px+.04,y+h*.6,pz+.02],[px+.09,y+h,pz+.04]],.011,m.twig,scenery,8);
+  if(j===0)rod([px+.09,y+h-.03,pz+.04],[px+.09,y+h+.12,pz+.04],.027,m.woodDark);
+ }
+}
+
+// Submerged ribbon grass remains visible through shallow water.
+for(let i=0;i<38;i++){
  const z=R(-7.6,7.6),x=shoreX(z)+R(.25,.75),u=(x-shoreX(z))/(8-shoreX(z));
- const y=.07-THREE.MathUtils.smoothstep(u,0,.3)*1.16;
+ const y=bedY(x,z);
  for(let j=0;j<3;j++)tube([[x+j*.035,y,z],[x+.08,y+.12,z+.03],[x+.14,y+.25,z+.08]],.013,leafMats[0]);
 }
 const willowBoughs=[];
 function willow(x,z,height,span,phase){
- const y=landY(x,z);
- tube([[x,y,z],[x+.08,y+1.2,z+.03],[x+.4,y+2.8,z-.13],[x+.75,y+height*.78,z+.08],[x+1.0,y+height*.93,z]],.19,m.trunk);
+ const y=landY(x,z),treeScale=height/5.15;
+ tube([[x,y,z],[x+.06,y+height*.23,z+.03],[x+.28,y+height*.53,z-.09],[x+.5,y+height*.78,z+.06],[x+.7,y+height*.93,z]],height*.034,m.trunk);
  // Fluted bark and long surface roots give the trunk a readable silhouette.
  for(let i=0;i<4;i++){
   const a=i/4*6.28;
-  tube([[x+Math.cos(a)*.17,y,z+Math.sin(a)*.17],[x+.1+Math.cos(a)*.14,y+1.5,z+Math.sin(a)*.15],[x+.45+Math.cos(a)*.09,y+3,z-.13]],.026,m.bark);
+  tube([[x+Math.cos(a)*.17*treeScale,y,z+Math.sin(a)*.17*treeScale],[x+.1+Math.cos(a)*.12*treeScale,y+height*.3,z+Math.sin(a)*.12*treeScale],[x+.3+Math.cos(a)*.07*treeScale,y+height*.61,z-.09]],.022*treeScale,m.bark);
  }
  for(let i=0;i<7;i++){
   const a=i/7*6.28,dx=Math.cos(a),dz=Math.sin(a),ex=THREE.MathUtils.clamp(x+dx*R(.7,1.35),-7.97,shoreX(z)-.1),ez=THREE.MathUtils.clamp(z+dz*.9,-7.9,7.9);
   tube([[x,y+.1,z],[x+dx*.4,landY(x+dx*.4,z+dz*.3)+.04,z+dz*.3],[ex,landY(ex,ez)+.02,ez]],.045,m.trunk);
  }
- for(let k=0;k<9;k++){
-  const a=k/9*6.28;
+ for(let k=0;k<7;k++){
+  const a=k/7*6.28;
   const endX=THREE.MathUtils.clamp(x+.7+Math.cos(a)*span,-7.55,shoreX(z)+1.05);
   const endZ=THREE.MathUtils.clamp(z+Math.sin(a)*span,-7.5,7.5);
   const endY=y+height+R(-.45,.25);
   tube([[x+.4,y+height*.56,z],[x+.7,y+height*.86,z],[THREE.MathUtils.lerp(x+.7,endX,.55),endY+.15,THREE.MathUtils.lerp(z,endZ,.55)],[endX,endY,endZ]],.047,m.trunk);
   const bough=new THREE.Group();bough.position.set(endX,endY,endZ);bough.name='swaying-willow';model.add(bough);
   const leaves=[[],[],[]],strings=[];
-  for(let j=0;j<6;j++){
-   const dx=R(-.32,.32),dz=R(-.34,.34);
+  for(let j=0;j<5;j++){
+   const dx=R(-.26,.26),dz=R(-.34,.34);
    const nearWater=endX>shoreX(endZ);
    const maxLength=endY-(nearWater?.28:landY(endX,endZ)+.18);
    const length=Math.min(maxLength,k%4===0&&j===0?maxLength:R(height*.48,height*.94));
@@ -164,16 +216,20 @@ function willow(x,z,height,span,phase){
    }
   }
   mesh(mergeGeometries(strings,false),m.twig,0,0,0,bough);strings.forEach(g=>g.dispose());
-  for(let j=0;j<3;j++)instances(geo.leaf,leafMats[j],leaves[j],bough,true);
+  const coloredLeaves=leaves.flatMap((items,i)=>items.map(a=>({...a,color:leafMats[i].color})));
+  instances(geo.leaf,foliageMaterial,coloredLeaves,bough,true);
   willowBoughs.push({g:bough,phase:phase+k*.73});
  }
 }
-willow(-6.65,-4.25,5.15,1.75,.2);
-willow(-6.5,5.1,5.75,1.95,2.5);
-willow(-7.05,-7.0,3.7,1.05,4.1);
+willow(-7.35,-6.6,2.55,.68,.2);
+willow(-6.8,-3.8,3.65,1.25,1.3);
+willow(-7.3,-.9,3.05,1.0,2.5);
+willow(-5.7,4.8,4.0,1.45,3.1);
+willow(-3.1,6.9,3.2,1.2,4.1);
+willow(-7.1,6.7,2.7,1.0,5.3);
 
 // The chaise faces the water (+local X). Broad slats and piping remain readable.
-const chaise=new THREE.Group();chaise.name='chaise-book-and-sleeping-cat';chaise.position.set(-5.58,landY(-5.58,.35),.35);chaise.rotation.y=.13;scenery.add(chaise);
+const chaise=new THREE.Group();chaise.name='chaise-book-and-sleeping-cat';chaise.position.set(-4.9,landY(-4.9,1.3),1.3);chaise.scale.setScalar(.78);chaise.rotation.y=.13;scenery.add(chaise);
 for(const z of [-.68,.68]){
  box(.02,.65,z,2.95,.15,.12,m.woodDark,chaise);
  rod([-1.15,.08,z],[-.73,.66,z],.065,m.woodDark,chaise);
@@ -287,6 +343,127 @@ for(let i=0;i<7;i++){
 }
 ell(.32,1.14,-.55,.105,.105,.105,m.cream,cat);
 
+// A weathered footbridge reaches into the lake and ends in missing, split boards.
+const bridge=new THREE.Group();bridge.name='broken-lakeside-bridge';
+bridge.position.set(shoreX(-.8)-.95,.48,-.8);bridge.rotation.y=.18;scenery.add(bridge);
+for(const z of [-.46,.46]){
+ box(2.55,-.02,z,5.55,.15,.13,m.woodDark,bridge);
+ for(const x of [.55,2.2,3.85]){
+  const p=v(x,0,z).applyAxisAngle(v(0,1,0),bridge.rotation.y).add(bridge.position);
+  const floor=bedY(p.x,p.z),bottom=Math.min(floor,-.5)-bridge.position.y;
+  rod([x,bottom,z],[x,.27,z],.075,m.woodDark,bridge,.063);
+ }
+}
+for(let i=0;i<22;i++){
+ if(i===17||i===20)continue;
+ const x=i*.245,broken=i>17;
+ const plank=box(x,.115+(broken?R(-.04,.025):0),broken?R(-.06,.06):0,.21,.10,broken?R(.50,.92):1.13,i%3?m.wood:m.woodLight,bridge);
+ if(broken){plank.rotation.z=R(-.10,.10);plank.rotation.y=R(-.13,.13)}
+ for(const z of [-.42,.42])ell(x,.171,z,.012,.007,.012,m.woodDark,bridge);
+}
+for(const x of [.3,1.6,2.9,4.0]){
+ rod([x,-.02,-.59],[x,1.0,-.59],.045,m.woodDark,bridge);
+ if(x<3)rod([x,.88,-.59],[x+1.3,.88,-.59],.035,m.wood,bridge);
+}
+rod([4,.88,-.59],[4.48,.59,-.59],.032,m.wood,bridge);
+for(let i=0;i<5;i++){
+ const x=4.85+R(-.12,.35),z=R(-.44,.44);
+ rod([x,.1,z],[x+R(.3,.6),R(-.06,.11),z+R(-.05,.05)],.018,m.woodLight,bridge,.006);
+}
+const fallen=box(4.43,-.36,.66,.23,.055,1.03,m.woodDark,bridge);fallen.rotation.set(.05,.20,-.14);
+// Woven willow basket: rounded ribs, alternating weft, a narrow rim and handle.
+const basket=new THREE.Group();basket.name='woven-fishing-basket';basket.position.set(3.65,.164,.08);bridge.add(basket);
+const wicker=toon('#ba945c'),wickerLight=toon('#dbc18a'),basketDark=toon('#756649');
+const basketRadius=y=>.23+.11*Math.sin(y/.64*Math.PI)-.035*y;
+for(let level=0;level<14;level++){
+ const y=.025+level*.043,r=basketRadius(y),pts=[];
+ for(let i=0;i<=44;i++){const a=i/44*Math.PI*2;pts.push([Math.cos(a)*r,y,Math.sin(a)*r])}
+ tube(pts,.014,level%3?wicker:wickerLight,basket,48);
+}
+for(let rib=0;rib<22;rib++){
+ const a=rib/22*Math.PI*2,pts=[];
+ for(let j=0;j<=18;j++){
+  const y=j/18*.60,r=basketRadius(y)+.008*Math.cos(j*Math.PI);
+  pts.push([Math.cos(a)*r,y,Math.sin(a)*r]);
+ }
+ tube(pts,.012,wickerLight,basket,22);
+}
+mesh(new THREE.CylinderGeometry(.23,.20,.035,24),basketDark,0,.018,0,basket);
+const rim=mesh(new THREE.TorusGeometry(basketRadius(.6),.027,6,32),wickerLight,0,.61,0,basket);rim.rotation.x=Math.PI/2;
+mesh(new THREE.CylinderGeometry(.17,.21,.09,24,1,true),basketDark,0,.53,0,basket);
+tube([[-.23,.51,0],[-.31,.80,0],[0,.98,0],[.31,.80,0],[.23,.51,0]],.023,wicker,basket,28);
+for(let i=0;i<3;i++){
+ const rope=mesh(new THREE.TorusGeometry(.11+i*.027,.012,5,24),wickerLight,3.05,.185,.31,bridge);rope.rotation.x=Math.PI/2;
+}
+
+// Four visibly different fish profiles share baked colored geometry per species.
+const fishMaterial=toon('#ffffff',{vertexColors:true,side:THREE.DoubleSide});
+const fishSphere=new THREE.SphereGeometry(1,14,9);
+const fishSpecies=[
+ {name:'koi',base:'#eee1ad',accent:'#e88845',length:.48,height:.14,width:.19,size:[1.0,1.22],count:6},
+ {name:'goldfish',base:'#efb94c',accent:'#e1893f',length:.35,height:.16,width:.17,size:[.65,.90],count:7},
+ {name:'silverfish',base:'#cbdede',accent:'#6e9aab',length:.41,height:.10,width:.12,size:[.75,1.0],count:6},
+ {name:'perch',base:'#9bb69c',accent:'#536f71',length:.36,height:.14,width:.15,size:[.80,1.02],count:5}
+];
+function fishGeometry(species,isTail=false){
+ const parts=[];
+ function add(g,color){
+  let q=g.index?g.toNonIndexed():g;q.deleteAttribute('uv');
+  if(!q.attributes.normal)q.computeVertexNormals();
+  const colorValue=new THREE.Color(color),colors=[];
+  for(let i=0;i<q.attributes.position.count;i++)colors.push(colorValue.r,colorValue.g,colorValue.b);
+  q.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));parts.push(q);
+ }
+ function oval(x,y,z,sx,sy,sz,color){const g=fishSphere.clone();g.scale(sx,sy,sz);g.translate(x,y,z);add(g,color)}
+ function fin(points,color){const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(points.flat(),3));g.computeVertexNormals();add(g,color)}
+ const {length:l,height:h,width:w}=species;
+ if(isTail){
+  const spread=species.name==='goldfish'?.23:.17;
+  fin([[0,0,0],[-.30,.015,-spread],[-.22,0,0],[0,0,0],[-.22,0,0],[-.30,.015,spread]],species.accent);
+ }else{
+  oval(0,0,0,l,h,w,species.base);
+  if(species.name==='koi'){
+   oval(-.17,h*.79,.005,.16,.045,w*.80,species.accent);
+   oval(.23,h*.65,-.02,.12,.055,w*.72,species.accent);
+   oval(-.06,h*.86,-.07,.055,.035,.07,'#68716c');
+  }else if(species.name==='perch'){
+   for(const x of [-.19,-.03,.13])oval(x,h*.6,0,.032,.07,w*.92,species.accent);
+  }else oval(-.03,h*.68,0,l*.8,.045,w*.72,species.accent);
+  for(const side of [-1,1]){
+   fin([[.04,-.015,side*w*.75],[-.15,-.035,side*(w+.16)],[-.12,0,side*w*.65]],species.accent);
+   oval(l*.72,h*.18,side*w*.73,.029,.025,.025,'#eaf0d7');
+   oval(l*.75,h*.2,side*(w*.73+.014),.017,.015,.014,'#354e4d');
+  }
+  fin([[.1,h*.85,0],[-.07,h+.12,0],[-.23,h*.72,0]],species.accent);
+ }
+ const merged=mergeGeometries(parts,false);parts.forEach(g=>g.dispose());return merged;
+}
+const swimmingFish=[];
+for(let speciesIndex=0;speciesIndex<fishSpecies.length;speciesIndex++){
+ const species=fishSpecies[speciesIndex],bodyGeometry=fishGeometry(species),tailGeometry=fishGeometry(species,true);
+ for(let i=0;i<species.count;i++){
+  const fish=new THREE.Group();fish.name='swimming-fish';fish.userData.species=species.name;fish.scale.setScalar(R(...species.size));model.add(fish);
+  const body=mesh(bodyGeometry,fishMaterial,0,0,0,fish);body.castShadow=false;
+  const tail=new THREE.Group();tail.position.x=-species.length*.86;fish.add(tail);
+  const tailMesh=mesh(tailGeometry,fishMaterial,0,0,0,tail);tailMesh.castShadow=false;
+  const lane=R(.22,.73),amplitude=R(.065,.14),centerZ=R(-4.9,4.9),radiusZ=R(.7,1.55);
+  swimmingFish.push({fish,body,tail,lane,amplitude,centerZ,radiusZ,phase:R(0,Math.PI*2),speed:R(.12,.24)*(speciesIndex%2?-1:1),depth:R(.14,.52)});
+ }
+}
+function updateFish(t){
+ for(const f of swimmingFish){
+  const a=t*f.speed+f.phase,z=f.centerZ+Math.sin(a)*f.radiusZ,u=f.lane+Math.cos(a)*f.amplitude;
+  const bank=shoreX(z)+.85,x=THREE.MathUtils.lerp(bank,7.2,u);
+  const dz=Math.cos(a)*f.radiusZ*f.speed,du=-Math.sin(a)*f.amplitude*f.speed;
+  const dx=shoreSlope(z)*dz*(1-u)+(7.2-bank)*du;
+  f.fish.position.set(x,THREE.MathUtils.lerp(WATER_LEVEL-.38,bedY(x,z)+.24,f.depth)+Math.sin(t*.57+f.phase)*.025,z);
+  f.fish.rotation.y=-Math.atan2(dz,dx);
+  f.body.rotation.z=Math.sin(t*1.4+f.phase)*.025;
+  f.tail.rotation.y=Math.sin(t*6.5+f.phase)*.33;
+ }
+}
+updateFish(0);
+
 // Batch the still life without baking the breathing belly or movable ears.
 scenery.updateMatrixWorld(true);
 const movable=new Set([belly,...ears.map(e=>e.g)]);
@@ -314,6 +491,7 @@ const pollen=new THREE.Points(pollenGeo,new THREE.PointsMaterial({size:.025,colo
 let startTime=null,nextEarAt=R(3,6),lastTime=0;
 function updateScene(t){
  water.material.uniforms.time.value=t;
+ updateFish(t);
  for(const {g,phase} of willowBoughs){
   g.rotation.z=Math.sin(t*.61+phase)*.014+Math.sin(t*.97+phase*1.8)*.004;
   g.rotation.x=Math.sin(t*.47+phase*1.3)*.009;

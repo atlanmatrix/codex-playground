@@ -40,15 +40,45 @@ try{
   const ears=['left-ear','right-ear'].map(n=>scene.getObjectByName(n));
   assert(belly&&ears.every(Boolean));
   assert(testControls.minDistance>16&&testControls.maxPolarAngle<Math.PI/2);
+  const fish=[];let boughs=0,grassPatches=0;
+  model.traverse(o=>{if(o.name==='swimming-fish')fish.push(o);if(o.name==='swaying-willow')boughs++;if(o.name==='breeze-grass')grassPatches++});
+  assert.equal(fish.length,24);assert.equal(new Set(fish.map(f=>f.userData.species)).size,4);
+  assert(boughs>=40&&grassPatches>=24,'Additional trees and ground cover must remain present');
+  assert(scene.getObjectByName('broken-lakeside-bridge')&&scene.getObjectByName('woven-fishing-basket'));
+  assert(scene.getObjectByName('chaise-book-and-sleeping-cat').scale.x<.8);
+  const lake=scene.getObjectByName('reflective-lake'),lakePositions=lake.geometry.attributes.position;
+  const rows=new Map();
+  for(let i=0;i<lakePositions.count;i++){
+   const z=Number((-lakePositions.getY(i)).toFixed(5)),x=lakePositions.getX(i);
+   rows.set(z,Math.min(rows.get(z)??Infinity,x));
+  }
+  const edges=[...rows].sort((a,b)=>a[0]-b[0]);
+  assert(edges.at(-1)[1]-edges[0][1]>4.8,'Shoreline must run diagonally across the base');
+  function bankAt(z){
+   const j=Math.min(edges.length-2,Math.max(0,Math.floor((z+8)/16*(edges.length-1))));
+   const [a,b]=[edges[j],edges[j+1]],t=(z-a[0])/(b[0]-a[0]);return a[1]+t*(b[1]-a[1]);
+  }
+  const motion=fish.map(f=>({last:f.position.x,direction:0,reversals:0,min:f.position.x,max:f.position.x}));
+  function checkFish(){fish.forEach((f,i)=>{
+   const {x,y,z}=f.position;
+   assert(Math.abs(z)<7.7&&x>bankAt(z)+.4&&x<7.6,'Fish escaped the water footprint');
+   assert(y<.04&&y>-2.5,'Fish must stay submerged and above the base');
+   const state=motion[i],delta=x-state.last;
+   if(Math.abs(delta)>.00001){const sign=Math.sign(delta);if(state.direction&&sign!==state.direction)state.reversals++;state.direction=sign;}
+   state.last=x;state.min=Math.min(state.min,x);state.max=Math.max(state.max,x);
+  })}
+  checkFish();
+
   const events=[];let active=[false,false],smallest=1,largest=1;
   if(!isPreview){
    for(let ms=20;ms<=90000;ms+=20){
-    globalThis.frame(ms);smallest=Math.min(smallest,belly.scale.y);largest=Math.max(largest,belly.scale.y);
+    globalThis.frame(ms);if(ms%200===0)checkFish();smallest=Math.min(smallest,belly.scale.y);largest=Math.max(largest,belly.scale.y);
     ears.forEach((e,i)=>{const moving=Math.abs(e.rotation.z-(i===0?-.19:.19))>.0001;if(moving&&!active[i])events.push({t:ms/1000,i});active[i]=moving});
    }
   }
   if(!isPreview&&!isReduced){
    assert(smallest<.99&&largest>1.01,'Breathing must remain subtle and continuous');
+   assert(motion.every(s=>s.reversals>=2&&s.max-s.min>.8),'Every fish must swim back and forth over time');
    assert(events.length>=14&&events.length<50,'Ears should twitch intermittently');
    // Separate two twitches belonging to a follow-up flick from new events.
    const onsets=events.filter((e,i)=>i===0||e.t-events[i-1].t>1);
@@ -59,11 +89,11 @@ try{
   const g=water.geometry,p=g.attributes.position,idx=g.index;let area=0;
   for(let i=0;i<idx.count;i+=3){const ids=[idx.getX(i),idx.getX(i+1),idx.getX(i+2)];const [a,b,c]=ids.map(i=>[p.getX(i),p.getY(i)]);area+=Math.abs((b[0]-a[0])*(c[1]-a[1])-(b[1]-a[1])*(c[0]-a[0]))/2;}
   assert(area/256>.73&&area/256<.77,`Lake fraction ${area/256}`);
-  console.log(JSON.stringify({lakeFraction:Number((area/256).toFixed(3)),breathing:[smallest,largest],earTwitches:events.length}));
+  console.log(JSON.stringify({lakeFraction:Number((area/256).toFixed(3)),fish:fish.length,species:4,breathing:[smallest,largest],earTwitches:events.length}));
  }
  scene.updateMatrixWorld(true);camera.updateMatrixWorld(true);
  const {Vector3,ShaderChunk}=await import(pathToFileURL(join(root,'node_modules/three/build/three.module.js')));
- const point=new Vector3();let meshes=0,instances=0,vertices=0,invalid=0;
+ const point=new Vector3();let meshes=0,instances=0,vertices=0,invalid=0,minWorldY=Infinity;
  const projected={left:Infinity,right:-Infinity,bottom:Infinity,top:-Infinity};
  model.traverse(o=>{
   if(!o.isMesh)return;meshes++;if(o.isInstancedMesh)instances+=o.count;
@@ -72,11 +102,12 @@ try{
   for(const n of p.array)if(!Number.isFinite(n))invalid++;
   if(o.isInstancedMesh){for(const n of o.instanceMatrix.array)if(!Number.isFinite(n))invalid++;return}
   for(let i=0;i<p.count;i++){
-   point.fromBufferAttribute(p,i).applyMatrix4(o.matrixWorld).project(camera);
+   point.fromBufferAttribute(p,i).applyMatrix4(o.matrixWorld);minWorldY=Math.min(minWorldY,point.y);point.project(camera);
    projected.left=Math.min(projected.left,point.x);projected.right=Math.max(projected.right,point.x);projected.bottom=Math.min(projected.bottom,point.y);projected.top=Math.max(projected.top,point.y);
   }
  });
  assert.equal(invalid,0);assert(instances>3000);assert(meshes<260);
+ if(name==='lakeside')assert(minWorldY < -3.0&&minWorldY > -3.1,'The deeper soil and water section must be retained');
  if(process.env.SCENE_SHADER_OUTPUT){
   const shaders=[];const expand=s=>s.replace(/#include <(\w+)>/g,(_,name)=>expand(ShaderChunk[name]));
   model.traverse(o=>{if(o.material?.isShaderMaterial)shaders.push({vertex:expand(o.material.vertexShader),fragment:expand(o.material.fragmentShader)})});
