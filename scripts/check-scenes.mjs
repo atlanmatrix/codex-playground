@@ -10,7 +10,7 @@ import assert from 'node:assert/strict';
 const name=process.argv[2]||'lakeside';
 const width=Number(process.argv[3]||1440),height=Number(process.argv[4]||1000);
 const isPreview=process.argv.includes('--preview'),isReduced=process.argv.includes('--reduced');
-assert(['city','lakeside'].includes(name));
+assert(['city','lakeside','courtyard'].includes(name));
 const root=resolve(import.meta.dirname,'..');
 const temp=await mkdtemp(join(tmpdir(),'little-worlds-check-'));
 const realThree=JSON.stringify(pathToFileURL(join(root,'node_modules/three/build/three.module.js')).href);
@@ -23,7 +23,7 @@ const plugin={name:'browser-io-stub',setup(b){
  b.onLoad({filter:/.*/,namespace:'controls'},()=>({contents:controlsStub,loader:'js',resolveDir:root}));
  b.onResolve({filter:/^file:/},a=>({path:a.path,external:true}));
 }};
-await build({entryPoints:[join(root,name==='city'?'src/scene.js':'src/lakeside.js')],outfile:join(temp,'scene.mjs'),bundle:true,platform:'node',format:'esm',plugins:[plugin]});
+await build({entryPoints:[join(root,name==='city'?'src/scene.js':`src/${name}.js`)],outfile:join(temp,'scene.mjs'),bundle:true,platform:'node',format:'esm',plugins:[plugin]});
 globalThis.innerWidth=width;globalThis.innerHeight=height;globalThis.devicePixelRatio=1;
 globalThis.location={search:isPreview?'?preview=1':''};
 globalThis.document={body:{appendChild(){}},createElement(){return{getContext(){return{fillRect(){},strokeRect(){},fillText(){}}}}}};
@@ -33,8 +33,23 @@ try{
  await import(pathToFileURL(join(temp,'scene.mjs')));
  if(!isPreview)globalThis.frame(0);
  const {scene,camera}=globalThis.rendered;
- const model=name==='city'?scene.children.find(o=>o.isGroup):scene.getObjectByName('lakeside-miniature');
+ const model=name==='city'?scene.children.find(o=>o.isGroup):scene.getObjectByName(`${name}-miniature`);
  assert(model);
+ if(name==='courtyard'){
+  const fixtures=['double-air-walker','horse-rider','three-position-waist-twister','double-seated-leg-press','waist-back-massager','upper-body-pulley','parallel-bars'].map(n=>scene.getObjectByName(n));
+  assert(fixtures.every(Boolean),'All seven fitness stations must exist');
+  assert(scene.getObjectByName('residential-facade')&&scene.getObjectByName('parked-bicycle'));
+  assert(testControls.minDistance>=17&&testControls.maxPolarAngle<Math.PI/2);
+  const crowns=[],leaves=[];model.traverse(o=>{if(o.name==='breeze-tree-crown')crowns.push(o);if(o.name==='falling-leaf')leaves.push(o)});
+  assert.equal(crowns.length,3);assert.equal(leaves.length,4);
+  const leafPosition=leaves[0].position.clone();
+  const fixturePoses=fixtures.map(o=>[...o.position.toArray(),...o.rotation.toArray()]);
+  if(!isPreview){for(const ms of [1000,5000,16000,60000])globalThis.frame(ms)}
+  if(!isPreview&&!isReduced){assert(crowns.some(o=>Math.abs(o.rotation.z)>.001));assert(leaves[0].position.distanceTo(leafPosition)>.1)}
+  else assert(leaves[0].position.equals(leafPosition));
+  fixtures.forEach((o,i)=>assert.deepEqual([...o.position.toArray(),...o.rotation.toArray()],fixturePoses[i]));
+  console.log(JSON.stringify({fitnessStations:fixtures.length,trees:crowns.length,fallingLeaves:leaves.length}));
+ }
  if(name==='lakeside'){
   const belly=scene.getObjectByName('breathing-belly');
   const ears=['left-ear','right-ear'].map(n=>scene.getObjectByName(n));
@@ -92,7 +107,7 @@ try{
   console.log(JSON.stringify({lakeFraction:Number((area/256).toFixed(3)),fish:fish.length,species:4,breathing:[smallest,largest],earTwitches:events.length}));
  }
  scene.updateMatrixWorld(true);camera.updateMatrixWorld(true);
- const {Vector3,ShaderChunk}=await import(pathToFileURL(join(root,'node_modules/three/build/three.module.js')));
+ const {Vector3,Matrix4,ShaderChunk}=await import(pathToFileURL(join(root,'node_modules/three/build/three.module.js')));
  const point=new Vector3();let meshes=0,instances=0,vertices=0,invalid=0,minWorldY=Infinity;
  const projected={left:Infinity,right:-Infinity,bottom:Infinity,top:-Infinity};
  model.traverse(o=>{
@@ -100,7 +115,20 @@ try{
   const p=o.geometry.attributes.position;vertices+=p.count;
   for(const n of o.matrixWorld.elements)if(!Number.isFinite(n))invalid++;
   for(const n of p.array)if(!Number.isFinite(n))invalid++;
-  if(o.isInstancedMesh){for(const n of o.instanceMatrix.array)if(!Number.isFinite(n))invalid++;return}
+  if(o.isInstancedMesh){
+   for(const n of o.instanceMatrix.array)if(!Number.isFinite(n))invalid++;
+   if(name==='courtyard'){
+    o.geometry.computeBoundingBox();const bounds=o.geometry.boundingBox,im=new Matrix4(),world=new Matrix4();
+    for(let i=0;i<o.count;i++){
+     o.getMatrixAt(i,im);world.multiplyMatrices(o.matrixWorld,im);
+     for(const x of [bounds.min.x,bounds.max.x])for(const y of [bounds.min.y,bounds.max.y])for(const z of [bounds.min.z,bounds.max.z]){
+      point.set(x,y,z).applyMatrix4(world).project(camera);
+      projected.left=Math.min(projected.left,point.x);projected.right=Math.max(projected.right,point.x);projected.bottom=Math.min(projected.bottom,point.y);projected.top=Math.max(projected.top,point.y);
+     }
+    }
+   }
+   return;
+  }
   for(let i=0;i<p.count;i++){
    point.fromBufferAttribute(p,i).applyMatrix4(o.matrixWorld);minWorldY=Math.min(minWorldY,point.y);point.project(camera);
    projected.left=Math.min(projected.left,point.x);projected.right=Math.max(projected.right,point.x);projected.bottom=Math.min(projected.bottom,point.y);projected.top=Math.max(projected.top,point.y);
@@ -114,7 +142,8 @@ try{
   await writeFile(process.env.SCENE_SHADER_OUTPUT,JSON.stringify(shaders));
  }
  assert(Object.values(projected).every(n=>Math.abs(n)<.98),`Camera crops the scene: ${JSON.stringify(projected)}`);
- if(name==='city'){
+ if(name==='city'||name==='courtyard'){
+  const minimum=name==='city'?-1.241:-1.651,maximum=name==='city'?.091:.121;
   const planes=new Map(['x:-8','x:8','z:-8','z:8'].map(k=>[k,new Map()]));
   const triangle=[new Vector3(),new Vector3(),new Vector3()];
   model.traverse(o=>{
@@ -123,7 +152,7 @@ try{
    for(let i=0;i<n;i+=3){
     triangle.forEach((v,j)=>v.fromBufferAttribute(p,idx?idx.getX(i+j):i+j).applyMatrix4(o.matrixWorld));
     const lo=Math.min(...triangle.map(v=>v.y)),hi=Math.max(...triangle.map(v=>v.y));
-    if(lo < -1.241 || hi > .091 || hi-lo < .01)continue;
+    if(lo < minimum || hi > maximum || hi-lo < .01)continue;
     for(const [key,faces] of planes){const [axis,plane]=key.split(':');if(triangle.every(v=>Math.abs(v[axis]-Number(plane))<1e-5)){const interval=[lo,hi].map(v=>Number(v.toFixed(5)));faces.set(interval.join(':'),interval)}}
    }
   });

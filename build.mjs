@@ -6,7 +6,8 @@ import { createHash } from 'node:crypto';
 const notice = await readFile('node_modules/three/LICENSE', 'utf8');
 const pages = [
   {entry: 'src/scene.js', template: 'src/city.html', output: 'city/index.html'},
-  {entry: 'src/lakeside.js', template: 'src/lakeside.html', output: 'lakeside/index.html'}
+  {entry: 'src/lakeside.js', template: 'src/lakeside.html', output: 'lakeside/index.html'},
+  {entry: 'src/courtyard.js', template: 'src/courtyard.html', output: 'courtyard/index.html'}
 ];
 const versions = new Map();
 for (const page of pages) {
@@ -25,7 +26,8 @@ for (const page of pages) {
   console.log(`Built and syntax-checked ${page.output}`);
 }
 let gallery = await readFile('src/index.html','utf8');
-for (const route of ['city','lakeside']) {
+for (const page of pages) {
+  const route=page.output.split('/')[0];
   if (!gallery.includes(`href="./${route}/"`)) throw new Error(`Missing gallery route: ${route}`);
   gallery=gallery.replace(`src="./${route}/?preview=1"`,()=>`src="./${route}/?preview=1&amp;v=${versions.get(route)}"`);
 }
