@@ -1,0 +1,63 @@
+{
+  "format": "webp",
+  "width": 1280,
+  "height": 720,
+  "scenes": {
+    "city": {
+      "file": "thumbnails/city.webp",
+      "source_sha256": "0f3ff4a815ba7e31537d8280724940e17a0ee88ceca0d3ab7b8d6f485e5a4e6a",
+      "sha256": "961a53a1f1d7b4bf41565f0299df94256d2754a8b1a9d4774b68c84168bbb261",
+      "width": 1280,
+      "height": 720,
+      "bytes": 39680
+    },
+    "lakeside": {
+      "file": "thumbnails/lakeside.webp",
+      "source_sha256": "24ce258eb393a84fa92374740732008f2703ca61a798961f4123b38b31ef9ff6",
+      "sha256": "bf58d48590e66adf0fa997c539f66aa3689b9c4fd4e6c84344927d20a8d4fa53",
+      "width": 1280,
+      "height": 720,
+      "bytes": 25898
+    },
+    "courtyard": {
+      "file": "thumbnails/courtyard.webp",
+      "source_sha256": "6bb9db9e44aa16e9deb751333654bdc1576f23648c17e094cbf4e73094c2b5ef",
+      "sha256": "b3fdbda57cea1415cd412ecffd53a12c27288c0885cf15202aa893b55e73e5e2",
+      "width": 1280,
+      "height": 720,
+      "bytes": 30864
+    },
+    "sakura": {
+      "file": "thumbnails/sakura.webp",
+      "source_sha256": "e01c10b74d1efb0dc83bb32153f3b9600281e11a60fd41801abd3e8ccb490031",
+      "sha256": "3f46a0b3e276c2dda59136e4d76cf3d51decccb54cdce4e9ce5761287cb65620",
+      "width": 1280,
+      "height": 720,
+      "bytes": 29030
+    },
+    "rooftop": {
+      "file": "thumbnails/rooftop.webp",
+      "source_sha256": "645e65ce734aabdfd603c55c52fe6ffe3abbb0bc3cc9ccb4ca53c3f3ffe47008",
+      "sha256": "20a43360433d64e8f5d5891227f7ef3d79f677c42411cab887ba4bf5b6fd1a74",
+      "width": 1280,
+      "height": 720,
+      "bytes": 36516
+    },
+    "rainy": {
+      "file": "thumbnails/rainy.webp",
+      "source_sha256": "da29c7f84a04929593bf9a711efb5f32a5b3662670ed50d9f8b8e29a17b4b6e0",
+      "sha256": "951c0a40fa70221b64ef05865c17b14fa98ca514ceab9298d410e55829909593",
+      "width": 1280,
+      "height": 720,
+      "bytes": 44634
+    },
+    "onsen": {
+      "file": "thumbnails/onsen.webp",
+      "source_sha256": "bad95288a0ea5162474d08490c136f502de9fc47cda8cc7971af5b7e925e9512",
+      "sha256": "eb41f11880ef2a431f218ca6e494d565f203bbc0029db59c5625ecc365fbd2ad",
+      "width": 1280,
+      "height": 720,
+      "bytes": 36946
+    }
+  }
+}
