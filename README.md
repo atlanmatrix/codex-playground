@@ -11,9 +11,9 @@ Seven explorable, toon-shaded Three.js miniatures. Every scene is procedural geo
 
 - `/rainy/` — **雨夜便利店**: a luminous corner shop with stocked aisles, drink refrigerators and a checkout. Falling rain stops above the roof and canopy; irregular puddles reflect the real scene, with independent expanding raindrop rings. Wet parking bays, vending machines, bicycles, overhead cables and quiet neighbors complete the midnight street.
 
-- `/onsen/` — **山中温泉旅馆**: a two-storey timber inn with furnished tatami rooms, futons, tea tables, a tiled roof and a projecting veranda. Pines and early-autumn maples surround a deep outdoor rock bath with real reflections, slowly rising steam, a bamboo spout, cedar bathing buckets and a small brook crossed by an arched footbridge.
+- `/onsen/` — **山中温泉旅馆**: a two-storey timber inn with furnished tatami rooms on an expanded 24×24 mountain base. A covered tea pavilion, longer brook, garden paths, sixteen pines and six early-autumn maples surround the deep outdoor rock bath. Sun and moon icon buttons switch between daylight and a moonlit garden with warm guest-room, veranda and stone-lantern lights; the pool and steam change with the lighting. Add `?time=night` to open directly at night.
 
-The scene routes contain no visible UI. Drag to orbit, scroll or pinch to zoom. The lakeside camera stays above ground and outside the model. Motion respects the system's reduced-motion preference. The thumbnail generator opens `?preview=1` to render each scene once, then saves a static WebP cover. Gallery image URLs carry a content hash, the first row loads eagerly, and subsequent covers load lazily. Fixed image dimensions reserve the cover space while images decode.
+The onsen has two compact sun/moon buttons; the other scene routes contain no visible UI. Drag to orbit, scroll or pinch to zoom. The lakeside camera stays above ground and outside the model. Motion respects the system's reduced-motion preference. The thumbnail generator opens `?preview=1` to render each scene once, then saves a static WebP cover. Gallery image URLs carry a content hash, the first row loads eagerly, and subsequent covers load lazily. Fixed image dimensions reserve the cover space while images decode.
 
 ## Development
 
@@ -28,7 +28,7 @@ npm run dev
 
 Open http://localhost:4173. Sources are in `src/`. The build generates `index.html`, `city/index.html`, `lakeside/index.html`, `courtyard/index.html`, `sakura/index.html`, `rooftop/index.html`, `rainy/index.html`, and `onsen/index.html`. Each scene embeds its bundled JavaScript using literal replacement and validates the final script before writing HTML.
 
-`npm run check` exercises real Three.js geometry and animation with browser I/O stubbed. It checks finite geometry, framing on desktop and mobile, water coverage and diagonal shoreline, fish containment and direction changes, section depth, breathing, ear timing, courtyard equipment, foliage motion, stable base sections, hollow tunnel clearance, railcar/barrier timing, rooftop rail/slab alignment, train wheel alignment, rain coverage over roofs, independent ripple timing, stocked store interiors, bath depth, independently timed steam, roof tiles and drifting leaves, static previews, and reduced motion. It does not replace GPU rendering or browser visual verification.
+`npm run check` exercises real Three.js geometry and animation with browser I/O stubbed. It checks finite geometry, framing on desktop and mobile, water coverage and diagonal shoreline, fish containment and direction changes, section depth, breathing, ear timing, courtyard equipment, foliage motion, stable base sections, hollow tunnel clearance, railcar/barrier timing, rooftop rail/slab alignment, train wheel alignment, rain coverage over roofs, independent ripple timing, stocked store interiors, expanded bath terrain, day/night lighting, independently timed steam, roof tiles and drifting leaves, static previews, and reduced motion. It does not replace GPU rendering or browser visual verification.
 
 ## Updating gallery covers
 

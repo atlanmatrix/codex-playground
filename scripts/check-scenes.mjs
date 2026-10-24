@@ -9,7 +9,7 @@ import assert from 'node:assert/strict';
 
 const name=process.argv[2]||'lakeside';
 const width=Number(process.argv[3]||1440),height=Number(process.argv[4]||1000);
-const isPreview=process.argv.includes('--preview'),isReduced=process.argv.includes('--reduced');
+const isPreview=process.argv.includes('--preview'),isReduced=process.argv.includes('--reduced'),isNight=process.argv.includes('--night');
 assert(['city','lakeside','courtyard','sakura','rooftop','rainy','onsen'].includes(name));
 const root=resolve(import.meta.dirname,'..');
 const temp=await mkdtemp(join(tmpdir(),'little-worlds-check-'));
@@ -28,7 +28,7 @@ const plugin={name:'browser-io-stub',setup(b){
 }};
 await build({entryPoints:[join(root,name==='city'?'src/scene.js':`src/${name}.js`)],outfile:join(temp,'scene.mjs'),bundle:true,platform:'node',format:'esm',plugins:[plugin]});
 globalThis.innerWidth=width;globalThis.innerHeight=height;globalThis.devicePixelRatio=1;
-globalThis.location={search:isPreview?'?preview=1':''};
+globalThis.location={search:'?'+new URLSearchParams({...isPreview?{preview:'1'}:{},...isNight?{time:'night'}:{}})};
 globalThis.document={body:{appendChild(){}},createElement(){return{getContext(){return{fillRect(){},strokeRect(){},fillText(){}}}}}};
 globalThis.matchMedia=()=>({matches:isReduced});
 const listeners=new Map();globalThis.addEventListener=(name,handler)=>listeners.set(name,handler);
@@ -41,8 +41,12 @@ try{
  if(name==='onsen'){
   const bath=scene.getObjectByName('reflective-mountain-onsen'),steam=scene.getObjectByName('rising-onsen-steam'),tiles=scene.getObjectByName('individual-ceramic-roof-tiles'),leaves=scene.getObjectByName('drifting-onsen-maple-leaves');
   assert(bath?.isReflector&&steam?.isInstancedMesh&&tiles?.isInstancedMesh&&leaves?.isInstancedMesh);
-  assert(scene.getObjectByName('mountain-ryokan')&&scene.getObjectByName('ryokan-bathhouse-annex')&&scene.getObjectByName('arched-cedar-footbridge'));
-  assert.equal(steam.count,34);assert(tiles.count>1200);assert.equal(leaves.count,26);
+  assert(scene.getObjectByName('mountain-ryokan')&&scene.getObjectByName('ryokan-bathhouse-annex')&&scene.getObjectByName('arched-cedar-footbridge')&&scene.getObjectByName('forest-tea-pavilion'));
+  assert.equal(model.userData.baseSize,24);assert.equal(model.userData.period,isNight?'night':'day');
+  assert.equal(bath.material.uniforms.night.value,isNight?1:0);
+  const warm=[];scene.traverse(o=>{if(o.name==='onsen-warm-light')warm.push(o)});assert(warm.length>=10);
+  warm.forEach(light=>assert.equal(light.intensity,isNight?light.userData.nightIntensity:light.userData.dayIntensity));
+  assert.equal(steam.count,34);assert(tiles.count>1400);assert.equal(leaves.count,26);
   assert.equal(bath.position.y,.86);
   const phase=steam.geometry.attributes.phase.array,life=steam.geometry.attributes.life.array;
   assert(new Set(phase).size===34&&Math.max(...life)-Math.min(...life)>6,'Steam must rise on independent lifetimes');
@@ -50,13 +54,17 @@ try{
   const changed=before.some((n,i)=>Math.abs(n-leaves.instanceMatrix.array[i])>.001);
   assert.equal(changed,!isPreview&&!isReduced);
   assert(Math.abs(bath.material.uniforms.time.value-(!isPreview&&!isReduced?4.5:0))<1e-8);
-  assert(testControls.minDistance>=23&&testControls.maxPolarAngle<Math.PI/2);
+  assert(testControls.minDistance>=31&&testControls.maxPolarAngle<Math.PI/2);
   const {Raycaster,Vector3}=await import(pathToFileURL(join(root,'node_modules/three/build/three.module.js')));
   scene.updateMatrixWorld(true);
   const ray=new Raycaster(new Vector3(3,.70,2.85),new Vector3(0,-1,0));
   const hits=ray.intersectObject(scene.getObjectByName('onsen-static-landscape'),true).filter(h=>h.object.isMesh&&!h.object.material.transparent);
   assert(hits.length&&hits[0].point.y<.27,'The bath must have real depth, without terrain crossing the water');
-  console.log(JSON.stringify({roofTiles:tiles.count,steamWisps:steam.count,driftingLeaves:leaves.count,submergedFloor:hits[0].point.y}));
+  for(const [x,z] of [[-11.3,10.5],[11.3,10.5],[10.5,-10.7]]){
+   const expandedRay=new Raycaster(new Vector3(x,20,z),new Vector3(0,-1,0));
+   assert(expandedRay.intersectObject(scene.getObjectByName('onsen-static-landscape'),true).some(h=>h.object.isMesh),'The added perimeter must have actual terrain');
+  }
+  console.log(JSON.stringify({baseSize:24,period:model.userData.period,warmLights:warm.length,roofTiles:tiles.count,steamWisps:steam.count,driftingLeaves:leaves.count,submergedFloor:hits[0].point.y}));
  }
  if(name==='rainy'){
   const rain=scene.getObjectByName('falling-rain'),ripples=scene.getObjectByName('independent-rain-ripples'),water=scene.getObjectByName('rain-reflecting-puddles'),goods=scene.getObjectByName('store-products');
@@ -216,7 +224,7 @@ try{
   for(const n of p.array)if(!Number.isFinite(n))invalid++;
   if(o.isInstancedMesh){
    for(const n of o.instanceMatrix.array)if(!Number.isFinite(n))invalid++;
-   if(name==='courtyard'||name==='sakura'||name==='rooftop'){
+   if(name==='courtyard'||name==='sakura'||name==='rooftop'||name==='onsen'){
     o.geometry.computeBoundingBox();const bounds=o.geometry.boundingBox,im=new Matrix4(),world=new Matrix4();
     for(let i=0;i<o.count;i++){
      o.getMatrixAt(i,im);world.multiplyMatrices(o.matrixWorld,im);
