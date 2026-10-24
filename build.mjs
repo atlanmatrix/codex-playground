@@ -7,7 +7,8 @@ const notice = await readFile('node_modules/three/LICENSE', 'utf8');
 const pages = [
   {entry: 'src/scene.js', template: 'src/city.html', output: 'city/index.html'},
   {entry: 'src/lakeside.js', template: 'src/lakeside.html', output: 'lakeside/index.html'},
-  {entry: 'src/courtyard.js', template: 'src/courtyard.html', output: 'courtyard/index.html'}
+  {entry: 'src/courtyard.js', template: 'src/courtyard.html', output: 'courtyard/index.html'},
+  {entry: 'src/sakura.js', template: 'src/sakura.html', output: 'sakura/index.html'}
 ];
 const versions = new Map();
 for (const page of pages) {

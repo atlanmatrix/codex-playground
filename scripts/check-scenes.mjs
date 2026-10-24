@@ -10,7 +10,7 @@ import assert from 'node:assert/strict';
 const name=process.argv[2]||'lakeside';
 const width=Number(process.argv[3]||1440),height=Number(process.argv[4]||1000);
 const isPreview=process.argv.includes('--preview'),isReduced=process.argv.includes('--reduced');
-assert(['city','lakeside','courtyard'].includes(name));
+assert(['city','lakeside','courtyard','sakura'].includes(name));
 const root=resolve(import.meta.dirname,'..');
 const temp=await mkdtemp(join(tmpdir(),'little-worlds-check-'));
 const realThree=JSON.stringify(pathToFileURL(join(root,'node_modules/three/build/three.module.js')).href);
@@ -35,6 +35,34 @@ try{
  const {scene,camera}=globalThis.rendered;
  const model=name==='city'?scene.children.find(o=>o.isGroup):scene.getObjectByName(`${name}-miniature`);
  assert(model);
+ if(name==='sakura'){
+  const train=scene.getObjectByName('local-railcar'),petals=scene.getObjectByName('drifting-cherry-petals');
+  const booms=[],crowns=[];model.traverse(o=>{if(o.name==='crossing-boom')booms.push(o);if(o.name==='cherry-blossom-crown')crowns.push(o)});
+  assert(train&&petals&&scene.getObjectByName('sakura-platform')&&scene.getObjectByName('timber-station-house'));
+  assert.equal(booms.length,2);assert.equal(crowns.length,8);assert(petals.count>=150);
+  assert(testControls.minDistance>=19&&testControls.maxPolarAngle<Math.PI/2);
+  train.traverse(o=>{if(o.isMesh)assert.equal(o.material.clippingPlanes?.length,2,'The railcar must be clipped inside the base')});
+  const before=Array.from(petals.instanceMatrix.array.slice(0,16));let crossings=0;
+  if(!isPreview){
+   for(let ms=100;ms<=64000;ms+=100){
+    globalThis.frame(ms);
+    if(train.visible&&train.position.x+1.8>2.8&&train.position.x-1.8<5.0){
+     assert(booms.every(g=>Math.abs(g.rotation.z)<.01)&&train.userData.crossingProtected,'Crossing must close before the railcar enters');crossings++;
+    }
+   }
+  }
+  if(!isPreview&&!isReduced){assert(crossings>40);assert(before.some((a,i)=>Math.abs(a-petals.instanceMatrix.array[i])>.01))}
+  else assert.deepEqual(Array.from(petals.instanceMatrix.array.slice(0,16)),before);
+  assert(!train.visible,'Preview and the end of the loop should show the empty station');
+  const {Raycaster,Vector3}=await import(pathToFileURL(join(root,'node_modules/three/build/three.module.js')));
+  scene.updateMatrixWorld(true);
+  for(const side of [-1,1])for(const height of [1.2,3.55]){
+   const ray=new Raycaster(new Vector3(side*6,height,0),new Vector3(side,0,0));
+   const hits=ray.intersectObject(scene.getObjectByName('static-station'),true).filter(h=>h.object.isMesh);
+   assert(hits.length&&hits[0].distance>2.5&&hits[0].distance<3.1,`Tunnel clearance ${side}/${height}: ${JSON.stringify(hits.slice(0,3).map(h=>({distance:h.distance,point:h.point.toArray(),color:h.object.material.color?.getHexString()})))}`);
+  }
+  console.log(JSON.stringify({cherryTrees:crowns.length,petals:petals.count,protectedCrossingSamples:crossings}));
+ }
  if(name==='courtyard'){
   const fixtures=['double-air-walker','horse-rider','three-position-waist-twister','double-seated-leg-press','waist-back-massager','upper-body-pulley','parallel-bars'].map(n=>scene.getObjectByName(n));
   assert(fixtures.every(Boolean),'All seven fitness stations must exist');
@@ -111,13 +139,15 @@ try{
  const point=new Vector3();let meshes=0,instances=0,vertices=0,invalid=0,minWorldY=Infinity;
  const projected={left:Infinity,right:-Infinity,bottom:Infinity,top:-Infinity};
  model.traverse(o=>{
-  if(!o.isMesh)return;meshes++;if(o.isInstancedMesh)instances+=o.count;
+  if(!o.isMesh)return;
+  if(name==='sakura'){for(let p=o;p&&p!==model;p=p.parent)if(!p.visible)return;}
+  meshes++;if(o.isInstancedMesh)instances+=o.count;
   const p=o.geometry.attributes.position;vertices+=p.count;
   for(const n of o.matrixWorld.elements)if(!Number.isFinite(n))invalid++;
   for(const n of p.array)if(!Number.isFinite(n))invalid++;
   if(o.isInstancedMesh){
    for(const n of o.instanceMatrix.array)if(!Number.isFinite(n))invalid++;
-   if(name==='courtyard'){
+   if(name==='courtyard'||name==='sakura'){
     o.geometry.computeBoundingBox();const bounds=o.geometry.boundingBox,im=new Matrix4(),world=new Matrix4();
     for(let i=0;i<o.count;i++){
      o.getMatrixAt(i,im);world.multiplyMatrices(o.matrixWorld,im);
