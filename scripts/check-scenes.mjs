@@ -250,7 +250,7 @@ try{
   for(const [x,z] of [[15.2,14.5],[-14.5,14.5],[14.5,-14.0]]){
    const ray=new Raycaster(new Vector3(x,14,z),new Vector3(0,-1,0));assert(ray.intersectObject(scene.getObjectByName('study-static-interior'),true).some(h=>h.object.isMesh),'The complete square floor must exist');
   }
-  console.log(JSON.stringify({baseSize:32,books:books.count,keyboardKeys:keys.count,openWindowRadians:sash.rotation.y,curtains:cloths.length}));
+  console.log(JSON.stringify({coreBaseSize:32,books:books.count,keyboardKeys:keys.count,openWindowRadians:sash.rotation.y,curtains:cloths.length}));
  }
  if(name==='onsen'){
   const bath=scene.getObjectByName('reflective-mountain-onsen'),steam=scene.getObjectByName('rising-onsen-steam'),tiles=scene.getObjectByName('individual-ceramic-roof-tiles'),leaves=scene.getObjectByName('drifting-onsen-maple-leaves');
@@ -289,7 +289,7 @@ try{
    assert(((o.position.x-4.5)/4.5)**2+((o.position.z-5.0)/3.25)**2>1.05,'Lanterns and bathing buckets must stay on the new shore');
   }});
   if(isNight){assert(Math.max(...warm.map(l=>l.intensity))<3,'Night lamps must remain dim');assert(warm.every(l=>l.color.r>l.color.g&&l.color.g>l.color.b*2),'Night lamps must be orange-yellow');}
-  console.log(JSON.stringify({baseSize:32,bathArea,terrainDrop:upper-lower,period:model.userData.period,warmLights:warm.length,roofTiles:tiles.count,steamWisps:steam.count,driftingLeaves:leaves.count,submergedFloor:hits[0].point.y}));
+  console.log(JSON.stringify({coreBaseSize:32,bathArea,terrainDrop:upper-lower,period:model.userData.period,warmLights:warm.length,roofTiles:tiles.count,steamWisps:steam.count,driftingLeaves:leaves.count,submergedFloor:hits[0].point.y}));
  }
  if(name==='rainy'){
   const rain=scene.getObjectByName('falling-rain'),ripples=scene.getObjectByName('independent-rain-ripples'),water=scene.getObjectByName('rain-reflecting-puddles'),goods=scene.getObjectByName('store-products');
@@ -435,6 +435,13 @@ try{
   for(let i=0;i<idx.count;i+=3){const ids=[idx.getX(i),idx.getX(i+1),idx.getX(i+2)];const [a,b,c]=ids.map(i=>[p.getX(i),p.getY(i)]);area+=Math.abs((b[0]-a[0])*(c[1]-a[1])-(b[1]-a[1])*(c[0]-a[0]))/2;}
   assert(area/256>.73&&area/256<.77,`Lake fraction ${area/256}`);
   console.log(JSON.stringify({lakeFraction:Number((area/256).toFixed(3)),fish:fish.length,species:4,breathing:[smallest,largest],earTwitches:events.length}));
+ }
+ if(expanded){
+  const extraFish=scene.getObjectByName('expanded-fish-schools');
+  if(extraFish){assert.equal(extraFish.count,name==='ocean'?288:192);const a=extraFish.instanceMatrix.array;for(let i=0;i<extraFish.count;i++){const x=a[i*16+12],y=a[i*16+13],z=a[i*16+14];assert(Math.abs(x)<62&&Math.abs(z)<62&&y<0&&y>(name==='ocean'?-5.5:-2.5),'Additional schools must remain inside the water volume')}}
+  if(name==='ocean'){const extras=[];model.traverse(o=>{if(o.name==='expanded-breaching-dolphin')extras.push(o)});assert.equal(extras.length,6);assert(model.userData.expansion.corals>60)}
+  const moving=['expanded-weather','expanded-fish-schools','expanded-neighborhood-traffic'].map(n=>scene.getObjectByName(n)).filter(Boolean);
+  if(!isPreview&&moving.length){const before=moving.map(o=>Array.from(o.instanceMatrix.array));globalThis.frame(231000);moving.forEach((o,i)=>{const after=Array.from(o.instanceMatrix.array);if(isReduced)assert.deepEqual(after,before[i]);else assert(after.some((v,j)=>Math.abs(v-before[i][j])>.01),'New elements must animate across the expanded world')})}
  }
  scene.updateMatrixWorld(true);camera.updateMatrixWorld(true);
  const {Vector3,Matrix4,ShaderChunk}=await import(pathToFileURL(join(root,'node_modules/three/build/three.module.js')));

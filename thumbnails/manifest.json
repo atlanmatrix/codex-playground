@@ -93,11 +93,11 @@
     },
     "ocean": {
       "file": "thumbnails/ocean.webp",
-      "source_sha256": "c2a35396b260d521940ba957dff904cb939b231fed477821200ecc9a5bf668b7",
-      "sha256": "8fbd2cc5443f88810ffd4f0a5b30748379bfb9a86344ca8cc78a68fa0a7c9dd2",
+      "source_sha256": "4f130941f268bb8a66639681cc825a1318444f8497b60dbc16729397bc767920",
+      "sha256": "1341de95fbf9a939e44cddce94b975a581a71c0ea8f00d177ba85feeef9cfdb2",
       "width": 1280,
       "height": 720,
-      "bytes": 14750
+      "bytes": 13334
     }
   }
 }

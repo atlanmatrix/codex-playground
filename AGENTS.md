@@ -1,6 +1,6 @@
 # Little Worlds scene conventions
 
-- New scenes use a complete **32 × 32 square base** by default. Import `DEFAULT_BASE_SIZE` from `src/scene-defaults.js`; change a new scene's size only when the user asks. Do not resize existing scenes implicitly.
+- New scenes use a complete **128 × 128 square base** by default. Import `DEFAULT_BASE_SIZE` from `src/scene-defaults.js`; change a new scene's size only when the user asks. Do not resize existing scenes implicitly.
 - Keep the procedural Three.js miniature / anime-inspired toon style and drag-to-orbit, wheel/pinch-to-zoom interaction. Frame the complete base on desktop and mobile; keep the camera above ground and outside the model.
 - New scenes have no people or overlaid UI unless requested. Physical monitor screens, signs, toys and books belong in the model.
 - Gallery cards use generated, versioned WebP thumbnails. Never embed scene iframes or initialize WebGL on the list page.

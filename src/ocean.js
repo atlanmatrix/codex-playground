@@ -1,7 +1,8 @@
+import {expandWorld,expandedFit} from './world-expansion.js';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { DEFAULT_BASE_SIZE } from './scene-defaults.js';
+import { CORE_BASE_SIZE } from './scene-defaults.js';
 
 const preview=new URLSearchParams(location.search).has('preview');
 const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -12,10 +13,10 @@ renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFi
 document.body.appendChild(renderer.domElement);renderer.domElement.setAttribute('role','img');renderer.domElement.setAttribute('aria-label','鱼群穿过珊瑚与海草，三只海豚轮流跃出海面；拖拽旋转，滚轮或双指缩放');
 const camera=new THREE.PerspectiveCamera(34,Math.max(1,innerWidth)/Math.max(1,innerHeight),.3,350);
 const controls=new OrbitControls(camera,renderer.domElement);controls.target.set(0,-1.5,0);controls.enableDamping=true;controls.enabled=!preview;controls.enablePan=false;controls.minDistance=42;controls.maxDistance=260;controls.minPolarAngle=.24;controls.maxPolarAngle=Math.PI*.44;
-const fit=aspect=>Math.max(79,84/aspect);const direction=new THREE.Vector3(.64,.82,.86).normalize();camera.position.copy(direction.multiplyScalar(fit(camera.aspect))).add(controls.target);camera.lookAt(controls.target);
+const fit=aspect=>expandedFit(aspect);const direction=new THREE.Vector3(.64,.82,.86).normalize();camera.position.copy(direction.multiplyScalar(fit(camera.aspect))).add(controls.target);camera.lookAt(controls.target);
 scene.add(new THREE.HemisphereLight(0xe2f8ff,0x497e92,2.0));
 const sun=new THREE.DirectionalLight(0xfff3d9,2.7);sun.position.set(-18,24,12);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);Object.assign(sun.shadow.camera,{left:-24,right:24,top:24,bottom:-24,near:1,far:70});sun.shadow.normalBias=.035;scene.add(sun);
-const model=new THREE.Group();model.name='ocean-miniature';model.userData.baseSize=DEFAULT_BASE_SIZE;scene.add(model);
+const model=new THREE.Group();model.name='ocean-miniature';model.userData.baseSize=CORE_BASE_SIZE;scene.add(model);
 const scenery=new THREE.Group();scenery.name='coral-reef-and-seabed';model.add(scenery);
 const ramp=new THREE.DataTexture(new Uint8Array([85,150,205,240,255]),5,1,THREE.RedFormat);ramp.needsUpdate=true;ramp.minFilter=ramp.magFilter=THREE.NearestFilter;
 const toon=color=>new THREE.MeshToonMaterial({color,gradientMap:ramp});
@@ -33,7 +34,7 @@ function batch(parent){
 let seed=66419;const random=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296};
 const R=(a,b)=>a+random()*(b-a),V=(x,y,z)=>new THREE.Vector3(x,y,z);
 const sand=toon('#a2c9c3'),rock=toon('#7f9d9f'),rockLight=toon('#afc5b6'),coralPink=toon('#d995a2'),coralOrange=toon('#dea16e'),coralPurple=toon('#a798bd'),weedMat=toon('#719f87');
-const HALF=DEFAULT_BASE_SIZE/2;
+const HALF=CORE_BASE_SIZE/2;
 const bed=(x,z)=>-6+.13*Math.sin(x*.55+z*.3)+.12*Math.cos(z*.65);
 model.userData.seabedHeight=bed;
 box(0,-6.85,0,32,.8,32,rock);box(0,-6.4,0,32,.2,32,sand);
@@ -166,6 +167,8 @@ function animate(t){
  bubbleData.forEach((b,i)=>{dummy.position.set(b.x+.1*Math.sin(t+b.p*6),-5.4+((b.p+t*.045)%1)*5.0,b.z);dummy.rotation.set(0,0,0);dummy.scale.setScalar(b.s);dummy.updateMatrix();bubbles.setMatrixAt(i,dummy.matrix)});bubbles.instanceMatrix.needsUpdate=true;
 }
 animate(0);let start=null;
-function renderFrame(ms){if(start===null)start=ms;if(!preview&&!reduced)animate((ms-start)/1000);controls.update();renderer.render(scene,camera)}
+const expandedWorld=expandWorld({kind:'ocean',scene,model,camera,controls,renderer,preview,reduced,wave,dolphinPath});
+function renderFrame(ms){
+ expandedWorld.update(start===null?0:(ms-start)*.001);if(start===null)start=ms;if(!preview&&!reduced)animate((ms-start)/1000);controls.update();renderer.render(scene,camera)}
 if(preview)renderFrame(0);else renderer.setAnimationLoop(renderFrame);
 addEventListener('resize',()=>{if(innerWidth<1||innerHeight<1)return;const aspect=innerWidth/innerHeight;camera.position.sub(controls.target).multiplyScalar(fit(aspect)/fit(camera.aspect)).add(controls.target);camera.aspect=aspect;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);if(preview)renderFrame(0)});
