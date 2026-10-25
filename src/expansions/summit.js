@@ -1,0 +1,23 @@
+import {detailedWorld,expandedFit} from './kit.js';export {expandedFit};
+const peak=(x,z,cx,cz,rx,rz,h)=>h*Math.pow(Math.max(0,1-Math.hypot((x-cx)/rx,(z-cz)/rz)),1.12);
+const mountain=(x,z)=>2+Math.max(peak(x,z,-29,-29,34,31,70),peak(x,z,24,-36,30,27,62),peak(x,z,38,8,27,35,44),peak(x,z,-40,29,25,26,25))+.25*Math.sin(x*.8+z*.4);
+export function expandWorld(options){return detailedWorld(options,{intent:'陡峭雪峰、岩脊与沿真实坡面组织的高山滑雪地形',seed:77321,height:mountain,blend:7,color(x,z,y){const dx=mountain(x+.4,z)-mountain(x-.4,z),dz=mountain(x,z+.4)-mountain(x,z-.4);return y>16&&Math.hypot(dx,dz)>1.05?(dx<0?'#8296ad':'#afbecc'):y>38?'#edf4fa':'#dfeaf1'},build(k){
+ const {THREE,land,landmark,group,box,cyl,rod,line,rock,ell,sign,roof,stair,tree,plant,path,motions,stats}=k;stats.peakHeight=mountain(-29,-29);stats.skiRuns=2;stats.plantTypes=[];
+ function run(name,points,width,color){const c=new THREE.CatmullRomCurve3(points.map(([x,z])=>new THREE.Vector3(x,0,z))),p=[];for(let i=0;i<=150;i++){const q=c.getPoint(i/150);p.push([q.x,land(q.x,q.z)+.10,q.z])}const curve=path(p,width,'#f4f8fa');landmark(name,points[0][0],points[0][1]);for(let t=.03;t<.98;t+=.065){const q=curve.getPointAt(t),v=curve.getTangentAt(t),n=new THREE.Vector3(v.z,0,-v.x).normalize();for(const s of [-1,1]){const x=q.x+n.x*s*width*.55,z=q.z+n.z*s*width*.55,y=land(x,z);cyl(x,y+.8,z,.035,1.6,color);box(x,y+1.3,z,.5,.45,.025,color,null,[0,Math.atan2(v.x,v.z),0])}}return curve}
+ run('blue-panorama-ski-run',[[-28,-28],[-15,-29],[0,-37],[18,-29],[32,-10],[44,12],[40,34]],5.8,'#789faf');
+ run('red-ridge-ski-run',[[24,-35],[37,-28],[29,-19],[39,-3],[46,14],[43,35]],4.2,'#b87a75');
+ const liftPoints=[],base=[48,37],top=[26,-35];for(let i=0;i<=7;i++){const t=i/7,x=base[0]+(top[0]-base[0])*t,z=base[1]+(top[1]-base[1])*t,y=land(x,z);liftPoints.push(new THREE.Vector3(x,y+7,z));
+  for(const s of [-1,1])rod([x+s*.7,y,z],[x+s*.15,y+6.7,z],.14,'#8b9da6');rod([x-2,y+6.7,z],[x+2,y+6.7,z],.13,'#a7b5b9');for(const s of [-1,1])cyl(x+s*1.1,y+6.9,z,.27,.12,'#647e8f',null,[Math.PI/2,0,0]);
+ }
+ stats.landmarks.push('chairlift-with-pulleys');
+ const cable=new THREE.CatmullRomCurve3(liftPoints),cablePts=[];for(let i=0;i<=130;i++)cablePts.push(cable.getPoint(i/130).toArray());for(const s of [-1,1])line(cablePts.map(p=>[p[0]+s,p[1],p[2]]),.022,'#738c9b');
+ for(let i=0;i<18;i++){const chair=group('moving-ski-chair',0,0,0,0,true);rod([0,0,0],[0,-1.8,0],.035,'#7e969d',chair);box(0,-1.9,0,1.3,.10,.7,'#83a6ae',chair);box(0,-1.6,-.32,1.3,.6,.08,'#8fb5ba',chair);line([[-.65,-1.8,.35],[-.65,-1.4,.35],[.65,-1.4,.35],[.65,-1.8,.35]],.025,'#879da2',chair);motions.push(t=>{const u=(i/18+t*.006)%1,reverse=u>.5,q=cable.getPointAt(reverse?2-2*u:2*u);chair.position.copy(q);chair.position.x+=reverse?-1:1;chair.rotation.y=reverse?Math.PI:0})}
+ const lodge=landmark('timber-ski-lodge',39,43),w=15,d=9;box(0,-.7,0,w+1,1.4,d+2,'#9aa7ae',lodge);box(0,2,0,w,4,d,'#b5a58b',lodge);for(let j=0;j<18;j++)box(-w/2+j*.85,2,d/2+.03,.08,3.8,.08,'#8e826f',lodge);roof(w,d,3.5,4.2,lodge,'#8da3b0');for(const x of [-4.8,-1.6,1.6,4.8]){box(x,2.1,4.57,2.1,2.2,.1,'#a4c8d5',lodge);box(x,2.1,4.66,.09,2.3,.12,'#d9e3df',lodge)}box(0,.1,6,17,.2,3,'#b9b3a2',lodge);sign('山脊小屋 / RIDGE',0,3.65,4.7,12,.65,'#718e9a',lodge);stair(0,-.2,7,3,5,.16,.35,lodge,Math.PI);
+ for(let j=0;j<12;j++){box(-7+j*.42,1.2,6.5,.22,2.2,.07,j%2?'#aa8678':'#86a2b3',lodge,[0,0,.08]);box(-7+j*.42,1.15,6.6,.14,.3,.12,'#d5dedc',lodge)}
+ const patrol=landmark('rescue-sled-and-trail-map',51,42);box(0,.4,0,2.7,.3,.8,'#ac7e70',patrol);for(const s of [-1,1])line([[-1.4,.15,s*.38],[1.35,.15,s*.38],[1.7,.45,s*.38]],.045,'#8f9da0',patrol);sign('蓝线 / 全景道    红线 / 山脊道',0,2.1,-1.2,7,1.7,'#6c929c',patrol);for(const s of [-1,1])cyl(s*2.6,1,-1.2,.075,2,'#99a7ab',patrol);
+ for(const [x,z] of [[-53,14],[-48,32],[-35,47],[-25,49],[13,48],[23,44],[54,24],[-57,-3]])tree('pine',x,z,k.R(.65,1.05));
+ const species=['juniper','dry-willow','rhododendron','saxifrage','grass'];for(let i=0;i<65;i++){const x=k.R(-58,58),z=k.R(-56,53);if(Math.max(Math.abs(x),Math.abs(z))<20||land(x,z)>31||Math.abs(x-43)<7)continue;plant(species[i%5],x,z,k.R(.6,1.2));rock(x+.8,land(x+.8,z)+.2,z,.7,.45,.5,'#aabac8')}
+ for(const [x,z] of [[-40,-22],[-23,-36],[22,-43],[39,-13]])for(let i=0;i<12;i++){const xx=x+k.R(-3,3),zz=z+k.R(-4,4);rock(xx,land(xx,zz)+.3,zz,k.R(.5,1.7),k.R(.3,1.1),k.R(.5,1.4),'#8d9eaf')}
+ for(let i=0;i<20;i++){const x=24+i*.65,z=30,y=land(x,z);cyl(x,y+.7,z,.04,1.4,'#9f9480');for(let j=0;j<3;j++)box(x,y+.35+j*.3,z,.55,.12,.06,'#c3b79d')}
+ stats.landmarks.push('snow-fence','exposed-rock-ridges','diverse-alpine-shrubs');k.weather('snow',1800);
+ }});}

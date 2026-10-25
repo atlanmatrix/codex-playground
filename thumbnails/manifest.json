@@ -77,11 +77,11 @@
     },
     "summit": {
       "file": "thumbnails/summit.webp",
-      "source_sha256": "192bd3660cf5e3a2e64962c2d0a1f38fe5724e38cfba02a9ee68504d8366ba12",
-      "sha256": "f8686c39d03f268202a692e3b94cc285b7088e2f59e1ea08d4335dd1c2cd5fae",
+      "source_sha256": "81383c5b269a4c44611d3173f0d0e250ea43a3114d4c2d17b7e01a7a87ddae4b",
+      "sha256": "d0e6a17846d2f86ed270ecd4ebef0e67f8ccbf3d6c9b1a7c74f1e523c067305f",
       "width": 1280,
       "height": 720,
-      "bytes": 21784
+      "bytes": 19038
     },
     "desert": {
       "file": "thumbnails/desert.webp",

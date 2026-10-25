@@ -95,3 +95,5 @@ Each completed expansion retains its original detailed core and adds a contiguou
 Expansions are redesigned around each original scene’s intent, using varied, detailed landmarks instead of generic grids. Every scene is verified, committed and immediately pushed before the next scene begins.
 
 - Intersection: four-lane merge approaches, a collector boulevard with four girder bridges, service alley, cycleway, bus shelters, two stopping buses, cars/taxis/vans/trucks, loading bays and detailed mixed-use corner shops.
+
+- Summit: 70-unit angular peaks and rock ridges, two slope-following graded ski runs, pulley-equipped chairlift with moving empty chairs, timber lodge, ski racks, rescue sled, trail map and five alpine shrub forms.
