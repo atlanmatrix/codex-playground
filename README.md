@@ -79,3 +79,5 @@ Each completed expansion retains its original detailed core and adds a contiguou
 - **Rainy**: expanded to 128×128 with a wider wet night neighborhood, lit shops and windows, street lights and roof-aware rainfall.
 
 - **Onsen**: expanded to 128×128 with a mountain woodland, additional timber guest houses, stone paths, rest terraces and lanterns.
+
+- **Study**: expanded to 128×128 with a connected library and editing studio with thousands of books, workstations, reading lounges and plants.

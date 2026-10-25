@@ -1,20 +1,21 @@
+import {expandWorld,expandedFit} from './world-expansion.js';
 import * as THREE from 'three';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 import {RoundedBoxGeometry} from 'three/addons/geometries/RoundedBoxGeometry.js';
-import {DEFAULT_BASE_SIZE} from './scene-defaults.js';
+import {CORE_BASE_SIZE} from './scene-defaults.js';
 
 const params=new URLSearchParams(location.search),preview=params.has('preview'),reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
 let periodMode=['day','night'].includes(params.get('time'))?params.get('time'):'auto';
 const localPeriod=date=>date.getHours()>=6&&date.getHours()<18?'day':'night';
-const BASE=DEFAULT_BASE_SIZE,H=BASE/2,iw=Math.max(1,innerWidth),ih=Math.max(1,innerHeight);
+const BASE=CORE_BASE_SIZE,H=BASE/2,iw=Math.max(1,innerWidth),ih=Math.max(1,innerHeight);
 const scene=new THREE.Scene(),renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,powerPreference:'high-performance'});
 renderer.setPixelRatio(Math.min(devicePixelRatio,preview?.85:1.6));renderer.setSize(iw,ih);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=.99;
 renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.shadowMap.autoUpdate=!preview&&!reduced;renderer.shadowMap.needsUpdate=true;
 document.body.appendChild(renderer.domElement);renderer.domElement.setAttribute('role','img');renderer.domElement.setAttribute('aria-label','剪辑师的明亮书房，拖拽旋转，滚轮或双指缩放');
 const camera=new THREE.PerspectiveCamera(33,iw/ih,.4,420),controls=new OrbitControls(camera,renderer.domElement);
 controls.target.set(0,3.6,0);controls.enableDamping=!reduced;controls.dampingFactor=.065;controls.enabled=!preview;controls.enablePan=false;controls.minDistance=40;controls.maxDistance=300;controls.minPolarAngle=.22;controls.maxPolarAngle=Math.PI*.445;
-const fit=a=>Math.max(BASE*1.875,BASE*2.16/a),distance=fit(camera.aspect);camera.position.set(distance*.64,3.6+distance*.73,distance*.88);camera.lookAt(controls.target);
+const fit=a=>expandedFit(a),distance=fit(camera.aspect);camera.position.set(distance*.64,3.6+distance*.73,distance*.88);camera.lookAt(controls.target);
 const skyLight=new THREE.HemisphereLight('#e9f4f0','#ac977d',1.85);scene.add(skyLight);
 const sun=new THREE.DirectionalLight('#fff1cb',3.15);sun.position.set(5,26,-21);sun.castShadow=true;sun.shadow.mapSize.set(preview?1024:2048,preview?1024:2048);Object.assign(sun.shadow.camera,{left:-24,right:24,top:25,bottom:-23,near:.5,far:80});sun.shadow.normalBias=.025;sun.shadow.bias=-.00012;sun.shadow.radius=2;scene.add(sun);
 const fill=new THREE.DirectionalLight('#d4e9e8',.72);fill.position.set(14,15,12);scene.add(fill);
@@ -399,7 +400,9 @@ function animate(t){
 }
 syncPeriod(new Date(),true);animate(0);let start=null,lastMs=-Infinity,renderedOnce=false,lastClockTick=-1;
 const lastPosition=new THREE.Vector3(),lastQuaternion=new THREE.Quaternion();
+const expandedWorld=expandWorld({kind:'study',scene,model,camera,controls,renderer,preview,reduced});
 function renderFrame(ms){
+ expandedWorld.update(ms*.001);
  if(start===null)start=ms;controls.update();
  if(!preview&&renderedOnce&&ms-lastMs<32)return;
  const now=new Date(),clockTick=Math.floor(now.getTime()/100);syncPeriod(now);
