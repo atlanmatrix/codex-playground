@@ -46,6 +46,7 @@ try{
  if(expanded){
   if(model.userData.expansion.detailVersion===2){assert(model.userData.expansion.landmarks.length>=3);if(name==='summit'){assert(model.userData.expansion.peakHeight>60&&model.userData.expansion.skiRuns===2);assert(model.userData.expansion.plantTypes.length>=5)}if(name==='intersection'){assert(model.userData.expansion.vehicleTypes.includes('bus')&&model.userData.expansion.vehicleTypes.includes('truck'));assert.equal(model.userData.expansion.roadTypes.length,4)}}
   if(name==='rainy')assert(scene.fog.density<=.001,'Fog must leave the enlarged night district visible');
+  if(name==='desert'&&model.userData.expansion.detailVersion===2){assert(model.userData.expansion.duneHeight>20);assert(model.userData.expansion.plantTypes.length>=6)}
   const extension=scene.getObjectByName(`expanded-${name}-world`);assert(extension&&extension.userData.staticInstances>800);
   const terrain=extension.getObjectByName('expanded-terrain-ring');terrain.geometry.computeBoundingBox();const bounds=terrain.geometry.boundingBox;
   assert.equal(bounds.min.x,-64);assert.equal(bounds.max.x,64);assert.equal(bounds.min.z,-64);assert.equal(bounds.max.z,64);

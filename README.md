@@ -113,3 +113,5 @@ Expansions are redesigned around each original scene’s intent, using varied, d
 - Onsen: a ravine landscape with post-supported timber guest houses, shoji lattices, hillside stepping paths, creek bridge, secluded rock bath and cedar tubs, bamboo/cedar/pine/maple layers, lanterns and steam.
 
 - Study: an asymmetric creative home with a stocked mezzanine library and stair, color/audio suite with faders, racks and speaker cones, cyclorama/camera/softboxes, reading sofas, vinyl console and espresso counter replaces copied work pods.
+
+- Desert: asymmetric high dunes with slope-following ripple ribbons, stratified mesa and undercut hoodoos, gravel wadi and salt pan, palm spring, rope well, woven rest shade, ribbed/flowering cactus species and rolling tumbleweeds.
