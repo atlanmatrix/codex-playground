@@ -1,4 +1,4 @@
-import {expandWorld,expandedFit} from './world-expansion.js';
+import {expandWorld,expandedFit} from './expansions/rooftop.js';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
@@ -371,7 +371,7 @@ for(let i=0;i<3;i++){
 
 // Two coupled commuter cars run along the roof, clipped cleanly at the model ends.
 const train=new THREE.Group();train.name='rooftop-commuter-train';train.position.set(-5.05,3.36,-4.9);train.rotation.y=-Math.PI/2;model.add(train);
-const clipPlanes=[new THREE.Plane(v(0,0,1),8.84),new THREE.Plane(v(0,0,-1),8.84)];
+const clipPlanes=[new THREE.Plane(v(0,0,1),64),new THREE.Plane(v(0,0,-1),64)];
 const trainMat={};
 for(const [key,mat] of Object.entries({body:m.white,band:m.blue,roof:m.roof,glass:m.window,dark:m.dark,steel:m.steel})){
  const clone=mat.clone();clone.clippingPlanes=clipPlanes;clone.clipShadows=true;trainMat[key]=clone;
@@ -426,7 +426,7 @@ for(const {mat,gs} of batches.values()){
 }
 if(lineParts.length){const g=mergeGeometries(lineParts,false);scenery.add(new THREE.LineSegments(g,edgeMat));lineParts.forEach(g=>g.dispose());}
 function animate(t){
- const position=-13+(t*1.55+8.1)%26;train.position.z=position;train.visible=position>-12.1&&position<12.1;
+ const position=-70+(t*1.55+65.1)%140;train.position.z=position;train.visible=position>-69&&position<69;
  wheels.forEach(w=>w.rotation.z=-t*8.15);
  laundry.forEach(({g,phase})=>{g.rotation.x=Math.sin(t*.65+phase)*.04;g.rotation.z=Math.sin(t*.47+phase)*.012;});
  const phase=t%18,active=phase<10?2:phase<12?1:0;
