@@ -42,8 +42,16 @@ try{
  const {scene,camera}=globalThis.rendered;
  const model=name==='city'?scene.children.find(o=>o.isGroup):scene.getObjectByName(`${name}-miniature`);
  assert(model);
+ const expanded=model.userData.baseSize===128;
+ if(expanded){
+  const extension=scene.getObjectByName(`expanded-${name}-world`);assert(extension&&extension.userData.staticInstances>800);
+  const terrain=extension.getObjectByName('expanded-terrain-ring');terrain.geometry.computeBoundingBox();const bounds=terrain.geometry.boundingBox;
+  assert.equal(bounds.min.x,-64);assert.equal(bounds.max.x,64);assert.equal(bounds.min.z,-64);assert.equal(bounds.max.z,64);
+  assert(testControls.minDistance>=100&&camera.far>=1500);
+  console.log(JSON.stringify({expandedScene:name,baseSize:128,coreSize:model.userData.coreBaseSize,additionalInstances:extension.userData.staticInstances,additionalBuildings:extension.userData.buildings,additionalTrees:extension.userData.trees}));
+ }
  if(name==='ocean'){
-  assert.equal(model.userData.baseSize,32);assert.equal(model.userData.fishSchools,3);
+  assert.equal(model.userData.coreBaseSize??model.userData.baseSize,32);assert.equal(model.userData.fishSchools,3);
   const water=scene.getObjectByName('rolling-ocean-surface'),floor=scene.getObjectByName('sandy-ocean-floor'),bodies=scene.getObjectByName('schooling-fish-bodies'),tails=scene.getObjectByName('schooling-fish-tails');
   assert(water&&floor&&scene.getObjectByName('transparent-ocean-section'));assert(water.material.transparent&&water.material.opacity<.5);assert.equal(bodies.count,72);
   floor.geometry.computeBoundingBox();assert.equal(floor.geometry.boundingBox.min.x,-16);assert.equal(floor.geometry.boundingBox.max.x,16);
@@ -82,7 +90,7 @@ try{
   console.log(JSON.stringify({schoolingFish:bodies.count,schools:3,dolphins:dolphins.length,breaches,entries,splashSamples}));
  }
  if(name==='desert'){
-  assert.equal(model.userData.baseSize,32);
+  assert.equal(model.userData.coreBaseSize??model.userData.baseSize,32);
   const dunes=scene.getObjectByName('wind-sculpted-dunes'),arch=scene.getObjectByName('wind-eroded-sandstone-arch');
   assert(dunes&&arch&&scene.getObjectByName('square-desert-section')&&scene.getObjectByName('dune-sand-ripples')&&scene.getObjectByName('sun-bleached-deadwood'));
   dunes.geometry.computeBoundingBox();const bounds=dunes.geometry.boundingBox;
@@ -107,7 +115,7 @@ try{
   console.log(JSON.stringify({desertShrubs:shrubs.length,saguaros:cacti.length,pricklyPears:pears.length,sandGrains:grains.count,wind}));
  }
  if(name==='summit'){
-  assert.equal(model.userData.baseSize,32);
+  assert.equal(model.userData.coreBaseSize??model.userData.baseSize,32);
   const terrain=scene.getObjectByName('faceted-snowy-summit'),section=scene.getObjectByName('square-mountain-section');
   assert(terrain&&section&&scene.getObjectByName('summit-stone-cairn'));
   assert(terrain.userData.snowyFaces>4000&&terrain.userData.rockFaces>100,'Both snow cover and exposed rock must exist');
@@ -139,7 +147,7 @@ try{
   console.log(JSON.stringify({alpineShrubs:shrubs.length,snowflakes:flakes.count,spindrift:drift.count,snowyFaces:terrain.userData.snowyFaces,rockFaces:terrain.userData.rockFaces,wind}));
  }
  if(name==='intersection'){
-  assert.equal(model.userData.baseSize,32);
+  assert.equal(model.userData.coreBaseSize??model.userData.baseSize,32);
   const cars=[];model.traverse(o=>{if(o.name==='moving-traffic-car')cars.push(o)});
   assert.equal(cars.length,12);assert.equal(new Set(cars.map(c=>c.userData.lane)).size,4);
   const before=cars.map(c=>c.position.clone()),crossings=[0,0,0,0],wraps=[0,0,0,0];
@@ -168,7 +176,7 @@ try{
   console.log(JSON.stringify({trafficCars:cars.length,crossings,wraps}));
  }
  if(name==='study'){
-  assert.equal(model.userData.baseSize,32);
+  assert.equal(model.userData.coreBaseSize??model.userData.baseSize,32);
   for(const n of ['wall-of-books','corner-reading-sofa','video-editing-workstation','editing-timeline-monitor','portrait-notes-monitor','ergonomic-editing-chair','open-reading-book','tiny-desk-robot','sleepy-cat-figurine','color-puzzle-cube','video-camera-tripod'])assert(scene.getObjectByName(n),n);
   const books=scene.getObjectByName('individual-library-books'),keys=scene.getObjectByName('mechanical-keyboard-keys'),sash=scene.getObjectByName('half-open-window-sash');
   assert(books?.isInstancedMesh&&books.count>300);assert(keys.count>60);assert(isNight?Math.abs(sash.rotation.y)<1e-10:sash.rotation.y<-.3&&sash.rotation.y>-.8);
@@ -243,7 +251,7 @@ try{
   const bath=scene.getObjectByName('reflective-mountain-onsen'),steam=scene.getObjectByName('rising-onsen-steam'),tiles=scene.getObjectByName('individual-ceramic-roof-tiles'),leaves=scene.getObjectByName('drifting-onsen-maple-leaves');
   assert(bath?.isReflector&&steam?.isInstancedMesh&&tiles?.isInstancedMesh&&leaves?.isInstancedMesh);
   assert(scene.getObjectByName('mountain-ryokan')&&scene.getObjectByName('ryokan-bathhouse-annex')&&scene.getObjectByName('arched-cedar-footbridge')&&scene.getObjectByName('forest-tea-pavilion'));
-  assert.equal(model.userData.baseSize,32);assert.equal(model.userData.period,isNight?'night':'day');
+  assert.equal(model.userData.coreBaseSize??model.userData.baseSize,32);assert.equal(model.userData.period,isNight?'night':'day');
   assert.equal(bath.material.uniforms.night.value,isNight?1:0);
   const warm=[];scene.traverse(o=>{if(o.name==='onsen-warm-light')warm.push(o)});assert(warm.length>=10);
   warm.forEach(light=>assert.equal(light.intensity,isNight?light.userData.nightIntensity:light.userData.dayIntensity));
@@ -436,7 +444,7 @@ try{
   for(const n of p.array)if(!Number.isFinite(n))invalid++;
   if(o.isInstancedMesh){
    for(const n of o.instanceMatrix.array)if(!Number.isFinite(n))invalid++;
-   if(name==='courtyard'||name==='sakura'||name==='rooftop'||name==='onsen'||name==='study'||name==='summit'||name==='desert'||name==='ocean'){
+   if(expanded||name==='courtyard'||name==='sakura'||name==='rooftop'||name==='onsen'||name==='study'||name==='summit'||name==='desert'||name==='ocean'){
     o.geometry.computeBoundingBox();const bounds=o.geometry.boundingBox,im=new Matrix4(),world=new Matrix4();
     for(let i=0;i<o.count;i++){
      o.getMatrixAt(i,im);world.multiplyMatrices(o.matrixWorld,im);
@@ -453,7 +461,7 @@ try{
    projected.left=Math.min(projected.left,point.x);projected.right=Math.max(projected.right,point.x);projected.bottom=Math.min(projected.bottom,point.y);projected.top=Math.max(projected.top,point.y);
   }
  });
- assert.equal(invalid,0);assert(instances>(name==='rooftop'?500:name==='rainy'?1000:name==='onsen'?2200:name==='study'?800:name==='intersection'?2000:name==='summit'?1800:name==='desert'?1800:name==='ocean'?2200:3000));assert(meshes<260);
+ assert.equal(invalid,0);assert(instances>(name==='rooftop'?500:name==='rainy'?1000:name==='onsen'?2200:name==='study'?800:name==='intersection'?2000:name==='summit'?1800:name==='desert'?1800:name==='ocean'?2200:3000));assert(meshes<(expanded?360:260));
  if(name==='lakeside')assert(minWorldY < -3.0&&minWorldY > -3.1,'The deeper soil and water section must be retained');
  if(process.env.SCENE_SHADER_OUTPUT){
   const shaders=[];const expand=s=>s.replace(/#include <(\w+)>/g,(_,name)=>expand(ShaderChunk[name]));

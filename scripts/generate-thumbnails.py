@@ -41,7 +41,10 @@ def main():
     if not gallery.routes or len(set(gallery.routes)) != len(gallery.routes):
         raise ValueError('Expected unique gallery scene routes')
     executable = os.environ.get('CHROMIUM_PATH') or shutil.which('chromium') or shutil.which('google-chrome')
+    previous_path = ROOT / 'thumbnails/manifest.json'
+    previous = json.loads(previous_path.read_text()) if previous_path.exists() else {'scenes': {}}
     manifest = {'format': 'webp', 'width': WIDTH, 'height': HEIGHT, 'scenes': {}}
+    captured = []
     with TemporaryDirectory(prefix='little-worlds-covers-') as temp, sync_playwright() as p:
         launch = {'headless': True, 'args': ['--no-sandbox', '--disable-dev-shm-usage', '--disable-background-networking', '--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader']}
         if executable:
@@ -76,6 +79,12 @@ def main():
             for scene in gallery.routes:
                 path = ROOT / scene / 'index.html'
                 source_hash = hashlib.sha256(path.read_bytes()).hexdigest()
+                old = previous['scenes'].get(scene)
+                cover = ROOT / f'thumbnails/{scene}.webp'
+                if old and old['source_sha256'] == source_hash and cover.exists() and hashlib.sha256(cover.read_bytes()).hexdigest() == old['sha256']:
+                    manifest['scenes'][scene] = old
+                    continue
+                captured.append(scene)
                 page = context.new_page()
                 errors = []
                 page.on('pageerror', lambda error: errors.append(str(error)))
@@ -106,7 +115,7 @@ def main():
         output = ROOT / 'thumbnails'
         output.mkdir(exist_ok=True)
         # Publish the complete set only after every scene has rendered successfully.
-        for scene in gallery.routes:
+        for scene in captured:
             shutil.copyfile(Path(temp) / f'{scene}.webp', output / f'{scene}.webp')
         (output / 'manifest.json').write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + '\n')
         print(f'Generated {len(manifest["scenes"])} static covers ({sum(s["bytes"] for s in manifest["scenes"].values()):,} bytes total).')

@@ -61,3 +61,9 @@ This requires Python with `playwright` and `Pillow`, plus Chromium (`CHROMIUM_PA
 Pushing to `main` runs `.github/workflows/pages.yml`, publishing the gallery, `thumbnails/`, and all twelve route directories to GitHub Pages. Folder routes also support direct navigation and refresh under a GitHub project path.
 
 Three.js is MIT licensed; its notice is embedded in every generated scene page.
+
+## 128×128 scene expansion
+
+Each completed expansion retains its original detailed core and adds a contiguous 128×128 surrounding world, with new theme-specific content at the same modeling scale. Each scene is validated and committed separately. Camera framing includes the entire expanded base on desktop and mobile. Thumbnail generation recaptures changed scenes and preserves covers for unchanged sources.
+
+- **City**: expanded to 128×128 with reclaimed residential blocks, roads, overgrown ruins, street trees, benches and lights.

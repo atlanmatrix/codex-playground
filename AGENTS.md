@@ -13,3 +13,8 @@
 - Before completing a scene, run the appropriate scene checks, verify desktop/mobile framing and real-browser rendering and interaction, regenerate its gallery cover with `npm run thumbnails`, and ensure `npm run build` succeeds. Include source, generated route HTML, versioned thumbnail/manifest, gallery entry, build/deployment registration, checks and documentation in the change.
 - **Every completed scene must be committed to Git.** Do not leave a finished scene only as uncommitted workspace changes. Stage the scene's complete related changes and use a descriptive commit message after validation passes. Commit subsequent requested scene refinements when completed as well.
 - In the delivery reply, report the commit hash and scene access address. If online delivery is requested, push the commit and verify the deployment/public route; distinguish local commits, remote pushes, local browser fixtures and live public HTTP verification accurately.
+
+## Current 128×128 expansion
+
+- Expand each existing scene to an actual contiguous **128×128 world**, retaining its detailed original core at its original modeling scale. Add appropriate surroundings and animation; do not satisfy an expansion by scaling the old model or leaving an empty enlarged base.
+- Validate and commit **each scene separately** before starting the next. Check the full world bounds, desktop/mobile framing, motion and reduced-motion behavior, real browser rendering and orbit/zoom interaction. Keep all generated route HTML and gallery cover hashes synchronized in that scene’s commit.

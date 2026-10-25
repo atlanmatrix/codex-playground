@@ -1,3 +1,4 @@
+import {expandWorld,expandedFit} from './world-expansion.js';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
@@ -26,7 +27,7 @@ controls.maxPolarAngle=Math.PI*.485;controls.minPolarAngle=.13;
 controls.enablePan=true;controls.enabled=!isPreview;controls.panSpeed=.7;
 function frame(){
  const aspect=innerWidth/innerHeight;
- const d=Math.max(38,40/aspect);
+ const d=expandedFit(aspect);
  camera.position.set(d*.68,4.1+d*.49,d*.78);
  camera.lookAt(controls.target);
 }
@@ -425,7 +426,9 @@ for(let i=0;i<90;i++){motePos[i*3]=R(-7,7);motePos[i*3+1]=R(.5,11);motePos[i*3+2
 moteGeo.setAttribute('position',new THREE.BufferAttribute(motePos,3));
 const motes=new THREE.Points(moteGeo,new THREE.PointsMaterial({color:0xfff3b4,size:.035,transparent:true,opacity:.65,depthWrite:false}));model.add(motes);
 let previous=0;const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const expandedWorld=expandWorld({kind:'city',scene,model,camera,controls,renderer,preview:isPreview,reduced});
 function renderFrame(ms){
+ expandedWorld.update(ms*.001);
  const t=ms*.001,dt=Math.min(t-previous,.05);previous=t;
  controls.update();
  if(!reduced){
@@ -439,6 +442,6 @@ function renderFrame(ms){
  renderer.render(scene,camera);
 }
 if(isPreview){renderFrame(0)}else{renderer.setAnimationLoop(renderFrame)}
-addEventListener('resize',()=>{const aspect=innerWidth/innerHeight;const factor=Math.max(38,40/aspect)/Math.max(38,40/camera.aspect);camera.position.sub(controls.target).multiplyScalar(factor).add(controls.target);camera.aspect=aspect;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio,isPreview?.85:1.8));if(isPreview)renderFrame(0);});
+addEventListener('resize',()=>{const aspect=innerWidth/innerHeight;const factor=expandedFit(aspect)/expandedFit(camera.aspect);camera.position.sub(controls.target).multiplyScalar(factor).add(controls.target);camera.aspect=aspect;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio,isPreview?.85:1.8));if(isPreview)renderFrame(0);});
 // Keep the composition visible when changing device orientation, without interrupting exploration.
 addEventListener('orientationchange',()=>requestAnimationFrame(frame));

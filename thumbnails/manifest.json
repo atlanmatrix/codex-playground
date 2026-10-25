@@ -5,11 +5,11 @@
   "scenes": {
     "city": {
       "file": "thumbnails/city.webp",
-      "source_sha256": "0f3ff4a815ba7e31537d8280724940e17a0ee88ceca0d3ab7b8d6f485e5a4e6a",
-      "sha256": "961a53a1f1d7b4bf41565f0299df94256d2754a8b1a9d4774b68c84168bbb261",
+      "source_sha256": "90f6af2e39cd6132694b2c0cee4b82363d074c8abd1a2ad3b3cab389aed4e110",
+      "sha256": "12dedaf966df7660f089d2360cc69efaf9588fb38802db0307e6e2cb9e1a6caa",
       "width": 1280,
       "height": 720,
-      "bytes": 39680
+      "bytes": 28778
     },
     "lakeside": {
       "file": "thumbnails/lakeside.webp",
