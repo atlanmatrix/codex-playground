@@ -1,4 +1,4 @@
-import {expandWorld,expandedFit} from './world-expansion.js';
+import {expandWorld,expandedFit} from './expansions/ocean.js';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
@@ -10,7 +10,7 @@ const scene=new THREE.Scene(),renderer=new THREE.WebGLRenderer({antialias:true,a
 renderer.setPixelRatio(Math.min(devicePixelRatio,preview?1:1.8));renderer.setSize(Math.max(1,innerWidth),Math.max(1,innerHeight));
 renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.localClippingEnabled=true;
 renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.15;
-document.body.appendChild(renderer.domElement);renderer.domElement.setAttribute('role','img');renderer.domElement.setAttribute('aria-label','鱼群穿过珊瑚与海草，三只海豚轮流跃出海面；拖拽旋转，滚轮或双指缩放');
+document.body.appendChild(renderer.domElement);renderer.domElement.setAttribute('role','img');renderer.domElement.setAttribute('aria-label','鱼群穿过珊瑚与海草，海豚轮流跃出海面，海龟与鳐鱼游过礁坡；拖拽旋转，滚轮或双指缩放');
 const camera=new THREE.PerspectiveCamera(34,Math.max(1,innerWidth)/Math.max(1,innerHeight),.3,350);
 const controls=new OrbitControls(camera,renderer.domElement);controls.target.set(0,-1.5,0);controls.enableDamping=true;controls.enabled=!preview;controls.enablePan=false;controls.minDistance=42;controls.maxDistance=260;controls.minPolarAngle=.24;controls.maxPolarAngle=Math.PI*.44;
 const fit=aspect=>expandedFit(aspect);const direction=new THREE.Vector3(.64,.82,.86).normalize();camera.position.copy(direction.multiplyScalar(fit(camera.aspect))).add(controls.target);camera.lookAt(controls.target);
@@ -167,7 +167,7 @@ function animate(t){
  bubbleData.forEach((b,i)=>{dummy.position.set(b.x+.1*Math.sin(t+b.p*6),-5.4+((b.p+t*.045)%1)*5.0,b.z);dummy.rotation.set(0,0,0);dummy.scale.setScalar(b.s);dummy.updateMatrix();bubbles.setMatrixAt(i,dummy.matrix)});bubbles.instanceMatrix.needsUpdate=true;
 }
 animate(0);let start=null;
-const expandedWorld=expandWorld({kind:'ocean',scene,model,camera,controls,renderer,preview,reduced,wave,dolphinPath});
+const expandedWorld=expandWorld({kind:'ocean',scene,model,camera,controls,renderer,preview,reduced,nativeHeight:bed,wave,dolphinPath});
 function renderFrame(ms){
  expandedWorld.update(start===null?0:(ms-start)*.001);if(start===null)start=ms;if(!preview&&!reduced)animate((ms-start)/1000);controls.update();renderer.render(scene,camera)}
 if(preview)renderFrame(0);else renderer.setAnimationLoop(renderFrame);

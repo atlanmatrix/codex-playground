@@ -44,6 +44,7 @@ try{
  assert(model);
  const expanded=model.userData.baseSize===128;
  if(expanded){
+  assert.equal(model.userData.expansion.detailVersion,2,'Every expansion must use its scene-specific detailed design');
   if(model.userData.expansion.detailVersion===2){assert(model.userData.expansion.landmarks.length>=3);if(name==='summit'){assert(model.userData.expansion.peakHeight>60&&model.userData.expansion.skiRuns===2);assert(model.userData.expansion.plantTypes.length>=5)}if(name==='intersection'){assert(model.userData.expansion.vehicleTypes.includes('bus')&&model.userData.expansion.vehicleTypes.includes('truck'));assert.equal(model.userData.expansion.roadTypes.length,4)}}
   if(name==='rainy')assert(scene.fog.density<=.001,'Fog must leave the enlarged night district visible');
   if(name==='desert'&&model.userData.expansion.detailVersion===2){assert(model.userData.expansion.duneHeight>20);assert(model.userData.expansion.plantTypes.length>=6)}
@@ -61,9 +62,14 @@ try{
   const dolphins=[],sprays=[],grass=[];model.traverse(o=>{if(o.name==='leaping-dolphin')dolphins.push(o);if(o.name==='dolphin-splash')sprays.push(o);if(o.name==='anchored-seagrass')grass.push(o)});
   assert.equal(dolphins.length,3);assert.equal(sprays.length,3);assert.equal(grass.length,20);assert(dolphins.some(o=>o.position.y>1),'The cover must show a breaching dolphin');
   const initialFish=Array.from(bodies.instanceMatrix.array),initialTail=Array.from(tails.instanceMatrix.array),initialWater=Array.from(water.geometry.attributes.position.array),initialDolphins=dolphins.map(o=>o.position.clone()),initialRoots=grass.map(o=>o.position.clone());
+  const outerFish=[],outerDolphins=[],kelpRoots=[];model.traverse(o=>{if(o.name==='detailed-school-fish')outerFish.push(o);if(o.name==='expanded-breaching-dolphin')outerDolphins.push(o);if(o.name==='anchored-kelp-root')kelpRoots.push(o)});
+  assert.equal(outerFish.length,176);assert.equal(outerDolphins.length,6);assert(kelpRoots.length>10);assert(model.userData.expansion.coralTypes.length>=5);assert(model.userData.expansion.height(-60,60)<-12);
+  const kelpPositions=kelpRoots.map(o=>o.position.clone()),outerStart=outerDolphins.map(o=>o.position.clone());let outerMin=Infinity,outerMax=-Infinity;
   const breaches=[0,0,0],entries=[0,0,0],lastY=dolphins.map(o=>o.position.y),minY=[Infinity,Infinity,Infinity],maxY=[-Infinity,-Infinity,-Infinity];let splashSamples=0;
   if(!isPreview)for(let ms=100;ms<=54000;ms+=100){
    globalThis.frame(ms);
+   outerFish.forEach(o=>{const {x,y,z}=o.position;assert(Math.abs(x)<62&&Math.abs(z)<62&&y<-.7);assert(y>model.userData.expansion.height(x,z)+.35,'Outer schools must clear the reef floor')});
+   outerDolphins.forEach(o=>{assert(Math.abs(o.position.x)<62&&Math.abs(o.position.z)<62);outerMin=Math.min(outerMin,o.position.y);outerMax=Math.max(outerMax,o.position.y)});kelpRoots.forEach((o,i)=>assert(o.position.equals(kelpPositions[i])));
    const poses=model.userData.fishPoses;assert.equal(poses.length,72);
    poses.forEach(p=>{assert(Math.abs(p.x)<14.5&&Math.abs(p.z)<14.5);assert(p.y<-.8&&p.y>model.userData.seabedHeight(p.x,p.z)+.6,'Schooling fish must stay submerged and clear of the floor')});
    for(let school=0;school<3;school++){
@@ -79,6 +85,7 @@ try{
    splashSamples+=sprays.filter(o=>o.visible).length;grass.forEach((o,i)=>assert(o.position.equals(initialRoots[i]),'Seagrass must remain rooted'));
   }
   if(!isPreview&&!isReduced){
+   assert(outerMin<-3&&outerMax>4,'Outer dolphins must complete their dive and breach');
    assert(breaches.every(n=>n>=2)&&entries.every(n=>n>=2));assert(minY.every(y=>y<-3)&&maxY.every(y=>y>4));assert(splashSamples>30);
    assert(initialFish.some((v,i)=>Math.abs(v-bodies.instanceMatrix.array[i])>.1));assert(initialTail.some((v,i)=>Math.abs(v-tails.instanceMatrix.array[i])>.1));assert(initialWater.some((v,i)=>Math.abs(v-water.geometry.attributes.position.array[i])>.01));
    // Both the leap/dive junction and the repeating loop must be continuous.
@@ -88,7 +95,7 @@ try{
     globalThis.frame((seconds+.001)*1000);assert(dolphins[i].position.distanceTo(before)<.012,'Dolphins must not teleport when diving or recycling');assert(Math.abs(dolphins[i].rotation.z-pitch)<.03,'Dolphin pitch must remain continuous');
    }
   }else{
-   assert.deepEqual(Array.from(bodies.instanceMatrix.array),initialFish);assert.deepEqual(Array.from(tails.instanceMatrix.array),initialTail);assert.deepEqual(Array.from(water.geometry.attributes.position.array),initialWater);dolphins.forEach((o,i)=>assert(o.position.equals(initialDolphins[i])));
+   outerDolphins.forEach((o,i)=>assert(o.position.equals(outerStart[i])));assert.deepEqual(Array.from(bodies.instanceMatrix.array),initialFish);assert.deepEqual(Array.from(tails.instanceMatrix.array),initialTail);assert.deepEqual(Array.from(water.geometry.attributes.position.array),initialWater);dolphins.forEach((o,i)=>assert(o.position.equals(initialDolphins[i])));
   }
   console.log(JSON.stringify({schoolingFish:bodies.count,schools:3,dolphins:dolphins.length,breaches,entries,splashSamples}));
  }

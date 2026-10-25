@@ -21,13 +21,13 @@ Twelve explorable, toon-shaded Three.js miniatures, each on a complete 128×128 
 
 - `/desert/` — **沙海来风**: a 128×128 desert with asymmetric dunes, fine surface ripples, exposed sandstone strata and an open natural stone arch. Six saguaros, six prickly pears, 24 dryland shrubs, scattered rocks and sun-bleached deadwood punctuate the sand. Shrub crowns sway and 480 grains stream over the terrain with coherent gusts. Preview and reduced-motion modes hold still.
 
-- `/ocean/` — **蓝海跃影**: a 128×128 translucent ocean section with a sandy floor, reef rocks, 12 coral clusters, starfish and anchored waving seagrass. Seventy-two fish in three central schools and 288 fish in 12 outer schools swim at different depths. Nine modeled dolphins take turns breaching on 18-second loops, pitching along continuous flight/dive paths and leaving expanding rings and spray on takeoff and landing. Surface waves, glints and rising bubbles animate independently; preview and reduced-motion modes hold still.
+- `/ocean/` — **蓝海跃影**: a 128×128 translucent ocean section with a sandy floor, reef rocks, 12 coral clusters, starfish and anchored waving seagrass. Seventy-two fish in three central schools and 176 fish in six outer schools swim at different depths. Nine modeled dolphins take turns breaching on 18-second loops, pitching along continuous flight/dive paths and leaving expanding rings and spray on takeoff and landing. Surface waves, glints and rising bubbles animate independently; preview and reduced-motion modes hold still.
 
-The onsen has two compact sun/moon buttons; the other scene routes contain no visible UI. Drag to orbit, scroll or pinch to zoom. The lakeside camera stays above ground and outside the model. Motion respects the system's reduced-motion preference. The thumbnail generator opens `?preview=1` to render each scene once, then saves a static WebP cover. Gallery image URLs carry a content hash, the first row loads eagerly, and subsequent covers load lazily. Fixed image dimensions reserve the cover space while images decode.
+The onsen and study have compact day/night controls; the other scene routes contain no visible UI. Drag to orbit, scroll or pinch to zoom. The lakeside camera stays above ground and outside the model. Motion respects the system's reduced-motion preference. The thumbnail generator opens `?preview=1` to render each scene once, then saves a static WebP cover. Gallery image URLs carry a content hash, the first row loads eagerly, and subsequent covers load lazily. Fixed image dimensions reserve the cover space while images decode.
 
 ## Defaults for future scenes
 
-New scenes use a **128×128 square base** unless a different size is explicitly requested. Import `DEFAULT_BASE_SIZE` from `src/scene-defaults.js`; `AGENTS.md` records this project convention. All twelve existing scenes use this full world size. `CORE_BASE_SIZE` retains the original 32-unit detailed cores; `world-expansion.js` fills the surrounding area with new terrain, structures, vegetation and motion instead of scaling up the core.
+New scenes use a **128×128 square base** unless a different size is explicitly requested. Import `DEFAULT_BASE_SIZE` from `src/scene-defaults.js`; `AGENTS.md` records this project convention. All twelve existing scenes use this full world size. `CORE_BASE_SIZE` retains the original 32-unit detailed cores; Each module in `src/expansions/` designs its own surrounding terrain, landmarks, vegetation and motion, while shared helpers construct the contiguous base without scaling the core.
 
 ## Development
 
@@ -62,34 +62,6 @@ Pushing to `main` runs `.github/workflows/pages.yml`, publishing the gallery, `t
 
 Three.js is MIT licensed; its notice is embedded in every generated scene page.
 
-## 128×128 scene expansion
-
-Each completed expansion retains its original detailed core and adds a contiguous 128×128 surrounding world, with new theme-specific content at the same modeling scale. Each scene is validated and committed separately. Camera framing includes the entire expanded base on desktop and mobile. Thumbnail generation recaptures changed scenes and preserves covers for unchanged sources.
-
-- **City**: expanded to 128×128 with reclaimed residential blocks, roads, overgrown ruins, street trees, benches and lights.
-
-- **Lakeside**: expanded to 128×128 with a long diagonal shoreline, lakeside paths, groves, fishing decks and eight additional fish schools (192 fish).
-
-- **Courtyard**: expanded to 128×128 with residential blocks, four new exercise courts, paths, benches and shade trees.
-
-- **Sakura**: expanded to 128×128 with a cherry blossom village, flowering avenues, additional railway track, petals and an animated two-car train.
-
-- **Rooftop**: expanded to 128×128 with a larger shop-and-home district, an elevated railway viaduct, streets, trees and an additional two-car train.
-
-- **Rainy**: expanded to 128×128 with a wider wet night neighborhood, lit shops and windows, street lights and roof-aware rainfall.
-
-- **Onsen**: expanded to 128×128 with a mountain woodland, additional timber guest houses, stone paths, rest terraces and lanterns.
-
-- **Study**: expanded to 128×128 with a connected library and editing studio with thousands of books, workstations, reading lounges and plants.
-
-- **Intersection**: expanded to 128×128 with additional city blocks and roads, trees, benches and 24 cars on an outer neighborhood circuit, four grade-separated crossings, and central traffic routes extended to the square edges.
-
-- **Summit**: expanded to 128×128 with a wider snow mountain range, additional peaks, snow-laden pines, alpine shrubs and wind-driven snow.
-
-- **Desert**: expanded to 128×128 with broader dune fields, distant sandstone towers, cacti, shrubs, sand ripples and drifting grains.
-
-- **Ocean**: expanded to 128×128 with a continuous enlarged sea, additional reefs and islands, 12 additional fish schools (360 fish total), six additional breaching dolphins (nine total), and the original splashes and water trails.
-
 ## Scene-specific detailed redesign
 
 Expansions are redesigned around each original scene’s intent, using varied, detailed landmarks instead of generic grids. Every scene is verified, committed and immediately pushed before the next scene begins.
@@ -115,3 +87,5 @@ Expansions are redesigned around each original scene’s intent, using varied, d
 - Study: an asymmetric creative home with a stocked mezzanine library and stair, color/audio suite with faders, racks and speaker cones, cyclorama/camera/softboxes, reading sofas, vinyl console and espresso counter replaces copied work pods.
 
 - Desert: asymmetric high dunes with slope-following ripple ribbons, stratified mesa and undercut hoodoos, gravel wadi and salt pan, palm spring, rope well, woven rest shade, ribbed/flowering cactus species and rolling tumbleweeds.
+
+- Ocean: shallow coral shelves and a deep basin, branching/table/brain/fan/anemone colonies, open reef grotto, rooted kelp, distinct bream/silver/butterfly schools, sea turtles, spotted rays and six additional detailed dolphins with independent rings, spray and airborne trails.
