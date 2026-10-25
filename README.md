@@ -1,6 +1,6 @@
 # 小景 · Little Worlds
 
-Ten explorable, toon-shaded Three.js miniatures. Every scene is procedural geometry, with no external assets or runtime CDN requests.
+Eleven explorable, toon-shaded Three.js miniatures. Every scene is procedural geometry, with no external assets or runtime CDN requests.
 
 - `/` — scene selection using pre-rendered WebP covers. The gallery contains no iframes, JavaScript or WebGL canvases; 3D starts only after following a scene link.
 - `/city/` — **被自然收回的城市街角**: a banyan tree growing through a furnished, ruined building.
@@ -19,6 +19,8 @@ Ten explorable, toon-shaded Three.js miniatures. Every scene is procedural geome
 
 - `/summit/` — **风雪之巅**: a 32×32 snow-covered summit with faceted rock faces, a continuous square mountain section, a cairn, a stony approach, 30 dwarf junipers and five windswept alpine pines. Coherent gusts flex shrub crowns, flutter a red-and-cream windsock and drive 780 snowflakes and 160 low spindrift streaks across the ridge. Roots and the windsock inlet remain anchored; snow stays above terrain. Preview and reduced-motion views remain still.
 
+- `/desert/` — **沙海来风**: a 32×32 desert with asymmetric dunes, fine surface ripples, exposed sandstone strata and an open natural stone arch. Six saguaros, six prickly pears, 24 dryland shrubs, scattered rocks and sun-bleached deadwood punctuate the sand. Shrub crowns sway and 480 grains stream over the terrain with coherent gusts. Preview and reduced-motion modes hold still.
+
 The onsen has two compact sun/moon buttons; the other scene routes contain no visible UI. Drag to orbit, scroll or pinch to zoom. The lakeside camera stays above ground and outside the model. Motion respects the system's reduced-motion preference. The thumbnail generator opens `?preview=1` to render each scene once, then saves a static WebP cover. Gallery image URLs carry a content hash, the first row loads eagerly, and subsequent covers load lazily. Fixed image dimensions reserve the cover space while images decode.
 
 ## Defaults for future scenes
@@ -36,7 +38,7 @@ npm run build
 npm run dev
 ```
 
-Open http://localhost:4173. Sources are in `src/`. The build generates `index.html`, `city/index.html`, `lakeside/index.html`, `courtyard/index.html`, `sakura/index.html`, `rooftop/index.html`, `rainy/index.html`, `onsen/index.html`, `study/index.html`, `intersection/index.html`, and `summit/index.html`. Each scene embeds its bundled JavaScript using literal replacement and validates the final script before writing HTML.
+Open http://localhost:4173. Sources are in `src/`. The build generates `index.html`, `city/index.html`, `lakeside/index.html`, `courtyard/index.html`, `sakura/index.html`, `rooftop/index.html`, `rainy/index.html`, `onsen/index.html`, `study/index.html`, `intersection/index.html`, `summit/index.html`, and `desert/index.html`. Each scene embeds its bundled JavaScript using literal replacement and validates the final script before writing HTML.
 
 `npm run check` exercises real Three.js geometry and animation with browser I/O stubbed. It checks finite geometry, framing on desktop and mobile, water coverage and diagonal shoreline, fish containment and direction changes, section depth, breathing, ear timing, courtyard equipment, foliage motion, stable base sections, hollow tunnel clearance, railcar/barrier timing, rooftop rail/slab alignment, train wheel alignment, rain coverage over roofs, independent ripple timing, stocked store interiors, mountainside elevation and terraces, enlarged bath area, dim amber night lighting, independently timed steam, roof tiles and drifting leaves, the furnished editing desk, book counts, open window, anchored curtain tops and moving hems, four-way traffic spacing, stop-line compliance, cross-traffic clearance, sustained vehicle recycling, static previews, and reduced motion. It does not replace GPU rendering or browser visual verification.
 
@@ -54,6 +56,6 @@ This requires Python with `playwright` and `Pillow`, plus Chromium (`CHROMIUM_PA
 
 ## Publishing
 
-Pushing to `main` runs `.github/workflows/pages.yml`, publishing the gallery, `thumbnails/`, and all ten route directories to GitHub Pages. Folder routes also support direct navigation and refresh under a GitHub project path.
+Pushing to `main` runs `.github/workflows/pages.yml`, publishing the gallery, `thumbnails/`, and all eleven route directories to GitHub Pages. Folder routes also support direct navigation and refresh under a GitHub project path.
 
 Three.js is MIT licensed; its notice is embedded in every generated scene page.

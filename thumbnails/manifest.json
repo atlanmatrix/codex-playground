@@ -82,6 +82,14 @@
       "width": 1280,
       "height": 720,
       "bytes": 27322
+    },
+    "desert": {
+      "file": "thumbnails/desert.webp",
+      "source_sha256": "3e4dcd30e07f881a6bf2c873ef0f064a16606b7cfaaf9eaa716ed5814c7bbec7",
+      "sha256": "e66a12b2912f9ddb0f2752eeee554db59194269b69d81cf2fc9b9ecf03e70bda",
+      "width": 1280,
+      "height": 720,
+      "bytes": 20504
     }
   }
 }
