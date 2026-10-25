@@ -1,3 +1,4 @@
+import {expandWorld,expandedFit} from './world-expansion.js';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
@@ -16,7 +17,7 @@ const controls=new OrbitControls(camera,renderer.domElement);
 controls.target.set(0,1.25,0);controls.enabled=!preview;controls.enablePan=false;
 controls.enableDamping=true;controls.dampingFactor=.065;controls.minDistance=17;controls.maxDistance=160;
 controls.minPolarAngle=.2;controls.maxPolarAngle=Math.PI*.445;
-const fitDistance=aspect=>Math.max(35,37/aspect);
+const fitDistance=aspect=>expandedFit(aspect);
 const d=fitDistance(camera.aspect);camera.position.set(d*.67,1.25+d*.61,d*.76);camera.lookAt(controls.target);
 scene.add(new THREE.HemisphereLight(0xf4fcf3,0x819276,2.05));
 const sun=new THREE.DirectionalLight(0xffe6ae,3.15);sun.position.set(-9,18,10);sun.castShadow=true;
@@ -341,7 +342,9 @@ function animate(t){
 }
 animate(0);
 let start=null;
-function renderFrame(ms){if(start===null)start=ms;controls.update();if(!preview&&!reduced)animate((ms-start)*.001);renderer.render(scene,camera);}
+const expandedWorld=expandWorld({kind:'courtyard',scene,model,camera,controls,renderer,preview,reduced});
+function renderFrame(ms){
+ expandedWorld.update(ms*.001);if(start===null)start=ms;controls.update();if(!preview&&!reduced)animate((ms-start)*.001);renderer.render(scene,camera);}
 if(preview){renderFrame(0)}else{renderer.setAnimationLoop(renderFrame)}
 addEventListener('resize',()=>{
  const aspect=innerWidth/innerHeight,factor=fitDistance(aspect)/fitDistance(camera.aspect);

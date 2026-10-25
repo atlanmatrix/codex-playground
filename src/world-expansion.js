@@ -13,7 +13,7 @@ const CONFIG = {
 
 // Extend a detailed central diorama with new, full-scale surroundings. Objects are
 // instanced by geometry, so hundreds of buildings/trees need only a few draw calls.
-export function expandWorld({kind,scene,model,camera,controls,renderer,preview,reduced,nativeHeight,wave}) {
+export function expandWorld({kind,scene,model,camera,controls,renderer,preview,reduced,nativeHeight,wave,dolphinPath}) {
  const cfg=CONFIG[kind],core=cfg.size/2,H=64,world=new THREE.Group();world.name=`expanded-${kind}-world`;model.add(world);
  model.userData.coreBaseSize=cfg.size;model.userData.baseSize=128;
  const stats={baseSize:128,coreSize:cfg.size,trees:0,buildings:0,shrubs:0,corals:0,books:0,vehicles:0};world.userData=stats;model.userData.expansion=stats;
@@ -102,7 +102,7 @@ export function expandWorld({kind,scene,model,camera,controls,renderer,preview,r
    for(let i=0;i<3;i++)tree(x+R(-9,9),z+R(-10,-7),R(.8,1.25),kind==='sakura'?'sakura':'leaf');bench(x-7,z+5);lamp(x-10,z+10);
   }
   for(let i=0;i<170;i++){const x=R(-60,60),z=R(-60,60);if(outside(x,z,4)&&Math.abs(Math.abs(x)-24)>5&&Math.abs(Math.abs(z)-24)>5)tree(x,z,R(.6,1.25),kind==='sakura'?'sakura':'leaf')}
-  if(kind==='courtyard')for(const [x,z] of [[-28,-28],[28,-28],[-28,28],[28,28]]){
+  if(kind==='courtyard')for(const [x,z] of [[-36,-36],[36,-36],[-36,36],[36,36]]){
    box('#b2c5a0',x,.17,z,15,.1,15);box('#c49c8d',x,.23,z,11,.05,11);
    for(let j=0;j<6;j++){const xx=x+(j%3-1)*3,zz=z+(Math.floor(j/3)-.5)*5;for(const side of [-1,1]){cylinder('#649cba',xx+side*.55,1.2,zz,.08,2);rod([xx+side*.55,2.2,zz],[xx,2.5,zz],.05,'#e4c86c')}box('#ddbf68',xx,1.2,zz,1.1,.15,.8)}for(const side of [-1,1])bench(x+side*7,z);
   }
@@ -164,6 +164,15 @@ export function expandWorld({kind,scene,model,camera,controls,renderer,preview,r
    const cx=kind==='ocean'?[-38,-12,18,40][school%4]:20+school%3*13,cz=-40+Math.floor(school/(kind==='ocean'?4:3))*34;
    for(let i=0;i<24;i++)movingFish.push({cx,cz,phase:school*.6,offset:(i%6-2.5)*1.1,row:(Math.floor(i/6)-1.5)*.6,color:pick(['#edc977','#a1ccd5','#dea79d']),depth:kind==='ocean'?-2-school%3*.7:-1.1});
   }
+ }
+ if(kind==='ocean'){
+  const template=model.getObjectByName('leaping-dolphin'),pods=[];
+  for(const [i,[x,z]] of [[-34,-30],[30,-32],[-36,30],[34,32],[1,39],[3,-40]].entries()){
+   const dolphin=template.clone();dolphin.name='expanded-breaching-dolphin';world.add(dolphin);
+   const ring=new THREE.Mesh(new THREE.TorusGeometry(1,.045,5,36),new THREE.MeshBasicMaterial({color:'#e5faf5',transparent:true,opacity:.6,depthWrite:false}));ring.rotation.x=-Math.PI/2;ring.position.set(x+3,.15,z);ring.renderOrder=6;world.add(ring);pods.push({dolphin,ring,x,z,phase:i*2.8});
+  }
+  stats.dolphins=pods.length;
+  motion.push(t=>{for(const pod of pods){const phase=(t+pod.phase)%18,p=dolphinPath(phase);pod.dolphin.position.set(pod.x+p.x,p.y,pod.z+p.z);pod.dolphin.rotation.set(0,-Math.atan2(p.dz,p.dx),Math.atan2(p.dy,Math.hypot(p.dx,p.dz)),'YXZ');const age=phase-4;pod.ring.visible=age>=0&&age<1.7;pod.ring.scale.setScalar(.4+Math.max(0,age)*1.4);pod.ring.material.opacity=Math.max(0,.6*(1-age/1.7))}});
  }
  // Assemble static instances after all theme-specific objects have been described.
  for(const [name,batch] of parts){const o=new THREE.InstancedMesh(geometries[batch.type],batch.glow?windowMat:material,batch.items.length);o.name=`expanded-${name}-instances`;batch.items.forEach((item,i)=>{dummy.position.set(...item.p);dummy.scale.set(...item.s);dummy.rotation.set(0,item.ry||0,0);if(item.q)dummy.quaternion.copy(item.q);dummy.updateMatrix();o.setMatrixAt(i,dummy.matrix);o.setColorAt(i,new THREE.Color(item.color))});o.castShadow=true;o.receiveShadow=true;world.add(o)}
