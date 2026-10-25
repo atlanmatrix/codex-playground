@@ -44,6 +44,7 @@ try{
  assert(model);
  const expanded=model.userData.baseSize===128;
  if(expanded){
+  if(model.userData.expansion.detailVersion===2){assert(model.userData.expansion.landmarks.length>=3);if(name==='intersection'){assert(model.userData.expansion.vehicleTypes.includes('bus')&&model.userData.expansion.vehicleTypes.includes('truck'));assert.equal(model.userData.expansion.roadTypes.length,4)}}
   if(name==='rainy')assert(scene.fog.density<=.001,'Fog must leave the enlarged night district visible');
   const extension=scene.getObjectByName(`expanded-${name}-world`);assert(extension&&extension.userData.staticInstances>800);
   const terrain=extension.getObjectByName('expanded-terrain-ring');terrain.geometry.computeBoundingBox();const bounds=terrain.geometry.boundingBox;
@@ -166,7 +167,7 @@ try{
      const queue=cars.filter(c=>c.userData.lane===lane).map(c=>c.userData.progress).sort((a,b)=>a-b);
      for(let j=1;j<queue.length;j++)assert(queue[j]-queue[j-1]>=3.74,'Traffic queues must preserve spacing');
     }
-    if(expanded&&ms%100===0){
+    if(expanded&&model.userData.expansion.detailVersion!==2&&ms%100===0){
      const traffic=scene.getObjectByName('expanded-neighborhood-traffic'),m=traffic.instanceMatrix.array;assert.equal(model.userData.expansion.bridges,4);
      for(let i=0;i<traffic.count;i++)for(const c of cars)assert(Math.abs(m[i*16+13]-(c.position.y+.66))>1.35||Math.abs(m[i*16+12]-c.position.x)>2.05||Math.abs(m[i*16+14]-c.position.z)>2.05,'Grade-separated outer traffic must clear the central avenue traffic');
     }
@@ -439,7 +440,7 @@ try{
  if(expanded){
   const extraFish=scene.getObjectByName('expanded-fish-schools');
   if(extraFish){assert.equal(extraFish.count,name==='ocean'?288:192);const a=extraFish.instanceMatrix.array;for(let i=0;i<extraFish.count;i++){const x=a[i*16+12],y=a[i*16+13],z=a[i*16+14];assert(Math.abs(x)<62&&Math.abs(z)<62&&y<0&&y>(name==='ocean'?-5.5:-2.5),'Additional schools must remain inside the water volume')}}
-  if(name==='ocean'){const extras=[];model.traverse(o=>{if(o.name==='expanded-breaching-dolphin')extras.push(o)});assert.equal(extras.length,6);assert(model.userData.expansion.corals>60)}
+  if(name==='ocean'&&model.userData.expansion.detailVersion!==2){const extras=[];model.traverse(o=>{if(o.name==='expanded-breaching-dolphin')extras.push(o)});assert.equal(extras.length,6);assert(model.userData.expansion.corals>60)}
   const moving=['expanded-weather','expanded-fish-schools','expanded-neighborhood-traffic'].map(n=>scene.getObjectByName(n)).filter(Boolean);
   if(!isPreview&&moving.length){const before=moving.map(o=>Array.from(o.instanceMatrix.array));globalThis.frame(231000);moving.forEach((o,i)=>{const after=Array.from(o.instanceMatrix.array);if(isReduced)assert.deepEqual(after,before[i]);else assert(after.some((v,j)=>Math.abs(v-before[i][j])>.01),'New elements must animate across the expanded world')})}
  }

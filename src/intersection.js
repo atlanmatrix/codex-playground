@@ -1,4 +1,4 @@
-import {expandWorld,expandedFit} from './world-expansion.js';
+import {expandWorld,expandedFit} from './expansions/intersection.js';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
@@ -128,7 +128,7 @@ for(let lane=0;lane<4;lane++){
  }
 }
 // Right-hand lanes in both directions. Fixed steps keep queues stable on slow devices.
-function pose(c){const along=c.u*c.dir,lateral=-2.02*c.dir;c.g.position.set(c.axis?along:lateral,0,c.axis?-lateral:along);c.g.rotation.y=(c.axis?Math.PI/2:0)+(c.dir<0?Math.PI:0);c.wheels.forEach(w=>w.rotation.x=c.travel/.29);c.g.userData.progress=c.u;c.g.userData.speed=c.v;}
+function pose(c){const along=c.u*c.dir,lateral=-2.02*c.dir;c.g.position.set(c.axis?along:lateral,Math.abs(c.u)>16?.14:0,c.axis?-lateral:along);c.g.rotation.y=(c.axis?Math.PI/2:0)+(c.dir<0?Math.PI:0);c.wheels.forEach(w=>w.rotation.x=c.travel/.29);c.g.userData.progress=c.u;c.g.userData.speed=c.v;}
 function phase(t){const p=t%34;return p<10?[0,'green']:p<12?[0,'amber']:p<17?[-1,'red']:p<27?[1,'green']:p<29?[1,'amber']:[-1,'red']}
 function lamps(t){const [axis,state]=phase(t);model.userData.signalPhase={axis,state};signals.forEach(s=>{const active=s.axis===axis?(state==='green'?2:1):0;s.g.userData.state=active;for(let i=0;i<3;i++){const color=i===active?['#ed7961','#ffd16b','#87d0ac'][i]:'#3c5050';s.lights[i].color.set(color);s.lights[i].emissive.set(i===active?color:'#000000');s.lights[i].emissiveIntensity=.3}})}
 function step(dt,t){

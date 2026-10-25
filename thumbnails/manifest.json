@@ -5,7 +5,7 @@
   "scenes": {
     "city": {
       "file": "thumbnails/city.webp",
-      "source_sha256": "550b0ff4a7765bd092d1b7f3def6a7abdb8a519bb85690c912c8d82c267a688e",
+      "source_sha256": "bebd68de4ce13f81704f5b3c0899e6ce0af01e3e179efc644c9d0b60191ab6f1",
       "sha256": "12dedaf966df7660f089d2360cc69efaf9588fb38802db0307e6e2cb9e1a6caa",
       "width": 1280,
       "height": 720,
@@ -13,7 +13,7 @@
     },
     "lakeside": {
       "file": "thumbnails/lakeside.webp",
-      "source_sha256": "7119ee22331d9b3222be28e0c34cd8f99557a9fe5f4e5c08e43ae10cd038b72f",
+      "source_sha256": "1d27376a54447d55d3614fb17de301aa690566fcec5aa2ede9b2b0db11df6315",
       "sha256": "dd1897ee97e7c99a78e7fb1d16ff5c0f9bdcceb72251b57ac67f0b8b5ce8e17e",
       "width": 1280,
       "height": 720,
@@ -21,7 +21,7 @@
     },
     "courtyard": {
       "file": "thumbnails/courtyard.webp",
-      "source_sha256": "ec8deed49a14d8506c4c1dff63d446916d6433b524df7599f3a613f0543a1be4",
+      "source_sha256": "186f228ef96af15b30af4c9dbedf4076240a11f4585d135a79c32b341b9e061b",
       "sha256": "0bc296aa602cc7122ade0ea1c1d94a51a83a6340170e8e871096157972130ef8",
       "width": 1280,
       "height": 720,
@@ -29,7 +29,7 @@
     },
     "sakura": {
       "file": "thumbnails/sakura.webp",
-      "source_sha256": "1a93d0a6999956d82360bb329e11769b2f158ea26afa601ccf56a4e488ec0512",
+      "source_sha256": "0dc8f7e38c3e520e0f3d76d3f7580b81facf9b5a6bc0a2a30fe9acb4213f6ae0",
       "sha256": "41447de51761a4da80f6be97e00845a64a0c5d9a5bb3d613fe3558b1fcfff9bc",
       "width": 1280,
       "height": 720,
@@ -37,7 +37,7 @@
     },
     "rooftop": {
       "file": "thumbnails/rooftop.webp",
-      "source_sha256": "6e8b993206146df03422ea548623638c530514ac7390edaefa885611eb650347",
+      "source_sha256": "57f79e5dcea1a4a2eb038f5f95e5d602a686db566a58d5d47b93cbf8f52ec5e8",
       "sha256": "ad7e91871107029e4cc74ce0fd7f6f3438700f65cbee6c4c2816be2a8511cfc0",
       "width": 1280,
       "height": 720,
@@ -45,7 +45,7 @@
     },
     "rainy": {
       "file": "thumbnails/rainy.webp",
-      "source_sha256": "6f834e9dd08b10b09fc5973090e58d4e81c03a1f948c52604c0903b02d3a6354",
+      "source_sha256": "7db729831a9958408fb480a6b718b6b1033e7adbc168232098c37066fee6c6bb",
       "sha256": "f37d1092add9408fd124172090fd6900feb53081ce11c96c22b908dd5b2dd2fd",
       "width": 1280,
       "height": 720,
@@ -53,7 +53,7 @@
     },
     "onsen": {
       "file": "thumbnails/onsen.webp",
-      "source_sha256": "ce2f6179380ff4d12d890f3a9080cd3d062180b32ed86c6deb459f57d6f11e3d",
+      "source_sha256": "4bec307ff213e8286dab9d6237941e7b0757cf23d6db50753e493ba6b56ab4c2",
       "sha256": "47f586469b1373307a3b36196da545aec1be42419c4ef0cbe589d40d4cb4d139",
       "width": 1280,
       "height": 720,
@@ -61,23 +61,23 @@
     },
     "study": {
       "file": "thumbnails/study.webp",
-      "source_sha256": "4147bae5a3d64898b92c7080bbe4742bc4d1ccaf672e0f2743b3488853271404",
-      "sha256": "d2fc29f526e2cb6c6375524333a673b77f2b76721af4ae1a43bdd77a8f8a65d4",
+      "source_sha256": "e8428cd72b52bb9e9b995fc1240fb5ea5f37dc55a2512d44b1d173825bd586c6",
+      "sha256": "85f34b8b04df8c65dcd6fbb1f2c80ae6b68828595c10085b66f71326c61f3e06",
       "width": 1280,
       "height": 720,
       "bytes": 26114
     },
     "intersection": {
       "file": "thumbnails/intersection.webp",
-      "source_sha256": "008cca9a78e3504ae80b0696a7df41047751fb647ab9c57b16459c684197b285",
-      "sha256": "3ea71ec6bf4c7d673372c0ee0bd062c8a7de49cd2f0c7f63394243588660f66f",
+      "source_sha256": "c4acbdb7fc724395c46fa3c232d6ded797c34514b2040fe92920f08133d95fd2",
+      "sha256": "08b9712c5e79912fb343070ddc81ef3abc04919995476fa09c6d3152b0e176bf",
       "width": 1280,
       "height": 720,
-      "bytes": 32214
+      "bytes": 30426
     },
     "summit": {
       "file": "thumbnails/summit.webp",
-      "source_sha256": "4038ae388f99cd194aee4b4e81ef4236f325d94c300847af7b908c0e53faa151",
+      "source_sha256": "192bd3660cf5e3a2e64962c2d0a1f38fe5724e38cfba02a9ee68504d8366ba12",
       "sha256": "f8686c39d03f268202a692e3b94cc285b7088e2f59e1ea08d4335dd1c2cd5fae",
       "width": 1280,
       "height": 720,
@@ -85,7 +85,7 @@
     },
     "desert": {
       "file": "thumbnails/desert.webp",
-      "source_sha256": "fc36516de179fbe6c4e3ee5987d0864f99175b564871f42ca6382f2dafbe9fd2",
+      "source_sha256": "8bc682654b0ff95e923d80bea0dc42e370d71c481dade7b2eb695baecf1c5229",
       "sha256": "a32bf2453b7fbed7278fd22dbb426a39d2339a7262cfb40b0b81942df8c17f0a",
       "width": 1280,
       "height": 720,
@@ -93,7 +93,7 @@
     },
     "ocean": {
       "file": "thumbnails/ocean.webp",
-      "source_sha256": "4f130941f268bb8a66639681cc825a1318444f8497b60dbc16729397bc767920",
+      "source_sha256": "6a82578d3afebecca5d1c7b3a39bffa74d7d83f8e3e7bda4d4c7350cff529b40",
       "sha256": "1341de95fbf9a939e44cddce94b975a581a71c0ea8f00d177ba85feeef9cfdb2",
       "width": 1280,
       "height": 720,

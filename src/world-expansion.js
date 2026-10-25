@@ -13,8 +13,8 @@ const CONFIG = {
 
 // Extend a detailed central diorama with new, full-scale surroundings. Objects are
 // instanced by geometry, so hundreds of buildings/trees need only a few draw calls.
-export function expandWorld({kind,scene,model,camera,controls,renderer,preview,reduced,nativeHeight,wave,dolphinPath}) {
- const cfg=CONFIG[kind],core=cfg.size/2,H=64,world=new THREE.Group();world.name=`expanded-${kind}-world`;model.add(world);
+export function expandWorld({kind,scene,model,camera,controls,renderer,preview,reduced,nativeHeight,wave,dolphinPath,detail=false,designHeight,designColor,designBottom}) {
+ const cfg={...CONFIG[kind],...(designBottom!==undefined?{bottom:designBottom}:{})},core=cfg.size/2,H=64,world=new THREE.Group();world.name=`expanded-${kind}-world`;model.add(world);
  model.userData.coreBaseSize=cfg.size;model.userData.baseSize=128;
  const stats={baseSize:128,coreSize:cfg.size,trees:0,buildings:0,shrubs:0,corals:0,books:0,vehicles:0};world.userData=stats;model.userData.expansion=stats;
  let seed=7937+[...kind].reduce((s,c)=>s+c.charCodeAt(0),0);const rand=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296};
@@ -34,6 +34,7 @@ export function expandWorld({kind,scene,model,camera,controls,renderer,preview,r
  rectangles(cfg.bottom,structuralTop,kind==='ocean'?'#789ca0':kind==='summit'?'#8c9fae':kind==='desert'?'#bf875a':kind==='study'?'#a68b68':'#8a8871');
  const originalHeight=nativeHeight||(()=>cfg.top);
  function land(x,z){
+  if(designHeight)return designHeight(x,z);
   if(kind==='lakeside'){const shore=-4.02+.38*z+.38*Math.sin(z*.55)+.1*Math.cos(z*.91);return x<shore?cfg.top:.07-THREE.MathUtils.smoothstep((x-shore)/4,0,1)*2.75}
   if(kind==='ocean')return -6+.13*Math.sin(x*.55+z*.3)+.12*Math.cos(z*.65);
   if(kind==='summit'||kind==='desert'||kind==='onsen'){
@@ -51,7 +52,7 @@ export function expandWorld({kind,scene,model,camera,controls,renderer,preview,r
  // A tessellated ring fits the old square exactly, with no doubled top faces.
  const p=[],c=[],idx=[],N=128,step=1;
  for(let j=0;j<=N;j++)for(let i=0;i<=N;i++){
-  const x=-H+i*step,z=-H+j*step,y=land(x,z),col=new THREE.Color(cfg.color);if(kind==='lakeside'&&y<.07){const shore=-4.02+.38*z+.38*Math.sin(z*.55)+.1*Math.cos(z*.91);col.set('#dbcfa8').lerp(new THREE.Color('#387f8e'),THREE.MathUtils.smoothstep((x-shore)/4,0,1))}if(kind==='summit'&&Math.abs(land(x+.4,z)-land(x-.4,z))>1)col.set('#97aabd');else col.multiplyScalar(.98+.02*Math.sin(x*.32+z*.23));p.push(x,y,z);c.push(col.r,col.g,col.b);
+  const x=-H+i*step,z=-H+j*step,y=land(x,z),col=new THREE.Color(cfg.color);if(kind==='lakeside'&&y<.07){const shore=-4.02+.38*z+.38*Math.sin(z*.55)+.1*Math.cos(z*.91);col.set('#dbcfa8').lerp(new THREE.Color('#387f8e'),THREE.MathUtils.smoothstep((x-shore)/4,0,1))}if(kind==='summit'&&Math.abs(land(x+.4,z)-land(x-.4,z))>1)col.set('#97aabd');else col.multiplyScalar(.98+.02*Math.sin(x*.32+z*.23));if(designColor)col.set(designColor(x,z,y));p.push(x,y,z);c.push(col.r,col.g,col.b);
   if(i<N&&j<N&&outside(x+.5,z+.5)){const a=j*(N+1)+i;idx.push(a,a+N+1,a+1,a+1,a+N+1,a+N+2)}
  }
  const terrainGeo=new THREE.BufferGeometry();terrainGeo.setAttribute('position',new THREE.Float32BufferAttribute(p,3));terrainGeo.setAttribute('color',new THREE.Float32BufferAttribute(c,3));terrainGeo.setIndex(idx);terrainGeo.computeVertexNormals();
@@ -91,8 +92,8 @@ export function expandWorld({kind,scene,model,camera,controls,renderer,preview,r
  function coral(x,z,s=1){const y=land(x,z);stats.corals++;ball('#8fb2b2',x,y+.25*s,z,1.2*s,.45*s,.8*s);for(let i=0;i<7;i++){const a=i*2.4,xx=x+Math.cos(a)*.7*s,zz=z+Math.sin(a)*.7*s;rod([x,y+.15,z],[xx,y+1.3*s,zz],.075*s,i%2?'#b39ec4':'#d899a7');ball('#e1b08c',xx,y+1.4*s,zz,.25*s,.22*s,.2*s)}}
  const sites=[];for(let z=-48;z<=48;z+=24)for(let x=-48;x<=48;x+=24)if(outside(x,z,10))sites.push([x,z]);
  const urban=['city','courtyard','sakura','rooftop','rainy','intersection'].includes(kind);
- if(urban){
-  if(kind==='city'){road(0,5.7,4);road(1,5.2,4)}else if(kind==='intersection'){road(0,0,8);road(1,0,8)}
+ if(urban&&!detail){
+  if(kind==='city'){road(0,5.7,4);road(1,5.2,4)}else if(kind==='intersection'&&!detail){road(0,0,8);road(1,0,8)}
   for(const offset of [-24,24]){road(0,offset,5);road(1,offset,5)}
   for(const [x,z] of sites){
    if(kind==='courtyard'&&Math.abs(x)===24&&Math.abs(z)===24)continue;
@@ -107,7 +108,7 @@ export function expandWorld({kind,scene,model,camera,controls,renderer,preview,r
    for(let j=0;j<6;j++){const xx=x+(j%3-1)*3,zz=z+(Math.floor(j/3)-.5)*5;for(const side of [-1,1]){cylinder('#649cba',xx+side*.55,1.2,zz,.08,2);rod([xx+side*.55,2.2,zz],[xx,2.5,zz],.05,'#e4c86c')}box('#ddbf68',xx,1.2,zz,1.1,.15,.8)}for(const side of [-1,1])bench(x+side*7,z);
   }
  }
- if(kind==='study'){
+ if(kind==='study'&&!detail){
   // A connected studio/library complex around the original detailed editing room.
   for(let z=-62;z<64;z+=1.6)for(let x=-60;x<64;x+=8)if(outside(x,z,1))box((Math.round(z/1.6)+Math.round(x/8))%3?'#caa779':'#d4b78a',x,.33,z,7.94,.035,1.55);
   box('#e0dfcf',-63.7,5.5,0,.5,11,128);box('#d7ded5',0,5.5,-63.7,128,11,.5);
@@ -115,12 +116,12 @@ export function expandWorld({kind,scene,model,camera,controls,renderer,preview,r
   for(const [x,z] of sites){library(x,z-7);library(x,z-3);furniture(x,z+4);const y=land(x,z);box('#b2916b',x+6,y+1.7,z+5,5,.15,2.2);for(const side of [-1,1])box('#796958',x+6+side*1.8,y+.8,z+5,.12,1.6,1.8);box('#566d72',x+6,y+2.55,z+4.7,2.2,1.4,.12);box('#92b2b7',x+6,y+2.55,z+4.79,2,1.2,.03,0,true);box('#95ad9f',x+6,y+.8,z+7,1.8,1.4,1.8);stats.buildings++;}
   for(let i=0;i<60;i++){const x=R(-60,60),z=R(-60,60);if(outside(x,z,3)){cylinder('#c5ae8d',x,.8,z,.55,.9);for(let j=0;j<4;j++)ball('#7ba284',x+Math.cos(j*2.4)*.35,1.7+j*.14,z+Math.sin(j*2.4)*.35,.6,.45,.4)}}
  }
- if(kind==='onsen'){
+ if(kind==='onsen'&&!detail){
   for(const [x,z] of sites){if((Math.abs(x)+Math.abs(z))%48===0)house(x,z,10,8,5,'inn');else{box('#b5b69b',x,land(x,z)+.08,z,10,.16,10);for(const side of [-1,1])bench(x+side*3,z)}}
   for(let i=0;i<360;i++){const x=R(-60,60),z=R(-60,60);if(outside(x,z,5))tree(x,z,R(.7,1.6),i%4?'pine':'leaf')}
   for(let i=0;i<120;i++){const a=i/119,x=-61+122*a,z=23+5*Math.sin(a*6);box('#b5b5a0',x,land(x,z)+.1,z,1.2,.2,1.4);if(i%7===0)lamp(x,z+1.8)}
  }
- if(kind==='summit'||kind==='desert'){
+ if(!detail&&(kind==='summit'||kind==='desert')){
   for(let i=0;i<220;i++){const x=R(-61,61),z=R(-61,61);if(outside(x,z,3)){ball(kind==='summit'?'#91a5b7':'#c58b5f',x,land(x,z)+R(.1,.7),z,R(.4,1.5),R(.2,.9),R(.4,1.1));if(i%3===0)shrub(x+1,z,R(.8,1.5),kind==='summit')}}
   if(kind==='summit')for(let i=0;i<95;i++){const x=R(-59,59),z=R(-59,59);if(outside(x,z,8)&&land(x,z)<9)tree(x,z,R(.5,1.1),'snow')}
   else{
@@ -132,11 +133,11 @@ export function expandWorld({kind,scene,model,camera,controls,renderer,preview,r
  }
  const movingFish=[];
  if(kind==='lakeside'||kind==='ocean'){
-  if(kind==='lakeside'){
+  if(!detail&&kind==='lakeside'){
    for(let z=-58;z<60;z+=5){const x=-4.02+.38*z-5;if(outside(x,z,3)){tree(x,z,R(1,1.6));for(let k=0;k<4;k++)box('#c1b690',x+2,land(x+2,z+k)+.06,z+k,2,.12,.8)}}
    for(let i=0;i<140;i++){const x=R(-61,15),z=R(-60,60);if(outside(x,z,4)&&land(x,z)>0)tree(x,z,R(.7,1.4))}
    for(const [x,z] of [[-28,-28],[-32,28],[-48,40]]){bench(x,z);box('#b7a27b',x+5,.5,z,5,.18,4);for(const side of [-1,1])cylinder('#9c8e6f',x+5+side*1.7,-.6,z,.09,2.2)}
-  }else{
+  }else if(!detail){
    for(let i=0;i<100;i++){const x=R(-59,59),z=R(-59,59);if(outside(x,z,5))coral(x,z,R(1,2))}
    for(const [x,z] of [[-36,-35],[35,-30],[-35,34],[39,30]]){for(let i=0;i<8;i++)ball(i%2?'#8faead':'#b6c9ba',x+R(-4,4),-4+i*.7,z+R(-4,4),R(2,4),R(1,2.5),R(2,3));}
   }
@@ -156,16 +157,16 @@ export function expandWorld({kind,scene,model,camera,controls,renderer,preview,r
   if(kind==='ocean')model.getObjectByName('transparent-ocean-section').visible=false;
   // Close the outside water section; the original internal ocean wall is hidden.
   const wp=[];for(const [ax,az,bx,bz] of [[-64,-64,64,-64],[64,-64,64,64],[64,64,-64,64],[-64,64,-64,-64]])for(let i=0;i<128;i++){
-   const x=ax+(bx-ax)*i/128,z=az+(bz-az)*i/128,xx=ax+(bx-ax)*(i+1)/128,zz=az+(bz-az)*(i+1)/128;if(kind==='lakeside'&&land((x+xx)/2,(z+zz)/2)>0)continue;const top=kind==='ocean'?0:.16,bottom=kind==='ocean'?-6.3:-2.7;wp.push(x,top,z,xx,bottom,zz,x,bottom,z,x,top,z,xx,top,zz,xx,bottom,zz);
+   const x=ax+(bx-ax)*i/128,z=az+(bz-az)*i/128,xx=ax+(bx-ax)*(i+1)/128,zz=az+(bz-az)*(i+1)/128;if(kind==='lakeside'&&land((x+xx)/2,(z+zz)/2)>0)continue;const top=kind==='ocean'?0:.16,bottom=kind==='ocean'?(designBottom!==undefined?designBottom+.9:-6.3):-2.7;wp.push(x,top,z,xx,bottom,zz,x,bottom,z,x,top,z,xx,top,zz,xx,bottom,zz);
   }
   const sg=new THREE.BufferGeometry();sg.setAttribute('position',new THREE.Float32BufferAttribute(wp,3));sg.computeVertexNormals();const section=new THREE.Mesh(sg,new THREE.MeshPhongMaterial({color:'#67a9b5',transparent:true,opacity:.35,depthWrite:false,side:THREE.FrontSide}));section.renderOrder=4;world.add(section);
   motion.push(t=>{if(kind==='ocean'){const p=wg.attributes.position;for(let i=0;i<p.count;i++)p.setY(i,wave(p.getX(i),p.getZ(i),t));p.needsUpdate=true;wg.computeVertexNormals()}});
-  for(let school=0;school<(kind==='ocean'?12:8);school++){
+  for(let school=0;school<(detail?0:kind==='ocean'?12:8);school++){
    const cx=kind==='ocean'?[-38,-12,18,40][school%4]:20+school%3*13,cz=-40+Math.floor(school/(kind==='ocean'?4:3))*34;
    for(let i=0;i<24;i++)movingFish.push({cx,cz,phase:school*.6,offset:(i%6-2.5)*1.1,row:(Math.floor(i/6)-1.5)*.6,color:pick(['#edc977','#a1ccd5','#dea79d']),depth:kind==='ocean'?-2-school%3*.7:-1.1});
   }
  }
- if(kind==='ocean'){
+ if(kind==='ocean'&&!detail){
   const template=model.getObjectByName('leaping-dolphin'),pods=[];
   for(const [i,[x,z]] of [[-34,-30],[30,-32],[-36,30],[34,32],[1,39],[3,-40]].entries()){
    const dolphin=template.clone();dolphin.name='expanded-breaching-dolphin';world.add(dolphin);
@@ -182,7 +183,7 @@ export function expandWorld({kind,scene,model,camera,controls,renderer,preview,r
   motion.push(t=>{movingFish.forEach((f,i)=>{const a=t*.11+f.phase,x=f.cx+Math.cos(a)*6+f.offset,z=f.cz+Math.sin(a)*4+f.row,heading=-Math.atan2(4*Math.cos(a),-6*Math.sin(a)),y=f.depth+.1*Math.sin(t+f.offset);dummy.position.set(x,y,z);dummy.rotation.set(0,heading,0);dummy.scale.set(.5,.18,.13);dummy.updateMatrix();bodies.setMatrixAt(i,dummy.matrix);dummy.position.x-=Math.cos(heading)*.55;dummy.position.z+=Math.sin(heading)*.55;dummy.rotation.y+=Math.sin(t*7+i)*.4;dummy.scale.set(1,1,.6);dummy.updateMatrix();tails.setMatrixAt(i,dummy.matrix)});bodies.instanceMatrix.needsUpdate=true;tails.instanceMatrix.needsUpdate=true});
  }
  // Rail extensions are independently animated, while the original local trains remain intact.
- if(kind==='sakura'||kind==='rooftop'){
+ if(!detail&&(kind==='sakura'||kind==='rooftop')){
   const alongZ=kind==='rooftop',track=alongZ?-28:-62,railY=alongZ?6.3:.44,railParts=[];
   for(let i=-62;i<=62;i+=1.3)railParts.push({p:alongZ?[track,railY-.16,i]:[i,railY-.16,track],s:alongZ?[2,.14,.24]:[.24,.14,2],color:'#9c9588'});
   for(const side of [-1,1])railParts.push({p:alongZ?[track+side*.63,railY,0]:[0,railY,track+side*.63],s:alongZ?[.08,.1,128]:[128,.1,.08],color:'#a8b9ba'});
@@ -193,7 +194,7 @@ export function expandWorld({kind,scene,model,camera,controls,renderer,preview,r
   renderer.localClippingEnabled=true;const clip=[new THREE.Plane(new THREE.Vector3(alongZ?0:1,0,alongZ?1:0),64),new THREE.Plane(new THREE.Vector3(alongZ?0:-1,0,alongZ?-1:0),64)];train.traverse(o=>{if(o.isMesh){o.material.clippingPlanes=clip;o.material.clipShadows=true}});
   train.rotation.y=alongZ?-Math.PI/2:0;motion.push(t=>{const position=-76+(t*3.7+31)%152;train.position.set(alongZ?track:position,railY+.25,alongZ?position:track);train.visible=position>-76&&position<76});stats.vehicles+=2;
  }
- if(kind==='intersection'){
+ if(kind==='intersection'&&!detail){
   // Additional cars circulate on the outer neighborhood streets, avoiding the signalized core.
   // Four short overpasses keep the outer circuit separate from the central avenues.
   const bridgeHeight=u=>2.6*Math.exp(-Math.pow(u/9,4)),bridgeSlope=u=>-2.6*Math.exp(-Math.pow(u/9,4))*4*Math.pow(u/9,3)/9;
@@ -209,7 +210,7 @@ export function expandWorld({kind,scene,model,camera,controls,renderer,preview,r
   const bodies=new THREE.InstancedMesh(geometries.box,material,24),tops=new THREE.InstancedMesh(geometries.box,material,24);bodies.name='expanded-neighborhood-traffic';world.add(bodies,tops);vehicleParts.forEach((v,i)=>{bodies.setColorAt(i,new THREE.Color(v.color));tops.setColorAt(i,new THREE.Color('#99b5ba'))});stats.vehicles+=24;
   motion.push(t=>{vehicleParts.forEach((v,i)=>{const progress=(v.phase+t*.007)%1,s=progress*4,k=Math.floor(s),u=s-k,L=24,offset=1.3,x=k===0?-L+48*u:k===1?L:k===2?L-48*u:-L,z=k===0?-L:k===1?-L+48*u:k===2?L:L-48*u,ry=[Math.PI/2,0,-Math.PI/2,Math.PI][k];const coordinate=k%2?z:x,lift=bridgeHeight(coordinate),pitch=bridgeSlope(coordinate)*(k<2?1:-1);dummy.position.set(x,.65+lift,z);dummy.rotation.set(-Math.atan(pitch),ry,0,'YXZ');dummy.scale.set(1.4,.7,2.7);dummy.updateMatrix();bodies.setMatrixAt(i,dummy.matrix);dummy.position.y=1.2+lift;dummy.scale.set(1.18,.5,1.45);dummy.updateMatrix();tops.setMatrixAt(i,dummy.matrix)});bodies.instanceMatrix.needsUpdate=true;tops.instanceMatrix.needsUpdate=true});
  }
- if(['rainy','summit','desert','sakura'].includes(kind)){
+ if(!detail&&['rainy','summit','desert','sakura'].includes(kind)){
   const rain=kind==='rainy',snow=kind==='summit',petals=kind==='sakura',count=rain?2400:1100;
   const particles=new THREE.InstancedMesh(geometries.ico,new THREE.MeshBasicMaterial({color:rain?'#a0bacb':snow?'#f5fcff':petals?'#f1c9d5':'#f7dfac',transparent:true,opacity:rain?.35:.65,depthWrite:false}),count);particles.name='expanded-weather';world.add(particles);stats.weatherParticles=count;
   const data=Array.from({length:count},()=>({x:R(0,120),z:R(0,120),p:R(0,1),s:R(.035,.085)}));
