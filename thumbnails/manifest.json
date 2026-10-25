@@ -90,6 +90,14 @@
       "width": 1280,
       "height": 720,
       "bytes": 20504
+    },
+    "ocean": {
+      "file": "thumbnails/ocean.webp",
+      "source_sha256": "c2a35396b260d521940ba957dff904cb939b231fed477821200ecc9a5bf668b7",
+      "sha256": "8fbd2cc5443f88810ffd4f0a5b30748379bfb9a86344ca8cc78a68fa0a7c9dd2",
+      "width": 1280,
+      "height": 720,
+      "bytes": 14750
     }
   }
 }

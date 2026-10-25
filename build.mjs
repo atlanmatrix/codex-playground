@@ -15,6 +15,7 @@ const pages = [
   {entry: 'src/intersection.js', template: 'src/intersection.html', output: 'intersection/index.html'},
   {entry: 'src/summit.js', template: 'src/summit.html', output: 'summit/index.html'},
   {entry: 'src/desert.js', template: 'src/desert.html', output: 'desert/index.html'},
+  {entry: 'src/ocean.js', template: 'src/ocean.html', output: 'ocean/index.html'},
   {entry: 'src/study.js', template: 'src/study.html', output: 'study/index.html'}
 ];
 const sceneHashes = new Map();

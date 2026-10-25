@@ -10,7 +10,7 @@ import assert from 'node:assert/strict';
 const name=process.argv[2]||'lakeside';
 const width=Number(process.argv[3]||1440),height=Number(process.argv[4]||1000);
 const isPreview=process.argv.includes('--preview'),isReduced=process.argv.includes('--reduced'),isNight=process.argv.includes('--night');
-assert(['city','lakeside','courtyard','sakura','rooftop','rainy','onsen','study','intersection','summit','desert'].includes(name));
+assert(['city','lakeside','courtyard','sakura','rooftop','rainy','onsen','study','intersection','summit','desert','ocean'].includes(name));
 const root=resolve(import.meta.dirname,'..');
 const temp=await mkdtemp(join(tmpdir(),'little-worlds-check-'));
 const realThree=JSON.stringify(pathToFileURL(join(root,'node_modules/three/build/three.module.js')).href);
@@ -42,6 +42,45 @@ try{
  const {scene,camera}=globalThis.rendered;
  const model=name==='city'?scene.children.find(o=>o.isGroup):scene.getObjectByName(`${name}-miniature`);
  assert(model);
+ if(name==='ocean'){
+  assert.equal(model.userData.baseSize,32);assert.equal(model.userData.fishSchools,3);
+  const water=scene.getObjectByName('rolling-ocean-surface'),floor=scene.getObjectByName('sandy-ocean-floor'),bodies=scene.getObjectByName('schooling-fish-bodies'),tails=scene.getObjectByName('schooling-fish-tails');
+  assert(water&&floor&&scene.getObjectByName('transparent-ocean-section'));assert(water.material.transparent&&water.material.opacity<.5);assert.equal(bodies.count,72);
+  floor.geometry.computeBoundingBox();assert.equal(floor.geometry.boundingBox.min.x,-16);assert.equal(floor.geometry.boundingBox.max.x,16);
+  const dolphins=[],sprays=[],grass=[];model.traverse(o=>{if(o.name==='leaping-dolphin')dolphins.push(o);if(o.name==='dolphin-splash')sprays.push(o);if(o.name==='anchored-seagrass')grass.push(o)});
+  assert.equal(dolphins.length,3);assert.equal(sprays.length,3);assert.equal(grass.length,20);assert(dolphins.some(o=>o.position.y>1),'The cover must show a breaching dolphin');
+  const initialFish=Array.from(bodies.instanceMatrix.array),initialTail=Array.from(tails.instanceMatrix.array),initialWater=Array.from(water.geometry.attributes.position.array),initialDolphins=dolphins.map(o=>o.position.clone()),initialRoots=grass.map(o=>o.position.clone());
+  const breaches=[0,0,0],entries=[0,0,0],lastY=dolphins.map(o=>o.position.y),minY=[Infinity,Infinity,Infinity],maxY=[-Infinity,-Infinity,-Infinity];let splashSamples=0;
+  if(!isPreview)for(let ms=100;ms<=54000;ms+=100){
+   globalThis.frame(ms);
+   const poses=model.userData.fishPoses;assert.equal(poses.length,72);
+   poses.forEach(p=>{assert(Math.abs(p.x)<14.5&&Math.abs(p.z)<14.5);assert(p.y<-.8&&p.y>model.userData.seabedHeight(p.x,p.z)+.6,'Schooling fish must stay submerged and clear of the floor')});
+   for(let school=0;school<3;school++){
+    const group=poses.filter(p=>p.school===school),cx=group.reduce((s,p)=>s+p.x,0)/group.length,cz=group.reduce((s,p)=>s+p.z,0)/group.length;
+    assert(group.every(p=>Math.hypot(p.x-cx,p.z-cz)<4.5),'Each school must remain coordinated');
+   }
+   dolphins.forEach((o,i)=>{
+    assert(Math.abs(o.position.x)<14.5&&Math.abs(o.position.z)<13);assert(o.position.y>-3.2&&o.position.y<4.2);
+    minY[i]=Math.min(minY[i],o.position.y);maxY[i]=Math.max(maxY[i],o.position.y);
+    if(lastY[i]<=0&&o.position.y>0)breaches[i]++;if(lastY[i]>=0&&o.position.y<0)entries[i]++;lastY[i]=o.position.y;
+    if(o.position.y>0)assert(Math.sign(o.rotation.z)===Math.sign(o.userData.velocity[1]),'Dolphins must pitch into their direction of travel');
+   });
+   splashSamples+=sprays.filter(o=>o.visible).length;grass.forEach((o,i)=>assert(o.position.equals(initialRoots[i]),'Seagrass must remain rooted'));
+  }
+  if(!isPreview&&!isReduced){
+   assert(breaches.every(n=>n>=2)&&entries.every(n=>n>=2));assert(minY.every(y=>y<-3)&&maxY.every(y=>y>4));assert(splashSamples>30);
+   assert(initialFish.some((v,i)=>Math.abs(v-bodies.instanceMatrix.array[i])>.1));assert(initialTail.some((v,i)=>Math.abs(v-tails.instanceMatrix.array[i])>.1));assert(initialWater.some((v,i)=>Math.abs(v-water.geometry.attributes.position.array[i])>.01));
+   // Both the leap/dive junction and the repeating loop must be continuous.
+   for(let i=0;i<3;i++)for(const phase of [4,18]){
+    const offset=1.6+i*6,seconds=(phase-offset+18)%18+72;
+    globalThis.frame((seconds-.001)*1000);const before=dolphins[i].position.clone(),pitch=dolphins[i].rotation.z;
+    globalThis.frame((seconds+.001)*1000);assert(dolphins[i].position.distanceTo(before)<.012,'Dolphins must not teleport when diving or recycling');assert(Math.abs(dolphins[i].rotation.z-pitch)<.03,'Dolphin pitch must remain continuous');
+   }
+  }else{
+   assert.deepEqual(Array.from(bodies.instanceMatrix.array),initialFish);assert.deepEqual(Array.from(tails.instanceMatrix.array),initialTail);assert.deepEqual(Array.from(water.geometry.attributes.position.array),initialWater);dolphins.forEach((o,i)=>assert(o.position.equals(initialDolphins[i])));
+  }
+  console.log(JSON.stringify({schoolingFish:bodies.count,schools:3,dolphins:dolphins.length,breaches,entries,splashSamples}));
+ }
  if(name==='desert'){
   assert.equal(model.userData.baseSize,32);
   const dunes=scene.getObjectByName('wind-sculpted-dunes'),arch=scene.getObjectByName('wind-eroded-sandstone-arch');
@@ -397,7 +436,7 @@ try{
   for(const n of p.array)if(!Number.isFinite(n))invalid++;
   if(o.isInstancedMesh){
    for(const n of o.instanceMatrix.array)if(!Number.isFinite(n))invalid++;
-   if(name==='courtyard'||name==='sakura'||name==='rooftop'||name==='onsen'||name==='study'||name==='summit'||name==='desert'){
+   if(name==='courtyard'||name==='sakura'||name==='rooftop'||name==='onsen'||name==='study'||name==='summit'||name==='desert'||name==='ocean'){
     o.geometry.computeBoundingBox();const bounds=o.geometry.boundingBox,im=new Matrix4(),world=new Matrix4();
     for(let i=0;i<o.count;i++){
      o.getMatrixAt(i,im);world.multiplyMatrices(o.matrixWorld,im);
@@ -414,7 +453,7 @@ try{
    projected.left=Math.min(projected.left,point.x);projected.right=Math.max(projected.right,point.x);projected.bottom=Math.min(projected.bottom,point.y);projected.top=Math.max(projected.top,point.y);
   }
  });
- assert.equal(invalid,0);assert(instances>(name==='rooftop'?500:name==='rainy'?1000:name==='onsen'?2200:name==='study'?800:name==='intersection'?2000:name==='summit'?1800:name==='desert'?1800:3000));assert(meshes<260);
+ assert.equal(invalid,0);assert(instances>(name==='rooftop'?500:name==='rainy'?1000:name==='onsen'?2200:name==='study'?800:name==='intersection'?2000:name==='summit'?1800:name==='desert'?1800:name==='ocean'?2200:3000));assert(meshes<260);
  if(name==='lakeside')assert(minWorldY < -3.0&&minWorldY > -3.1,'The deeper soil and water section must be retained');
  if(process.env.SCENE_SHADER_OUTPUT){
   const shaders=[];const expand=s=>s.replace(/#include <(\w+)>/g,(_,name)=>expand(ShaderChunk[name]));
@@ -442,7 +481,7 @@ try{
   }
  }
  assert.equal(testControls.enabled,!isPreview);
- if(name==='rooftop'||name==='rainy'||name==='onsen'||name==='study'||name==='intersection'||name==='summit'||name==='desert'){
+ if(name==='rooftop'||name==='rainy'||name==='onsen'||name==='study'||name==='intersection'||name==='summit'||name==='desert'||name==='ocean'){
   const before=camera.position.clone(),aspect=camera.aspect;
   for(const [w,h] of [[0,330],[624,0],[0,0]]){
    globalThis.innerWidth=w;globalThis.innerHeight=h;listeners.get('resize')();
