@@ -5,7 +5,7 @@
   "scenes": {
     "city": {
       "file": "thumbnails/city.webp",
-      "source_sha256": "90f6af2e39cd6132694b2c0cee4b82363d074c8abd1a2ad3b3cab389aed4e110",
+      "source_sha256": "1c654f0286e401fcbf62450518a26bc308c6c377cc27b5250bfce57421286874",
       "sha256": "12dedaf966df7660f089d2360cc69efaf9588fb38802db0307e6e2cb9e1a6caa",
       "width": 1280,
       "height": 720,
@@ -13,11 +13,11 @@
     },
     "lakeside": {
       "file": "thumbnails/lakeside.webp",
-      "source_sha256": "24ce258eb393a84fa92374740732008f2703ca61a798961f4123b38b31ef9ff6",
-      "sha256": "bf58d48590e66adf0fa997c539f66aa3689b9c4fd4e6c84344927d20a8d4fa53",
+      "source_sha256": "51a982bf54517c01f94ebfbfa51a57a2fa8db8bad10659b96e58fcd1e0b32fc8",
+      "sha256": "dd1897ee97e7c99a78e7fb1d16ff5c0f9bdcceb72251b57ac67f0b8b5ce8e17e",
       "width": 1280,
       "height": 720,
-      "bytes": 25898
+      "bytes": 15208
     },
     "courtyard": {
       "file": "thumbnails/courtyard.webp",

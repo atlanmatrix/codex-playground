@@ -1,3 +1,4 @@
+import {expandWorld,expandedFit} from './world-expansion.js';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { Reflector } from 'three/addons/objects/Reflector.js';
@@ -21,7 +22,7 @@ controls.target.set(-.7,0,0);controls.enabled=!preview;
 controls.enableDamping=true;controls.dampingFactor=.065;controls.enablePan=false;
 controls.minDistance=17;controls.maxDistance=160;
 controls.minPolarAngle=.22;controls.maxPolarAngle=Math.PI*.445;
-const fitDistance=aspect=>Math.max(36,37/aspect);
+const fitDistance=aspect=>expandedFit(aspect);
 function frame(){const d=fitDistance(camera.aspect);camera.position.set(d*.66,d*.62,d*.73);camera.lookAt(controls.target)}
 frame();
 scene.add(new THREE.HemisphereLight(0xf1fcff,0x819663,2.0));
@@ -509,7 +510,9 @@ function updateScene(t){
  const dt=Math.min(Math.max(t-lastTime,0),.05);lastTime=t;
  for(let i=0;i<30;i++){pollenPositions[i*3+1]+=dt*.025;if(pollenPositions[i*3+1]>5.5)pollenPositions[i*3+1]=.6;}pollenGeo.attributes.position.needsUpdate=true;
 }
+const expandedWorld=expandWorld({kind:'lakeside',scene,model,camera,controls,renderer,preview,reduced});
 function renderFrame(ms){
+ expandedWorld.update(ms*.001);
  if(startTime===null)startTime=ms;
  const t=(ms-startTime)*.001;
  controls.update();

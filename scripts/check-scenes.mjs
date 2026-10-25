@@ -386,7 +386,7 @@ try{
   assert(boughs>=40&&grassPatches>=24,'Additional trees and ground cover must remain present');
   assert(scene.getObjectByName('broken-lakeside-bridge')&&scene.getObjectByName('woven-fishing-basket'));
   assert(scene.getObjectByName('chaise-book-and-sleeping-cat').scale.x<.8);
-  const lake=scene.getObjectByName('reflective-lake'),lakePositions=lake.geometry.attributes.position;
+  const lake=scene.getObjectByName('reflective-lake'),lakePositions=(lake.userData.coreGeometry||lake.geometry).attributes.position;
   const rows=new Map();
   for(let i=0;i<lakePositions.count;i++){
    const z=Number((-lakePositions.getY(i)).toFixed(5)),x=lakePositions.getX(i);
@@ -426,7 +426,7 @@ try{
    assert(!events.some((e,i)=>i>0&&e.i!==events[i-1].i&&e.t===events[i-1].t),'Ears must not twitch in synchrony');
   }else assert.equal(belly.scale.y,1);
   const water=scene.getObjectByName('reflective-lake');assert(water?.isReflector);
-  const g=water.geometry,p=g.attributes.position,idx=g.index;let area=0;
+  const g=water.userData.coreGeometry||water.geometry,p=g.attributes.position,idx=g.index;let area=0;
   for(let i=0;i<idx.count;i+=3){const ids=[idx.getX(i),idx.getX(i+1),idx.getX(i+2)];const [a,b,c]=ids.map(i=>[p.getX(i),p.getY(i)]);area+=Math.abs((b[0]-a[0])*(c[1]-a[1])-(b[1]-a[1])*(c[0]-a[0]))/2;}
   assert(area/256>.73&&area/256<.77,`Lake fraction ${area/256}`);
   console.log(JSON.stringify({lakeFraction:Number((area/256).toFixed(3)),fish:fish.length,species:4,breathing:[smallest,largest],earTwitches:events.length}));

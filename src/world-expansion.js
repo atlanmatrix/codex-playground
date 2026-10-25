@@ -30,10 +30,11 @@ export function expandWorld({kind,scene,model,camera,controls,renderer,preview,r
  function cylinder(color,x,y,z,r,h){put('cyl',color,x,y,z,r,h,r)}
  function rod(a,b,r,color){const from=new THREE.Vector3(...a),to=new THREE.Vector3(...b),delta=to.clone().sub(from),mid=from.add(to).multiplyScalar(.5);const key='rod';if(!parts.has(key))parts.set(key,{type:'cyl',items:[]});parts.get(key).items.push({p:mid.toArray(),s:[r,delta.length(),r],q:new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,1,0),delta.normalize()),color})}
  function rectangles(lo,hi,color){const s=H-core;for(const [x,z,w,d] of [[0,-(H+core)/2,128,s],[0,(H+core)/2,128,s],[-(H+core)/2,0,s,cfg.size],[(H+core)/2,0,s,cfg.size]])box(color,x,(lo+hi)/2,z,w,hi-lo,d)}
- rectangles(cfg.bottom,cfg.top-.12,kind==='ocean'?'#789ca0':kind==='summit'?'#8c9fae':kind==='desert'?'#bf875a':kind==='study'?'#a68b68':'#8a8871');
+ const structuralTop=kind==='lakeside'?-2.77:kind==='ocean'?-6.35:kind==='desert'?-.25:cfg.top-.12;
+ rectangles(cfg.bottom,structuralTop,kind==='ocean'?'#789ca0':kind==='summit'?'#8c9fae':kind==='desert'?'#bf875a':kind==='study'?'#a68b68':'#8a8871');
  const originalHeight=nativeHeight||(()=>cfg.top);
  function land(x,z){
-  if(kind==='lakeside'){const shore=-4.02+.38*z+.38*Math.sin(z*.55)+.1*Math.cos(z*.91);return x<shore?cfg.top:-2.68}
+  if(kind==='lakeside'){const shore=-4.02+.38*z+.38*Math.sin(z*.55)+.1*Math.cos(z*.91);return x<shore?cfg.top:.07-THREE.MathUtils.smoothstep((x-shore)/4,0,1)*2.75}
   if(kind==='ocean')return -6+.13*Math.sin(x*.55+z*.3)+.12*Math.cos(z*.65);
   if(kind==='summit'||kind==='desert'||kind==='onsen'){
    const distance=Math.max(Math.abs(x),Math.abs(z))-core,blend=THREE.MathUtils.smoothstep(distance,0,10);
@@ -50,14 +51,14 @@ export function expandWorld({kind,scene,model,camera,controls,renderer,preview,r
  // A tessellated ring fits the old square exactly, with no doubled top faces.
  const p=[],c=[],idx=[],N=128,step=1;
  for(let j=0;j<=N;j++)for(let i=0;i<=N;i++){
-  const x=-H+i*step,z=-H+j*step,y=land(x,z),col=new THREE.Color(cfg.color);if(kind==='summit'&&Math.abs(land(x+.4,z)-land(x-.4,z))>1)col.set('#97aabd');else col.multiplyScalar(.98+.02*Math.sin(x*.32+z*.23));p.push(x,y,z);c.push(col.r,col.g,col.b);
+  const x=-H+i*step,z=-H+j*step,y=land(x,z),col=new THREE.Color(cfg.color);if(kind==='lakeside'&&y<.07){const shore=-4.02+.38*z+.38*Math.sin(z*.55)+.1*Math.cos(z*.91);col.set('#dbcfa8').lerp(new THREE.Color('#387f8e'),THREE.MathUtils.smoothstep((x-shore)/4,0,1))}if(kind==='summit'&&Math.abs(land(x+.4,z)-land(x-.4,z))>1)col.set('#97aabd');else col.multiplyScalar(.98+.02*Math.sin(x*.32+z*.23));p.push(x,y,z);c.push(col.r,col.g,col.b);
   if(i<N&&j<N&&outside(x+.5,z+.5)){const a=j*(N+1)+i;idx.push(a,a+N+1,a+1,a+1,a+N+1,a+N+2)}
  }
  const terrainGeo=new THREE.BufferGeometry();terrainGeo.setAttribute('position',new THREE.Float32BufferAttribute(p,3));terrainGeo.setAttribute('color',new THREE.Float32BufferAttribute(c,3));terrainGeo.setIndex(idx);terrainGeo.computeVertexNormals();
  const terrain=new THREE.Mesh(terrainGeo,new THREE.MeshToonMaterial({color:'#ffffff',gradientMap:ramp,vertexColors:true,side:THREE.DoubleSide}));terrain.name='expanded-terrain-ring';terrain.receiveShadow=true;world.add(terrain);
  // Exposed side faces follow the terrain down to the structural layer.
  const walls=[];for(const [ax,az,bx,bz] of [[-64,-64,64,-64],[64,-64,64,64],[64,64,-64,64],[-64,64,-64,-64]])for(let i=0;i<128;i++){
-  const x=ax+(bx-ax)*i/128,z=az+(bz-az)*i/128,xx=ax+(bx-ax)*(i+1)/128,zz=az+(bz-az)*(i+1)/128,lo=cfg.top-.12;walls.push(x,lo,z,xx,lo,zz,x,land(x,z),z,xx,lo,zz,xx,land(xx,zz),zz,x,land(x,z),z);
+  const x=ax+(bx-ax)*i/128,z=az+(bz-az)*i/128,xx=ax+(bx-ax)*(i+1)/128,zz=az+(bz-az)*(i+1)/128,lo=structuralTop;walls.push(x,lo,z,xx,lo,zz,x,land(x,z),z,xx,lo,zz,xx,land(xx,zz),zz,x,land(x,z),z);
  }
  const wallGeo=new THREE.BufferGeometry();wallGeo.setAttribute('position',new THREE.Float32BufferAttribute(walls,3));wallGeo.computeVertexNormals();const wall=new THREE.Mesh(wallGeo,new THREE.MeshToonMaterial({color:cfg.color,gradientMap:ramp,side:THREE.DoubleSide}));wall.receiveShadow=true;world.add(wall);
  function tree(x,z,s=1,type='leaf'){
@@ -66,7 +67,7 @@ export function expandWorld({kind,scene,model,camera,controls,renderer,preview,r
   else for(let i=0;i<6;i++){const a=i*2.4,col=type==='sakura'?pick(['#edbac7','#f3d1d8','#dba7bd']):pick(['#80a26e','#a0b984','#668e72']);ball(col,x+Math.cos(a)*s,y+4.2*s+(i%2)*.6*s,z+Math.sin(a)*s,1.65*s,1.7*s,1.65*s)}
  }
  function shrub(x,z,s=1,snow=false){const y=land(x,z);stats.shrubs++;for(let i=0;i<4;i++){const a=i*2.4;ball(kind==='desert'?'#b1ab77':'#77977f',x+Math.cos(a)*.6*s,y+.45*s,z+Math.sin(a)*.6*s,.75*s,.45*s,.65*s);if(snow)ball('#edf5f6',x+Math.cos(a)*.6*s,y+.78*s,z+Math.sin(a)*.6*s,.65*s,.12*s,.56*s)}}
- function bench(x,z,ry=0){const y=land(x,z);box('#b3946a',x,y+.8,z,3.2,.18,1,ry);box('#a2835d',x,y+1.25,z-.42,3.2,.8,.12,ry);for(const side of [-1,1])box('#637777',x+side,z?y+.38:y+.38,z,.12,.76,.7,ry)}
+ function bench(x,z,ry=0){const y=land(x,z);box('#b3946a',x,y+.8,z,3.2,.18,1,ry);box('#a2835d',x,y+1.25,z-.42,3.2,.8,.12,ry);for(const side of [-1,1])box('#637777',x+side,y+.38,z,.12,.76,.7,ry)}
  const roofs=[];
  function house(x,z,w=9,d=7,h=8,style='house'){
   const y=land(x,z);stats.buildings++;const night=kind==='rainy',japanese=style==='inn';
@@ -144,7 +145,14 @@ export function expandWorld({kind,scene,model,camera,controls,renderer,preview,r
    if(i<128&&j<128&&outside(x+.5,z+.5)&&(kind==='ocean'||land(x+.5,z+.5)<0)){const a=j*129+i;waterIndices.push(a,a+129,a+1,a+1,a+129,a+130)}
   }
   const wg=new THREE.BufferGeometry();wg.setAttribute('position',new THREE.Float32BufferAttribute(waterPositions,3));wg.setIndex(waterIndices);wg.computeVertexNormals();
-  const wm=kind==='ocean'?model.getObjectByName('rolling-ocean-surface').material:new THREE.MeshPhongMaterial({color:'#65b4b8',transparent:true,opacity:.8,shininess:75,side:THREE.DoubleSide});const water=new THREE.Mesh(wg,wm);water.name='expanded-water-surface';water.renderOrder=3;world.add(water);
+  const wm=kind==='ocean'?model.getObjectByName('rolling-ocean-surface').material:new THREE.MeshPhongMaterial({color:'#65b4b8',transparent:true,opacity:.8,shininess:75,side:THREE.DoubleSide});const water=new THREE.Mesh(wg,wm);water.name='expanded-water-surface';water.renderOrder=3;
+  if(kind==='lakeside'){
+   // One real reflector covers the entire enlarged lake, avoiding a visible square seam.
+   const lake=model.getObjectByName('reflective-lake'),lp=[],li=[],n=256;lake.userData.coreGeometry=lake.geometry;model.traverse(o=>{if(o.name==='lake-cutaway-water')o.visible=false});
+   for(let j=0;j<=n;j++)for(let i=0;i<=n;i++){const z=-64+128*j/n,shore=-4.02+.38*z+.38*Math.sin(z*.55)+.1*Math.cos(z*.91);lp.push(shore+(64-shore)*i/n,-z,0);if(i<n&&j<n){const a=j*(n+1)+i;li.push(a,a+n+1,a+1,a+1,a+n+1,a+n+2)}}
+   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(lp,3));g.setIndex(li);g.computeVertexNormals();lake.geometry=g;
+   lake.material.vertexShader=lake.material.vertexShader.replaceAll('8.-abs','64.-abs');lake.material.needsUpdate=true;
+  }else world.add(water);
   if(kind==='ocean')model.getObjectByName('transparent-ocean-section').visible=false;
   // Close the outside water section; the original internal ocean wall is hidden.
   const wp=[];for(const [ax,az,bx,bz] of [[-64,-64,64,-64],[64,-64,64,64],[64,64,-64,64],[-64,64,-64,-64]])for(let i=0;i<128;i++){

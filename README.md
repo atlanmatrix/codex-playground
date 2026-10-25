@@ -67,3 +67,5 @@ Three.js is MIT licensed; its notice is embedded in every generated scene page.
 Each completed expansion retains its original detailed core and adds a contiguous 128×128 surrounding world, with new theme-specific content at the same modeling scale. Each scene is validated and committed separately. Camera framing includes the entire expanded base on desktop and mobile. Thumbnail generation recaptures changed scenes and preserves covers for unchanged sources.
 
 - **City**: expanded to 128×128 with reclaimed residential blocks, roads, overgrown ruins, street trees, benches and lights.
+
+- **Lakeside**: expanded to 128×128 with a long diagonal shoreline, lakeside paths, groves, fishing decks and eight additional fish schools (192 fish).
