@@ -1,4 +1,4 @@
-import {expandWorld,expandedFit} from './world-expansion.js';
+import {expandWorld,expandedFit} from './expansions/lakeside.js';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { Reflector } from 'three/addons/objects/Reflector.js';

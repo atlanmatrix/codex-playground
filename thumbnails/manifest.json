@@ -13,11 +13,11 @@
     },
     "lakeside": {
       "file": "thumbnails/lakeside.webp",
-      "source_sha256": "1d27376a54447d55d3614fb17de301aa690566fcec5aa2ede9b2b0db11df6315",
-      "sha256": "dd1897ee97e7c99a78e7fb1d16ff5c0f9bdcceb72251b57ac67f0b8b5ce8e17e",
+      "source_sha256": "793ad2ffdc58e4b38435b5cc32961d7155bdc54a2554eaa8ff0f3e5417217471",
+      "sha256": "d9140ceacd7ff96779c6d517f067ce0791a924a430bdc2920915cba846ce93fb",
       "width": 1280,
       "height": 720,
-      "bytes": 15208
+      "bytes": 11980
     },
     "courtyard": {
       "file": "thumbnails/courtyard.webp",

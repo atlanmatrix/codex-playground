@@ -99,3 +99,5 @@ Expansions are redesigned around each original scene’s intent, using varied, d
 - Summit: 70-unit angular peaks and rock ridges, two slope-following graded ski runs, pulley-equipped chairlift with moving empty chairs, timber lodge, ski racks, rescue sled, trail map and five alpine shrub forms.
 
 - City: a roofless tram workshop, abandoned library with books and stairs, collapsed arcade and pedestrian bridge, flooded court, exposed rebar, crumbling paving and facade ivy build a coherent reclaimed district.
+
+- Lakeside: curved bays, detailed weeping willow boughs, a bank-following path, reading pavilion, bird hide, furnished fishing piers, a moored canoe with paddle and rope, reed/lily beds and distinct fish schools.
