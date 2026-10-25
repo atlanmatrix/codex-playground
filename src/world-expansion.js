@@ -101,7 +101,7 @@ export function expandWorld({kind,scene,model,camera,controls,renderer,preview,r
    if(kind!=='courtyard')house(x-5,z-5,R(6,9),R(5,8),R(4,7),kind==='city'?'ruin':'house');
    for(let i=0;i<3;i++)tree(x+R(-9,9),z+R(-10,-7),R(.8,1.25),kind==='sakura'?'sakura':'leaf');bench(x-7,z+5);lamp(x-10,z+10);
   }
-  for(let i=0;i<170;i++){const x=R(-60,60),z=R(-60,60);if(outside(x,z,4)&&Math.abs(Math.abs(x)-24)>5&&Math.abs(Math.abs(z)-24)>5)tree(x,z,R(.6,1.25),kind==='sakura'?'sakura':'leaf')}
+  for(let i=0;i<170;i++){const x=R(-60,60),z=R(-60,60);if(outside(x,z,4)&&Math.abs(Math.abs(x)-24)>5&&Math.abs(Math.abs(z)-24)>5&&(kind!=='rooftop'||Math.abs(x+28)>5))tree(x,z,R(.6,1.25),kind==='sakura'?'sakura':'leaf')}
   if(kind==='courtyard')for(const [x,z] of [[-36,-36],[36,-36],[-36,36],[36,36]]){
    box('#b2c5a0',x,.17,z,15,.1,15);box('#c49c8d',x,.23,z,11,.05,11);
    for(let j=0;j<6;j++){const xx=x+(j%3-1)*3,zz=z+(Math.floor(j/3)-.5)*5;for(const side of [-1,1]){cylinder('#649cba',xx+side*.55,1.2,zz,.08,2);rod([xx+side*.55,2.2,zz],[xx,2.5,zz],.05,'#e4c86c')}box('#ddbf68',xx,1.2,zz,1.1,.15,.8)}for(const side of [-1,1])bench(x+side*7,z);
@@ -183,14 +183,15 @@ export function expandWorld({kind,scene,model,camera,controls,renderer,preview,r
  }
  // Rail extensions are independently animated, while the original local trains remain intact.
  if(kind==='sakura'||kind==='rooftop'){
-  const alongZ=kind==='rooftop',track=alongZ?-28:28,railY=alongZ?6.3:.44,railParts=[];
+  const alongZ=kind==='rooftop',track=alongZ?-28:-62,railY=alongZ?6.3:.44,railParts=[];
   for(let i=-62;i<=62;i+=1.3)railParts.push({p:alongZ?[track,railY-.16,i]:[i,railY-.16,track],s:alongZ?[2,.14,.24]:[.24,.14,2],color:'#9c9588'});
   for(const side of [-1,1])railParts.push({p:alongZ?[track+side*.63,railY,0]:[0,railY,track+side*.63],s:alongZ?[.08,.1,128]:[128,.1,.08],color:'#a8b9ba'});
   const rail=new THREE.InstancedMesh(geometries.box,material,railParts.length);railParts.forEach((p,i)=>{dummy.position.set(...p.p);dummy.rotation.set(0,0,0);dummy.scale.set(...p.s);dummy.updateMatrix();rail.setMatrixAt(i,dummy.matrix);rail.setColorAt(i,new THREE.Color(p.color))});rail.castShadow=rail.receiveShadow=true;world.add(rail);
   if(alongZ){const deck=new THREE.Mesh(new THREE.BoxGeometry(5,.35,128),new THREE.MeshToonMaterial({color:'#c0c6b7',gradientMap:ramp}));deck.position.set(track,railY-.4,0);deck.castShadow=deck.receiveShadow=true;world.add(deck);const pillars=[];for(let z=-60;z<=60;z+=8)pillars.push(z);const piers=new THREE.InstancedMesh(geometries.box,material,pillars.length);pillars.forEach((z,i)=>{dummy.position.set(track,2.9,z);dummy.rotation.set(0,0,0);dummy.scale.set(.65,5.8,.65);dummy.updateMatrix();piers.setMatrixAt(i,dummy.matrix);piers.setColorAt(i,new THREE.Color('#b1bbb2'))});piers.castShadow=true;world.add(piers)}
   const train=new THREE.Group();train.name='expanded-local-train';world.add(train);
   for(let j=0;j<2;j++){const car=new THREE.Mesh(new THREE.BoxGeometry(6.4,1.7,1.9),new THREE.MeshToonMaterial({color:j?'#a5c0b5':'#85ad9e',gradientMap:ramp}));car.position.set(j*6.7,1.5,0);train.add(car);for(let k=0;k<5;k++){const window=new THREE.Mesh(new THREE.BoxGeometry(.75,.6,1.96),new THREE.MeshToonMaterial({color:'#7094a0',gradientMap:ramp}));window.position.set(j*6.7-2.3+k*1.15,1.65,0);train.add(window)}}
-  train.rotation.y=alongZ?-Math.PI/2:0;motion.push(t=>{const position=-76+(t*3.7+31)%152;train.position.set(alongZ?track:position,railY+.25,alongZ?position:track);train.visible=position>-59&&position<52});stats.vehicles+=2;
+  renderer.localClippingEnabled=true;const clip=[new THREE.Plane(new THREE.Vector3(alongZ?0:1,0,alongZ?1:0),64),new THREE.Plane(new THREE.Vector3(alongZ?0:-1,0,alongZ?-1:0),64)];train.traverse(o=>{if(o.isMesh){o.material.clippingPlanes=clip;o.material.clipShadows=true}});
+  train.rotation.y=alongZ?-Math.PI/2:0;motion.push(t=>{const position=-76+(t*3.7+31)%152;train.position.set(alongZ?track:position,railY+.25,alongZ?position:track);train.visible=position>-76&&position<76});stats.vehicles+=2;
  }
  if(kind==='intersection'){
   // Additional cars circulate on the outer neighborhood streets, avoiding the signalized core.

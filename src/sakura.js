@@ -1,3 +1,4 @@
+import {expandWorld,expandedFit} from './world-expansion.js';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
@@ -15,7 +16,7 @@ const camera=new THREE.PerspectiveCamera(33,innerWidth/innerHeight,.35,260);
 const controls=new OrbitControls(camera,renderer.domElement);
 controls.target.set(0,1.4,0);controls.enabled=!preview;controls.enableDamping=true;controls.dampingFactor=.065;
 controls.enablePan=false;controls.minDistance=19;controls.maxDistance=170;controls.minPolarAngle=.22;controls.maxPolarAngle=Math.PI*.44;
-const fit=aspect=>Math.max(35,42/aspect);
+const fit=aspect=>expandedFit(aspect);
 const distance=fit(camera.aspect);camera.position.set(distance*.65,1.4+distance*.68,distance*.79);camera.lookAt(controls.target);
 scene.add(new THREE.HemisphereLight(0xf9f7ff,0xa0b183,2.05));
 const sun=new THREE.DirectionalLight(0xfff0cc,2.65);sun.position.set(-10,19,12);sun.castShadow=true;
@@ -380,6 +381,8 @@ function animate(t){
 }
 animate(0);
 let start=null;
-function renderFrame(ms){if(start===null)start=ms;controls.update();if(!preview&&!reduced)animate((ms-start)*.001);renderer.render(scene,camera);}
+const expandedWorld=expandWorld({kind:'sakura',scene,model,camera,controls,renderer,preview,reduced});
+function renderFrame(ms){
+ expandedWorld.update(ms*.001);if(start===null)start=ms;controls.update();if(!preview&&!reduced)animate((ms-start)*.001);renderer.render(scene,camera);}
 if(preview){renderFrame(0)}else{renderer.setAnimationLoop(renderFrame)}
 addEventListener('resize',()=>{const aspect=innerWidth/innerHeight,factor=fit(aspect)/fit(camera.aspect);camera.position.sub(controls.target).multiplyScalar(factor).add(controls.target);camera.aspect=aspect;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio,preview?.85:1.8));if(preview)renderFrame(0);});

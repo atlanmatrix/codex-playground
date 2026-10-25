@@ -71,3 +71,5 @@ Each completed expansion retains its original detailed core and adds a contiguou
 - **Lakeside**: expanded to 128×128 with a long diagonal shoreline, lakeside paths, groves, fishing decks and eight additional fish schools (192 fish).
 
 - **Courtyard**: expanded to 128×128 with residential blocks, four new exercise courts, paths, benches and shade trees.
+
+- **Sakura**: expanded to 128×128 with a cherry blossom village, flowering avenues, additional railway track, petals and an animated two-car train.

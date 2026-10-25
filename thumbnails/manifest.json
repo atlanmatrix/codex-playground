@@ -5,7 +5,7 @@
   "scenes": {
     "city": {
       "file": "thumbnails/city.webp",
-      "source_sha256": "c555fbfcdcd5cc9794aa45baec423b1f4d0f127297ab91a9c411c1711cc7a9e3",
+      "source_sha256": "74286ae5babcc5b43f3c03215b803704ae94f6f38145c3b00dad728a3852eb05",
       "sha256": "12dedaf966df7660f089d2360cc69efaf9588fb38802db0307e6e2cb9e1a6caa",
       "width": 1280,
       "height": 720,
@@ -13,7 +13,7 @@
     },
     "lakeside": {
       "file": "thumbnails/lakeside.webp",
-      "source_sha256": "2e106de28d59dc5b309b0e7e86b0c1df3003ed080e1d7d6c458e5b92fb68f66f",
+      "source_sha256": "c72f363621b35a5ea9caf6fd528e303f534bdd8c8e0000cf0c152c3179be4b62",
       "sha256": "dd1897ee97e7c99a78e7fb1d16ff5c0f9bdcceb72251b57ac67f0b8b5ce8e17e",
       "width": 1280,
       "height": 720,
@@ -21,7 +21,7 @@
     },
     "courtyard": {
       "file": "thumbnails/courtyard.webp",
-      "source_sha256": "43eb342413e23fceca70665d367bd3fb3a64017b654c417dacaefa9ab7e4e66f",
+      "source_sha256": "14fe32182c436b9628c62860019ce21415988fc63721297a6cf16f2ea99998e8",
       "sha256": "0bc296aa602cc7122ade0ea1c1d94a51a83a6340170e8e871096157972130ef8",
       "width": 1280,
       "height": 720,
@@ -29,11 +29,11 @@
     },
     "sakura": {
       "file": "thumbnails/sakura.webp",
-      "source_sha256": "e01c10b74d1efb0dc83bb32153f3b9600281e11a60fd41801abd3e8ccb490031",
-      "sha256": "3f46a0b3e276c2dda59136e4d76cf3d51decccb54cdce4e9ce5761287cb65620",
+      "source_sha256": "0642ccf3805ebc1b5cad80b293faffc1c1fa7f0e89deab90e4f553fb28ec58b2",
+      "sha256": "41447de51761a4da80f6be97e00845a64a0c5d9a5bb3d613fe3558b1fcfff9bc",
       "width": 1280,
       "height": 720,
-      "bytes": 29030
+      "bytes": 22682
     },
     "rooftop": {
       "file": "thumbnails/rooftop.webp",
