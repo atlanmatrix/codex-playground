@@ -21,11 +21,11 @@
     },
     "courtyard": {
       "file": "thumbnails/courtyard.webp",
-      "source_sha256": "186f228ef96af15b30af4c9dbedf4076240a11f4585d135a79c32b341b9e061b",
-      "sha256": "0bc296aa602cc7122ade0ea1c1d94a51a83a6340170e8e871096157972130ef8",
+      "source_sha256": "9246fb163e7ecae581f2643a679a87a66cab29f00fc9951fe2bdab215dee6416",
+      "sha256": "9f01a81539b16ea592983d7b18d51a4892f3e1725989ce7d83b45d093eb38875",
       "width": 1280,
       "height": 720,
-      "bytes": 24782
+      "bytes": 15640
     },
     "sakura": {
       "file": "thumbnails/sakura.webp",

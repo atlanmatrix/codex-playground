@@ -101,3 +101,5 @@ Expansions are redesigned around each original scene’s intent, using varied, d
 - City: a roofless tram workshop, abandoned library with books and stairs, collapsed arcade and pedestrian bridge, flooded court, exposed rebar, crumbling paving and facade ivy build a coherent reclaimed district.
 
 - Lakeside: curved bays, detailed weeping willow boughs, a bank-following path, reading pavilion, bird hide, furnished fishing piers, a moored canoe with paddle and rope, reed/lily beds and distinct fish schools.
+
+- Courtyard: varied apartment wings with balcony rails, condensers, laundry and mailboxes frame connected walks, a fenced half court, chess pavilion, slide/sandbox, gatehouse, bike shelter, lockers and sorting station.
