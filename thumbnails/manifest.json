@@ -5,7 +5,7 @@
   "scenes": {
     "city": {
       "file": "thumbnails/city.webp",
-      "source_sha256": "306abbeb0aa036fe540b1ce7cb4194bc3919ff17fa931ff1f1b063cfad921657",
+      "source_sha256": "550b0ff4a7765bd092d1b7f3def6a7abdb8a519bb85690c912c8d82c267a688e",
       "sha256": "12dedaf966df7660f089d2360cc69efaf9588fb38802db0307e6e2cb9e1a6caa",
       "width": 1280,
       "height": 720,
@@ -13,7 +13,7 @@
     },
     "lakeside": {
       "file": "thumbnails/lakeside.webp",
-      "source_sha256": "41e6926866516cce66438a234322b947403cb74217b61d7dbeb49f814e907656",
+      "source_sha256": "7119ee22331d9b3222be28e0c34cd8f99557a9fe5f4e5c08e43ae10cd038b72f",
       "sha256": "dd1897ee97e7c99a78e7fb1d16ff5c0f9bdcceb72251b57ac67f0b8b5ce8e17e",
       "width": 1280,
       "height": 720,
@@ -21,7 +21,7 @@
     },
     "courtyard": {
       "file": "thumbnails/courtyard.webp",
-      "source_sha256": "9112254ac08e177d4263d17c72ebfc82c147f8421f0924a2cb3aba10ea34b054",
+      "source_sha256": "ec8deed49a14d8506c4c1dff63d446916d6433b524df7599f3a613f0543a1be4",
       "sha256": "0bc296aa602cc7122ade0ea1c1d94a51a83a6340170e8e871096157972130ef8",
       "width": 1280,
       "height": 720,
@@ -29,7 +29,7 @@
     },
     "sakura": {
       "file": "thumbnails/sakura.webp",
-      "source_sha256": "7deec3d9b4cb2b3dbae196e67977f4eb50b5af41995e6d78d747f93b9868d79e",
+      "source_sha256": "1a93d0a6999956d82360bb329e11769b2f158ea26afa601ccf56a4e488ec0512",
       "sha256": "41447de51761a4da80f6be97e00845a64a0c5d9a5bb3d613fe3558b1fcfff9bc",
       "width": 1280,
       "height": 720,
@@ -37,7 +37,7 @@
     },
     "rooftop": {
       "file": "thumbnails/rooftop.webp",
-      "source_sha256": "d31d661607bcbb0bdaf780c774f8cbc81e51b06a351eed8096d9af7dad0d1763",
+      "source_sha256": "6e8b993206146df03422ea548623638c530514ac7390edaefa885611eb650347",
       "sha256": "ad7e91871107029e4cc74ce0fd7f6f3438700f65cbee6c4c2816be2a8511cfc0",
       "width": 1280,
       "height": 720,
@@ -45,7 +45,7 @@
     },
     "rainy": {
       "file": "thumbnails/rainy.webp",
-      "source_sha256": "e8cd994b4db92b0e9b2a2aeb69cb1c6c4a5a3689c4293b87027e04d4ac49b912",
+      "source_sha256": "6f834e9dd08b10b09fc5973090e58d4e81c03a1f948c52604c0903b02d3a6354",
       "sha256": "f37d1092add9408fd124172090fd6900feb53081ce11c96c22b908dd5b2dd2fd",
       "width": 1280,
       "height": 720,
@@ -53,7 +53,7 @@
     },
     "onsen": {
       "file": "thumbnails/onsen.webp",
-      "source_sha256": "445b4c6582b456d570214f636c977db91cf5caeb5128851d9896b0169c720076",
+      "source_sha256": "ce2f6179380ff4d12d890f3a9080cd3d062180b32ed86c6deb459f57d6f11e3d",
       "sha256": "47f586469b1373307a3b36196da545aec1be42419c4ef0cbe589d40d4cb4d139",
       "width": 1280,
       "height": 720,
@@ -61,7 +61,7 @@
     },
     "study": {
       "file": "thumbnails/study.webp",
-      "source_sha256": "e1f4faf2943082d6714c02c72a9faccd35316c5245dc0debc3c8104ec582201f",
+      "source_sha256": "4147bae5a3d64898b92c7080bbe4742bc4d1ccaf672e0f2743b3488853271404",
       "sha256": "d2fc29f526e2cb6c6375524333a673b77f2b76721af4ae1a43bdd77a8f8a65d4",
       "width": 1280,
       "height": 720,
@@ -69,11 +69,11 @@
     },
     "intersection": {
       "file": "thumbnails/intersection.webp",
-      "source_sha256": "1ea68093a5e75dab73c3e015f9e497b2ed693e7a7b04594be687b35cc1d17a3f",
-      "sha256": "4fcbd3305f9c9fe844ee8bdcc5ba10cd9e130383dfa2dd9c869f11201e3c5305",
+      "source_sha256": "008cca9a78e3504ae80b0696a7df41047751fb647ab9c57b16459c684197b285",
+      "sha256": "3ea71ec6bf4c7d673372c0ee0bd062c8a7de49cd2f0c7f63394243588660f66f",
       "width": 1280,
       "height": 720,
-      "bytes": 38454
+      "bytes": 32214
     },
     "summit": {
       "file": "thumbnails/summit.webp",

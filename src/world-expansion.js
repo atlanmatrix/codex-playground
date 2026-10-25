@@ -195,9 +195,19 @@ export function expandWorld({kind,scene,model,camera,controls,renderer,preview,r
  }
  if(kind==='intersection'){
   // Additional cars circulate on the outer neighborhood streets, avoiding the signalized core.
+  // Four short overpasses keep the outer circuit separate from the central avenues.
+  const bridgeHeight=u=>2.6*Math.exp(-Math.pow(u/9,4)),bridgeSlope=u=>-2.6*Math.exp(-Math.pow(u/9,4))*4*Math.pow(u/9,3)/9;
+  const deckPositions=[];
+  for(const [axis,offset] of [[0,-24],[0,24],[1,-24],[1,24]])for(let i=0;i<72;i++){
+   const u=-18+i*.5,v=u+.5,point=(a,side)=>axis?[a,cfg.top+.07+bridgeHeight(a),offset+side*2.5]:[offset+side*2.5,cfg.top+.07+bridgeHeight(a),a];
+   const a=point(u,-1),b=point(u,1),c=point(v,-1),d=point(v,1);deckPositions.push(...a,...b,...c,...c,...b,...d);
+  }
+  const deckGeo=new THREE.BufferGeometry();deckGeo.setAttribute('position',new THREE.Float32BufferAttribute(deckPositions,3));deckGeo.computeVertexNormals();const bridges=new THREE.Mesh(deckGeo,new THREE.MeshToonMaterial({color:'#819398',gradientMap:ramp,side:THREE.DoubleSide}));bridges.name='expanded-traffic-overpasses';bridges.castShadow=bridges.receiveShadow=true;world.add(bridges);stats.bridges=4;
+  const piers=new THREE.InstancedMesh(geometries.box,material,16);let pier=0;
+  for(const [axis,offset] of [[0,-24],[0,24],[1,-24],[1,24]])for(const u of [-6,6])for(const side of [-1,1]){const h=bridgeHeight(u);dummy.position.set(axis?u:offset+side*2.1,cfg.top+h/2,axis?offset+side*2.1:u);dummy.rotation.set(0,0,0);dummy.scale.set(.3,h,.3);dummy.updateMatrix();piers.setMatrixAt(pier,dummy.matrix);piers.setColorAt(pier++,new THREE.Color('#b5c0b5'))}piers.castShadow=true;world.add(piers);
   const vehicleParts=[];for(let i=0;i<24;i++){vehicleParts.push({color:pick(['#c27d6c','#a2b9bb','#d9bf7f','#9cb9a0']),phase:i/24})}
   const bodies=new THREE.InstancedMesh(geometries.box,material,24),tops=new THREE.InstancedMesh(geometries.box,material,24);bodies.name='expanded-neighborhood-traffic';world.add(bodies,tops);vehicleParts.forEach((v,i)=>{bodies.setColorAt(i,new THREE.Color(v.color));tops.setColorAt(i,new THREE.Color('#99b5ba'))});stats.vehicles+=24;
-  motion.push(t=>{vehicleParts.forEach((v,i)=>{const progress=(v.phase+t*.007)%1,s=progress*4,k=Math.floor(s),u=s-k,L=24,offset=1.3,x=k===0?-L+48*u:k===1?L:k===2?L-48*u:-L,z=k===0?-L:k===1?-L+48*u:k===2?L:L-48*u,ry=[Math.PI/2,0,-Math.PI/2,Math.PI][k];dummy.position.set(x,.65,z);dummy.rotation.set(0,ry,0);dummy.scale.set(1.4,.7,2.7);dummy.updateMatrix();bodies.setMatrixAt(i,dummy.matrix);dummy.position.y=1.2;dummy.scale.set(1.18,.5,1.45);dummy.updateMatrix();tops.setMatrixAt(i,dummy.matrix)});bodies.instanceMatrix.needsUpdate=true;tops.instanceMatrix.needsUpdate=true});
+  motion.push(t=>{vehicleParts.forEach((v,i)=>{const progress=(v.phase+t*.007)%1,s=progress*4,k=Math.floor(s),u=s-k,L=24,offset=1.3,x=k===0?-L+48*u:k===1?L:k===2?L-48*u:-L,z=k===0?-L:k===1?-L+48*u:k===2?L:L-48*u,ry=[Math.PI/2,0,-Math.PI/2,Math.PI][k];const coordinate=k%2?z:x,lift=bridgeHeight(coordinate),pitch=bridgeSlope(coordinate)*(k<2?1:-1);dummy.position.set(x,.65+lift,z);dummy.rotation.set(-Math.atan(pitch),ry,0,'YXZ');dummy.scale.set(1.4,.7,2.7);dummy.updateMatrix();bodies.setMatrixAt(i,dummy.matrix);dummy.position.y=1.2+lift;dummy.scale.set(1.18,.5,1.45);dummy.updateMatrix();tops.setMatrixAt(i,dummy.matrix)});bodies.instanceMatrix.needsUpdate=true;tops.instanceMatrix.needsUpdate=true});
  }
  if(['rainy','summit','desert','sakura'].includes(kind)){
   const rain=kind==='rainy',snow=kind==='summit',petals=kind==='sakura',count=rain?2400:1100;

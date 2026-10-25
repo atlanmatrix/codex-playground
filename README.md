@@ -81,3 +81,5 @@ Each completed expansion retains its original detailed core and adds a contiguou
 - **Onsen**: expanded to 128×128 with a mountain woodland, additional timber guest houses, stone paths, rest terraces and lanterns.
 
 - **Study**: expanded to 128×128 with a connected library and editing studio with thousands of books, workstations, reading lounges and plants.
+
+- **Intersection**: expanded to 128×128 with additional city blocks and roads, trees, benches and 24 cars on an outer neighborhood circuit, four grade-separated crossings, and central traffic routes extended to the square edges.

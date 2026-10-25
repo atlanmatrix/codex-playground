@@ -166,6 +166,10 @@ try{
      const queue=cars.filter(c=>c.userData.lane===lane).map(c=>c.userData.progress).sort((a,b)=>a-b);
      for(let j=1;j<queue.length;j++)assert(queue[j]-queue[j-1]>=3.74,'Traffic queues must preserve spacing');
     }
+    if(expanded&&ms%100===0){
+     const traffic=scene.getObjectByName('expanded-neighborhood-traffic'),m=traffic.instanceMatrix.array;assert.equal(model.userData.expansion.bridges,4);
+     for(let i=0;i<traffic.count;i++)for(const c of cars)assert(Math.abs(m[i*16+13]-(c.position.y+.66))>1.35||Math.abs(m[i*16+12]-c.position.x)>2.05||Math.abs(m[i*16+14]-c.position.z)>2.05,'Grade-separated outer traffic must clear the central avenue traffic');
+    }
     // AABB footprints of orthogonal cars may never intersect in the junction.
     for(const a of cars.filter(c=>c.userData.axis===0))for(const b of cars.filter(c=>c.userData.axis===1))assert(Math.abs(a.position.x-b.position.x)>2.01||Math.abs(a.position.z-b.position.z)>2.01,'Cross traffic collision');
    }

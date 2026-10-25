@@ -1,7 +1,8 @@
+import {expandWorld,expandedFit} from './world-expansion.js';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { DEFAULT_BASE_SIZE } from './scene-defaults.js';
+import { CORE_BASE_SIZE } from './scene-defaults.js';
 
 const preview=new URLSearchParams(location.search).has('preview');
 const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -12,10 +13,10 @@ renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFi
 document.body.appendChild(renderer.domElement);renderer.domElement.setAttribute('role','img');renderer.domElement.setAttribute('aria-label','午后的十字路口，车辆随红绿灯交替通行；拖拽旋转，滚轮或双指缩放');
 const camera=new THREE.PerspectiveCamera(34,Math.max(1,innerWidth)/Math.max(1,innerHeight),.3,350);
 const controls=new OrbitControls(camera,renderer.domElement);controls.target.set(0,1.5,0);controls.enableDamping=true;controls.enabled=!preview;controls.enablePan=false;controls.minDistance=37;controls.maxDistance=260;controls.minPolarAngle=.24;controls.maxPolarAngle=Math.PI*.44;
-const fit=aspect=>Math.max(74,80/aspect);const direction=new THREE.Vector3(.64,.82,.86).normalize();camera.position.copy(direction.multiplyScalar(fit(camera.aspect))).add(controls.target);camera.lookAt(controls.target);
+const fit=aspect=>expandedFit(aspect);const direction=new THREE.Vector3(.64,.82,.86).normalize();camera.position.copy(direction.multiplyScalar(fit(camera.aspect))).add(controls.target);camera.lookAt(controls.target);
 scene.add(new THREE.HemisphereLight(0xe4f3ff,0xb5ad8d,2.1));
 const sun=new THREE.DirectionalLight(0xffefd3,3.1);sun.position.set(-14,28,18);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);Object.assign(sun.shadow.camera,{left:-24,right:24,top:24,bottom:-24,near:1,far:70});sun.shadow.normalBias=.035;scene.add(sun);
-const model=new THREE.Group();model.name='intersection-miniature';model.userData.baseSize=DEFAULT_BASE_SIZE;scene.add(model);
+const model=new THREE.Group();model.name='intersection-miniature';model.userData.baseSize=CORE_BASE_SIZE;scene.add(model);
 const scenery=new THREE.Group();scenery.name='four-corner-neighborhood';model.add(scenery);
 const ramp=new THREE.DataTexture(new Uint8Array([85,150,205,240,255]),5,1,THREE.RedFormat);ramp.needsUpdate=true;ramp.minFilter=ramp.magFilter=THREE.NearestFilter;
 const toon=color=>new THREE.MeshToonMaterial({color,gradientMap:ramp});
@@ -35,7 +36,7 @@ function sign(text,x,y,z,w,h,bg,rotation=0,parent=scenery){
  const tex=new THREE.CanvasTexture(c);tex.colorSpace=THREE.SRGBColorSpace;const o=box(x,y,z,w,h,.06,new THREE.MeshToonMaterial({map:tex,gradientMap:ramp}),parent);o.rotation.y=rotation;return o;
 }
 // A complete square section. Both streets continue naturally to the four cut edges.
-box(0,-.73,0,DEFAULT_BASE_SIZE,1.3,DEFAULT_BASE_SIZE,m.soil);box(0,-.02,0,32,.12,32,m.base);
+box(0,-.73,0,CORE_BASE_SIZE,1.3,CORE_BASE_SIZE,m.soil);box(0,-.02,0,32,.12,32,m.base);
 box(0,.07,0,8,.06,32,m.road);box(-10,.07,0,12,.06,8,m.road);box(10,.07,0,12,.06,8,m.road);
 const shadow=new THREE.Mesh(new THREE.PlaneGeometry(200,200),new THREE.ShadowMaterial({opacity:.14}));shadow.rotation.x=-Math.PI/2;shadow.position.y=-1.4;scene.add(shadow);
 const tiles=[],dummy=new THREE.Object3D();
@@ -105,7 +106,7 @@ for(let lane=0;lane<4;lane++){
  const lights=[];for(let i=0;i<3;i++){const mat=toon('#3c5050');mat.emissive=new THREE.Color(0);lights.push(mat);const lens=pole(-2.47+i*.42,4.28,-6.48,.155,.06,mat,g);lens.rotation.x=Math.PI/2}
  signals.push({axis,lights,g});
 }
-const edgePlanes=[new THREE.Plane(new THREE.Vector3(1,0,0),16),new THREE.Plane(new THREE.Vector3(-1,0,0),16),new THREE.Plane(new THREE.Vector3(0,0,1),16),new THREE.Plane(new THREE.Vector3(0,0,-1),16)];
+const edgePlanes=[new THREE.Plane(new THREE.Vector3(1,0,0),64),new THREE.Plane(new THREE.Vector3(-1,0,0),64),new THREE.Plane(new THREE.Vector3(0,0,1),64),new THREE.Plane(new THREE.Vector3(0,0,-1),64)];
 const cars=[],lanes=[];const colors=['#e0b354','#bd7467','#8bb5a5','#eee5cb','#91afc0','#adbd85'];
 for(let lane=0;lane<4;lane++){
  const axis=lane<2?0:1,dir=lane%2===0?1:-1,list=[];lanes.push(list);
@@ -142,13 +143,15 @@ function step(dt,t){
    c.v=Math.max(0,c.v+THREE.MathUtils.clamp(target-c.v,-3.5*dt,1.6*dt));
    const movement=Math.max(0,Math.min(c.v*dt,gap));c.u+=movement;c.travel+=movement;if(gap<.002)c.v=0;
   }
-  for(const c of list)if(c.u>18.2){const tail=Math.min(...list.filter(a=>a!==c).map(a=>a.u));if(tail>-14.2){c.u=-18.4;c.v=3.3}else c.v=0}
+  for(const c of list)if(c.u>66.2){const tail=Math.min(...list.filter(a=>a!==c).map(a=>a.u));if(tail>-62.2){c.u=-66.4;c.v=3.3}else c.v=0}
  }
  cars.forEach(pose);lamps(t);
 }
 cars.forEach(pose);lamps(0);
 let last=null,simulation=0,accumulator=0;
+const expandedWorld=expandWorld({kind:'intersection',scene,model,camera,controls,renderer,preview,reduced});
 function renderFrame(ms){
+ expandedWorld.update(ms*.001);
  if(last===null)last=ms;const delta=Math.max(0,Math.min((ms-last)/1000,.25));last=ms;
  if(!preview&&!reduced){accumulator+=delta;while(accumulator>=1/60){simulation+=1/60;step(1/60,simulation);accumulator-=1/60}}
  controls.update();renderer.render(scene,camera);
