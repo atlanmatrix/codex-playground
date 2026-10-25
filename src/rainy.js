@@ -1,3 +1,4 @@
+import {expandWorld,expandedFit} from './world-expansion.js';
 import * as THREE from 'three';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
@@ -11,7 +12,7 @@ const preview=new URLSearchParams(location.search).has('preview');
 const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
 const vw=Math.max(1,innerWidth),vh=Math.max(1,innerHeight);
 const scene=new THREE.Scene();scene.background=new THREE.Color('#252e49');
-scene.fog=new THREE.FogExp2('#1a2139',.011);
+scene.fog=new THREE.FogExp2('#1a2139',.0007);
 const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,powerPreference:'high-performance'});
 renderer.setPixelRatio(Math.min(devicePixelRatio,preview?.8:1.5));renderer.setSize(vw,vh);
 renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.12;
@@ -22,7 +23,7 @@ const camera=new THREE.PerspectiveCamera(34,vw/vh,.4,250);
 const controls=new OrbitControls(camera,renderer.domElement);controls.target.set(0,1.8,0);
 controls.enableDamping=true;controls.dampingFactor=.065;controls.enablePan=false;controls.enabled=!preview;
 controls.minDistance=21;controls.maxDistance=160;controls.minPolarAngle=.26;controls.maxPolarAngle=Math.PI*.455;
-const fit=a=>Math.max(34,39/a),d=fit(camera.aspect);
+const fit=a=>expandedFit(a),d=fit(camera.aspect);
 camera.position.set(d*.48,1.8+d*.56,d*.94);camera.lookAt(controls.target);
 scene.add(new THREE.HemisphereLight('#98a7db','#262538',.58));
 const moon=new THREE.DirectionalLight('#a2b7ef',.86);moon.position.set(-8,18,6);moon.castShadow=true;
@@ -236,6 +237,8 @@ const drips=instances(geo.sphere,new THREE.MeshBasicMaterial({color:'#acc9df',tr
 const composer=new EffectComposer(renderer);composer.addPass(new RenderPass(scene,camera));
 const bloom=new UnrealBloomPass(new THREE.Vector2(vw,vh),.32,.43,1.25);composer.addPass(bloom);composer.addPass(new OutputPass());bloom.setSize(vw*.5,vh*.5);
 let started=null,lastRender=-Infinity,renderedOnce=false;const lastPosition=new THREE.Vector3(),lastQuaternion=new THREE.Quaternion();
-function renderFrame(ms){if(started===null)started=ms;const t=preview||reduced?0:(ms-started)*.001;controls.update();if(reduced&&renderedOnce&&lastPosition.distanceToSquared(camera.position)<1e-12&&Math.abs(lastQuaternion.dot(camera.quaternion))>1-1e-12)return;if(!preview&&!reduced&&ms-lastRender<32)return;lastRender=ms;rainMaterial.uniforms.time.value=t;rippleUniforms.time.value=t;reflection.material.uniforms.time.value=t;drips.position.y=-(t*.42% .30);composer.render();lastPosition.copy(camera.position);lastQuaternion.copy(camera.quaternion);renderedOnce=true;}
+const expandedWorld=expandWorld({kind:'rainy',scene,model,camera,controls,renderer,preview,reduced});
+function renderFrame(ms){
+ expandedWorld.update(ms*.001);if(started===null)started=ms;const t=preview||reduced?0:(ms-started)*.001;controls.update();if(reduced&&renderedOnce&&lastPosition.distanceToSquared(camera.position)<1e-12&&Math.abs(lastQuaternion.dot(camera.quaternion))>1-1e-12)return;if(!preview&&!reduced&&ms-lastRender<32)return;lastRender=ms;rainMaterial.uniforms.time.value=t;rippleUniforms.time.value=t;reflection.material.uniforms.time.value=t;drips.position.y=-(t*.42% .30);composer.render();lastPosition.copy(camera.position);lastQuaternion.copy(camera.quaternion);renderedOnce=true;}
 if(preview)renderFrame(0);else renderer.setAnimationLoop(renderFrame);
 addEventListener('resize',()=>{if(innerWidth<1||innerHeight<1)return;const aspect=innerWidth/innerHeight,factor=fit(aspect)/fit(camera.aspect);camera.position.sub(controls.target).multiplyScalar(factor).add(controls.target);camera.aspect=aspect;camera.updateProjectionMatrix();renderer.setPixelRatio(Math.min(devicePixelRatio,preview?.8:1.5));renderer.setSize(innerWidth,innerHeight);composer.setPixelRatio(renderer.getPixelRatio());composer.setSize(innerWidth,innerHeight);bloom.setSize(innerWidth*.5,innerHeight*.5);renderedOnce=false;if(preview||reduced)renderFrame(0)});

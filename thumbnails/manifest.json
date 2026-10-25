@@ -45,11 +45,11 @@
     },
     "rainy": {
       "file": "thumbnails/rainy.webp",
-      "source_sha256": "da29c7f84a04929593bf9a711efb5f32a5b3662670ed50d9f8b8e29a17b4b6e0",
-      "sha256": "951c0a40fa70221b64ef05865c17b14fa98ca514ceab9298d410e55829909593",
+      "source_sha256": "3ddcb4945d77e297e4a7a41e65e521e2c6ec90b03c8f90dbfd84b09adb68f299",
+      "sha256": "f37d1092add9408fd124172090fd6900feb53081ce11c96c22b908dd5b2dd2fd",
       "width": 1280,
       "height": 720,
-      "bytes": 44634
+      "bytes": 35444
     },
     "onsen": {
       "file": "thumbnails/onsen.webp",

@@ -44,6 +44,7 @@ try{
  assert(model);
  const expanded=model.userData.baseSize===128;
  if(expanded){
+  if(name==='rainy')assert(scene.fog.density<=.001,'Fog must leave the enlarged night district visible');
   const extension=scene.getObjectByName(`expanded-${name}-world`);assert(extension&&extension.userData.staticInstances>800);
   const terrain=extension.getObjectByName('expanded-terrain-ring');terrain.geometry.computeBoundingBox();const bounds=terrain.geometry.boundingBox;
   assert.equal(bounds.min.x,-64);assert.equal(bounds.max.x,64);assert.equal(bounds.min.z,-64);assert.equal(bounds.max.z,64);
