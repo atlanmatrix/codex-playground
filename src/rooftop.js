@@ -1,3 +1,4 @@
+import {expandWorld,expandedFit} from './world-expansion.js';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
@@ -16,7 +17,7 @@ const camera=new THREE.PerspectiveCamera(33,initialWidth/initialHeight,.35,270);
 const controls=new OrbitControls(camera,renderer.domElement);
 controls.target.set(0,2.0,0);controls.enableDamping=true;controls.dampingFactor=.065;controls.enabled=!preview;controls.enablePan=false;
 controls.minDistance=20;controls.maxDistance=170;controls.minPolarAngle=.22;controls.maxPolarAngle=Math.PI*.44;
-const fit=aspect=>Math.max(36,42/aspect);
+const fit=aspect=>expandedFit(aspect);
 const distance=fit(camera.aspect);camera.position.set(distance*.58,2+distance*.84,distance*.77);camera.lookAt(controls.target);
 scene.add(new THREE.HemisphereLight(0xe4f3ff,0x858f85,1.95));
 const sun=new THREE.DirectionalLight(0xfff0d5,3.25);sun.position.set(-10,22,7);sun.castShadow=true;
@@ -433,7 +434,9 @@ function animate(t){
 }
 animate(0);
 let start=null;
-function renderFrame(ms){if(start===null)start=ms;controls.update();if(!preview&&!reduced)animate((ms-start)*.001);renderer.render(scene,camera);}
+const expandedWorld=expandWorld({kind:'rooftop',scene,model,camera,controls,renderer,preview,reduced});
+function renderFrame(ms){
+ expandedWorld.update(ms*.001);if(start===null)start=ms;controls.update();if(!preview&&!reduced)animate((ms-start)*.001);renderer.render(scene,camera);}
 if(preview){renderFrame(0)}else{renderer.setAnimationLoop(renderFrame)}
 addEventListener('resize',()=>{
  // Lazy iframes can temporarily collapse during layout or capture. Preserve the

@@ -37,11 +37,11 @@
     },
     "rooftop": {
       "file": "thumbnails/rooftop.webp",
-      "source_sha256": "645e65ce734aabdfd603c55c52fe6ffe3abbb0bc3cc9ccb4ca53c3f3ffe47008",
-      "sha256": "20a43360433d64e8f5d5891227f7ef3d79f677c42411cab887ba4bf5b6fd1a74",
+      "source_sha256": "c8127ab71f3c6f5aaccd381673d086be5e9d073183f99ad91fb69384227807e5",
+      "sha256": "ad7e91871107029e4cc74ce0fd7f6f3438700f65cbee6c4c2816be2a8511cfc0",
       "width": 1280,
       "height": 720,
-      "bytes": 36516
+      "bytes": 24692
     },
     "rainy": {
       "file": "thumbnails/rainy.webp",

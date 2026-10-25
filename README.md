@@ -73,3 +73,5 @@ Each completed expansion retains its original detailed core and adds a contiguou
 - **Courtyard**: expanded to 128×128 with residential blocks, four new exercise courts, paths, benches and shade trees.
 
 - **Sakura**: expanded to 128×128 with a cherry blossom village, flowering avenues, additional railway track, petals and an animated two-car train.
+
+- **Rooftop**: expanded to 128×128 with a larger shop-and-home district, an elevated railway viaduct, streets, trees and an additional two-car train.
