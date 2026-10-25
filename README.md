@@ -85,3 +85,5 @@ Each completed expansion retains its original detailed core and adds a contiguou
 - **Intersection**: expanded to 128×128 with additional city blocks and roads, trees, benches and 24 cars on an outer neighborhood circuit, four grade-separated crossings, and central traffic routes extended to the square edges.
 
 - **Summit**: expanded to 128×128 with a wider snow mountain range, additional peaks, snow-laden pines, alpine shrubs and wind-driven snow.
+
+- **Desert**: expanded to 128×128 with broader dune fields, distant sandstone towers, cacti, shrubs, sand ripples and drifting grains.

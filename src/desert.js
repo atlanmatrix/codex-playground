@@ -1,7 +1,8 @@
+import {expandWorld,expandedFit} from './world-expansion.js';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { DEFAULT_BASE_SIZE } from './scene-defaults.js';
+import { CORE_BASE_SIZE } from './scene-defaults.js';
 
 const preview=new URLSearchParams(location.search).has('preview');
 const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -12,10 +13,10 @@ renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFi
 document.body.appendChild(renderer.domElement);renderer.domElement.setAttribute('role','img');renderer.domElement.setAttribute('aria-label','沙丘、风蚀石拱、仙人掌和摇曳灌木组成的沙漠微缩景观；拖拽旋转，滚轮或双指缩放');
 const camera=new THREE.PerspectiveCamera(34,Math.max(1,innerWidth)/Math.max(1,innerHeight),.3,350);
 const controls=new OrbitControls(camera,renderer.domElement);controls.target.set(0,3.0,0);controls.enableDamping=true;controls.enabled=!preview;controls.enablePan=false;controls.minDistance=42;controls.maxDistance=260;controls.minPolarAngle=.24;controls.maxPolarAngle=Math.PI*.44;
-const fit=aspect=>Math.max(77,82/aspect);const direction=new THREE.Vector3(.64,.82,.86).normalize();camera.position.copy(direction.multiplyScalar(fit(camera.aspect))).add(controls.target);camera.lookAt(controls.target);
+const fit=aspect=>expandedFit(aspect);const direction=new THREE.Vector3(.64,.82,.86).normalize();camera.position.copy(direction.multiplyScalar(fit(camera.aspect))).add(controls.target);camera.lookAt(controls.target);
 scene.add(new THREE.HemisphereLight(0xffebcd,0xb58a62,1.9));
 const sun=new THREE.DirectionalLight(0xffe1aa,3.0);sun.position.set(-18,24,12);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);Object.assign(sun.shadow.camera,{left:-24,right:24,top:24,bottom:-24,near:1,far:70});sun.shadow.normalBias=.035;scene.add(sun);
-const model=new THREE.Group();model.name='desert-miniature';model.userData.baseSize=DEFAULT_BASE_SIZE;scene.add(model);
+const model=new THREE.Group();model.name='desert-miniature';model.userData.baseSize=CORE_BASE_SIZE;scene.add(model);
 const scenery=new THREE.Group();scenery.name='sandstone-and-desert-plants';model.add(scenery);
 const ramp=new THREE.DataTexture(new Uint8Array([85,150,205,240,255]),5,1,THREE.RedFormat);ramp.needsUpdate=true;ramp.minFilter=ramp.magFilter=THREE.NearestFilter;
 const toon=color=>new THREE.MeshToonMaterial({color,gradientMap:ramp});
@@ -43,7 +44,7 @@ function height(x,z){
  return .7+main+small+.14*Math.sin(z*.32+x*.18);
 }
 model.userData.terrainHeight=height;
-const HALF=DEFAULT_BASE_SIZE/2,N=96,positions=[],colors=[],indices=[];
+const HALF=CORE_BASE_SIZE/2,N=96,positions=[],colors=[],indices=[];
 for(let j=0;j<=N;j++)for(let i=0;i<=N;i++){
  const x=-HALF+i*32/N,z=-HALF+j*32/N,y=height(x,z);positions.push(x,y,z);
  const c=new THREE.Color().lerpColors(new THREE.Color('#d9ab72'),new THREE.Color('#f3d59a'),THREE.MathUtils.clamp(.4+y*.07,0,1));colors.push(c.r,c.g,c.b);
@@ -141,6 +142,8 @@ function animate(t){
  grains.forEach((p,i)=>{const x=wrap(p.x+t*(2.5+.35*Math.sin(p.phase)),30)-15,z=wrap(p.z+t*.36,30)-15;dummy.position.set(x,height(x,z)+p.h+.05*Math.sin(t*2+p.phase),z);dummy.scale.set(p.s*(3+gust*2),p.s*.65,p.s);dummy.rotation.set(0,-.14,0);dummy.updateMatrix();dust.setMatrixAt(i,dummy.matrix)});dust.instanceMatrix.needsUpdate=true;
 }
 animate(0);let start=null;
-function renderFrame(ms){if(start===null)start=ms;if(!preview&&!reduced)animate((ms-start)/1000);controls.update();renderer.render(scene,camera)}
+const expandedWorld=expandWorld({kind:'desert',scene,model,camera,controls,renderer,preview,reduced,nativeHeight:height});
+function renderFrame(ms){
+ expandedWorld.update(ms*.001);if(start===null)start=ms;if(!preview&&!reduced)animate((ms-start)/1000);controls.update();renderer.render(scene,camera)}
 if(preview)renderFrame(0);else renderer.setAnimationLoop(renderFrame);
 addEventListener('resize',()=>{if(innerWidth<1||innerHeight<1)return;const aspect=innerWidth/innerHeight;camera.position.sub(controls.target).multiplyScalar(fit(aspect)/fit(camera.aspect)).add(controls.target);camera.aspect=aspect;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);if(preview)renderFrame(0)});

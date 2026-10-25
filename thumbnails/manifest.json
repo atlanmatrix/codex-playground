@@ -85,11 +85,11 @@
     },
     "desert": {
       "file": "thumbnails/desert.webp",
-      "source_sha256": "3e4dcd30e07f881a6bf2c873ef0f064a16606b7cfaaf9eaa716ed5814c7bbec7",
-      "sha256": "e66a12b2912f9ddb0f2752eeee554db59194269b69d81cf2fc9b9ecf03e70bda",
+      "source_sha256": "fc36516de179fbe6c4e3ee5987d0864f99175b564871f42ca6382f2dafbe9fd2",
+      "sha256": "a32bf2453b7fbed7278fd22dbb426a39d2339a7262cfb40b0b81942df8c17f0a",
       "width": 1280,
       "height": 720,
-      "bytes": 20504
+      "bytes": 20252
     },
     "ocean": {
       "file": "thumbnails/ocean.webp",
