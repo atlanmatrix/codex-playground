@@ -30,7 +30,7 @@ export function detailedWorld(options,design){
   }
   cyl(0,y+h+.12,0,.14,d+.9,'#677e78',parent,[Math.PI/2,0,0]);
  }
- function stair(x,y,z,width,steps,rise,run,parent=world,ry=0){const g=group('stair-flight',x,y,z,ry,false,parent);for(let i=0;i<steps;i++)box(0,(i+.5)*rise,i*run,width,(i+1)*rise,run,'#a9b1a5',g);for(const s of [-1,1]){line([[s*width/2,.8,-.2],[s*width/2,steps*rise+.8,(steps-1)*run]],.035,'#7c9190',g);for(let i=0;i<steps;i+=2)cyl(s*width/2,i*rise+.4,i*run,.035,.8,'#7c9190',g)}return g}
+ function stair(x,y,z,width,steps,rise,run,parent=world,ry=0){const g=group('stair-flight',x,y,z,ry,false,parent);for(let i=0;i<steps;i++)box(0,(i+1)*rise/2,i*run,width,(i+1)*rise,run,'#a9b1a5',g);for(const s of [-1,1]){line([[s*width/2,.8,-.2],[s*width/2,steps*rise+.8,(steps-1)*run]],.035,'#7c9190',g);for(let i=0;i<steps;i+=2)cyl(s*width/2,i*rise+.4,i*run,.035,.8,'#7c9190',g)}return g}
  function bench(x,z,ry=0,parent=world){const g=group('slatted-bench',x, parent===world?land(x,z):0,z,ry,false,parent);for(let i=0;i<5;i++)box(0,.68,-.4+i*.2,3.1,.1,.16,i%2?'#b49a73':'#c2aa83',g);for(let i=0;i<3;i++)box(0,1+i*.18,-.5,3.1,.14,.08,'#b49a73',g);for(const s of [-1,1]){box(s*1.1,.34,0,.13,.68,.9,'#637b7b',g);rod([s*1.45,.6,.38],[s*1.45,.95,-.42],.045,'#637b7b',g)}return g}
  function tree(style,x,z,s=1){const y=land(x,z),g=group(style+'-tree',x,y,z,R(-.3,.3));stats.trees++;const trunk=style==='palm'?'#a29572':'#8c7d60';
   line([[0,0,0],[.1*s,2*s,.05],[.2*s,4*s,0],[.5*s,5.4*s,.1]],.16*s,trunk,g);

@@ -5,15 +5,15 @@
   "scenes": {
     "city": {
       "file": "thumbnails/city.webp",
-      "source_sha256": "c819f27890be404d0b813d03f2393be32089a50cb45ac756f336e6c86a617f29",
-      "sha256": "8b57b594400fd7b319183a4ada20db31e07e3c7287a8c608aed503bbe87181d9",
+      "source_sha256": "1154b59829667fc1f3cf1dc838c8b7c32172f3147d9d0a2546ff19610cfcd07d",
+      "sha256": "e7e11586ad02f2cece1d045640f95e188b7c621a14ec788199f3861f24c4c73c",
       "width": 1280,
       "height": 720,
-      "bytes": 15196
+      "bytes": 15176
     },
     "lakeside": {
       "file": "thumbnails/lakeside.webp",
-      "source_sha256": "2b18a91c5646beed950d448a330fca22a9f3b87b40b538e4bcba5d85808da0da",
+      "source_sha256": "80c7b126895323c79270256cecf9ed196cb4b6df678d9f91fc49090151d9c5c7",
       "sha256": "d9140ceacd7ff96779c6d517f067ce0791a924a430bdc2920915cba846ce93fb",
       "width": 1280,
       "height": 720,
@@ -21,15 +21,15 @@
     },
     "courtyard": {
       "file": "thumbnails/courtyard.webp",
-      "source_sha256": "887819708d9036cfb092e1a3e31b827be80c37fc98bbc838fbf23c31e01790d0",
-      "sha256": "9f01a81539b16ea592983d7b18d51a4892f3e1725989ce7d83b45d093eb38875",
+      "source_sha256": "af9f974dd03c2811a1f932571b25d1b83ec8fac4f8ce71e8ab4114d9619eb91d",
+      "sha256": "a2d348d9926f1ea7d384c8673fdcd19fd896912dffbee1713ab84bcd9a214f50",
       "width": 1280,
       "height": 720,
-      "bytes": 15640
+      "bytes": 15642
     },
     "sakura": {
       "file": "thumbnails/sakura.webp",
-      "source_sha256": "6fd70a3926ebcbcb12d976a0bbe775879e6407437c1571d4270c78e0d2063844",
+      "source_sha256": "d70b3d489dd4d2314fa47e5fefca44ab07902d02c3e24a325426693089c9ac0c",
       "sha256": "2e774abae44a23776a96df28fd246db1080c67d6c6dc3d5343ee2172f269a7c5",
       "width": 1280,
       "height": 720,
@@ -37,15 +37,15 @@
     },
     "rooftop": {
       "file": "thumbnails/rooftop.webp",
-      "source_sha256": "da2ba867083dfdac0da2307301b29a65682ba134e33a71118fd46d8843cc6509",
-      "sha256": "45d343012aac391d7c7693e328bf47f58c30b6c01be685396ad745eb37cf7e9c",
+      "source_sha256": "fe66bab6f1b32a739e11215337c82f035aa6785246a346697ad08d486bc0cba8",
+      "sha256": "28a0020269247962b5f2e4b0aac013954745036fa30a606b5f4ab64eccebf71d",
       "width": 1280,
       "height": 720,
-      "bytes": 16794
+      "bytes": 16762
     },
     "rainy": {
       "file": "thumbnails/rainy.webp",
-      "source_sha256": "f6951131cff8d9cce261b22c8746fa83a5ba2ffd7da662cbe56c3f4a035d9351",
+      "source_sha256": "74cbb5a3e810a126088cfb1c90d628c9c029b0ac6674b5b22f1775c339c19bff",
       "sha256": "5908f85b77ff1476cd7b20d0d54221501c617a1bd62bd8c55883b4b017fb5ee1",
       "width": 1280,
       "height": 720,
@@ -53,7 +53,7 @@
     },
     "onsen": {
       "file": "thumbnails/onsen.webp",
-      "source_sha256": "8f7bbbf72783fbf447bdaf6f4bf62a6d596c7673512656d8dae0bb9ceccafc6b",
+      "source_sha256": "52130fbdc611e5f725bff91d651057bf09d392791d12e61b4d1cab995301e4c5",
       "sha256": "fbb6b9461a960c5317d479c686fb7e3fe56e694b7f5ea1cb2f9bb207d71fe617",
       "width": 1280,
       "height": 720,
@@ -61,15 +61,15 @@
     },
     "study": {
       "file": "thumbnails/study.webp",
-      "source_sha256": "e8428cd72b52bb9e9b995fc1240fb5ea5f37dc55a2512d44b1d173825bd586c6",
-      "sha256": "85f34b8b04df8c65dcd6fbb1f2c80ae6b68828595c10085b66f71326c61f3e06",
+      "source_sha256": "4fb15135cb84867e1f25fe2a165b87370685996fd4c30d38a2f3b422cf9a1cf8",
+      "sha256": "618c26cf674646b21981a8fe0eb252b11165872bd53701365e336e1ab3d1b394",
       "width": 1280,
       "height": 720,
-      "bytes": 26114
+      "bytes": 21360
     },
     "intersection": {
       "file": "thumbnails/intersection.webp",
-      "source_sha256": "055c5fae8c4b17d9f6dc4200fab8768bbc4dcf038def864c5e8b3637b51725bb",
+      "source_sha256": "26347cad1b36d518860a3677fd934d68462a530f43beda61d69fa34d27260afa",
       "sha256": "08b9712c5e79912fb343070ddc81ef3abc04919995476fa09c6d3152b0e176bf",
       "width": 1280,
       "height": 720,
@@ -77,11 +77,11 @@
     },
     "summit": {
       "file": "thumbnails/summit.webp",
-      "source_sha256": "93b33615d148f62d1353102adb74a3e17df4227c2d5d88cc2a2571c1713c366f",
-      "sha256": "d0e6a17846d2f86ed270ecd4ebef0e67f8ccbf3d6c9b1a7c74f1e523c067305f",
+      "source_sha256": "1089118c72f5621e43dbe149b00231cc31f661c09febb7b88649fc4a78cbb98a",
+      "sha256": "2e93fa6602365f43af330697a5bfd8275ee0ef52d10a017fa943b42b046d910d",
       "width": 1280,
       "height": 720,
-      "bytes": 19038
+      "bytes": 19036
     },
     "desert": {
       "file": "thumbnails/desert.webp",
