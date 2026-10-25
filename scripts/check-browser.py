@@ -31,6 +31,8 @@ with sync_playwright() as p:
   webgl=page.evaluate("() => { const gl=document.querySelector('canvas').getContext('webgl2');return gl && {lost:gl.isContextLost(),error:gl.getError()};}")
   assert webgl and not webgl['lost'] and not webgl['error'],webgl
   page.emulate_media(reduced_motion='reduce');page.set_viewport_size({'width':390,'height':844});page.goto(f'http://little-worlds.test/{scene}/?preview=1&time=day');page.locator('canvas').wait_for();shot('mobile')
+  if scene in ('onsen','study'):
+   page.set_viewport_size({'width':960,'height':640});page.goto(f'http://little-worlds.test/{scene}/?preview=1&time=night');page.locator('canvas').wait_for();shot('night')
   assert not errors,errors
   print(json.dumps({'scene':scene,'verification':'local browser fixtures','orbitDifference':orbit,'zoomDifference':zoom,'webgl':webgl,'errors':errors}),flush=True)
   context.close()

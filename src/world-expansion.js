@@ -70,21 +70,21 @@ export function expandWorld({kind,scene,model,camera,controls,renderer,preview,r
  function bench(x,z,ry=0){const y=land(x,z);box('#b3946a',x,y+.8,z,3.2,.18,1,ry);box('#a2835d',x,y+1.25,z-.42,3.2,.8,.12,ry);for(const side of [-1,1])box('#637777',x+side,y+.38,z,.12,.76,.7,ry)}
  const roofs=[];
  function house(x,z,w=9,d=7,h=8,style='house'){
-  const y=land(x,z);stats.buildings++;const night=kind==='rainy',japanese=style==='inn';
+  const y=land(x,z);stats.buildings++;const night=kind==='rainy',japanese=style==='inn';if(japanese)box('#8f9a89',x,y-1.6,z,w+.5,3.2,d+.5);
   box(night?'#677586':style==='ruin'?'#a5b19b':pick(['#d9cfb5','#c4c8b4','#b5c6c3','#d2b6a6']),x,y+h/2,z,w,h,d);
   box(japanese?'#537478':night?'#536276':'#a6b0a4',x,y+h+.2,z,w+.8,.4,d+.8);roofs.push({x,z,w:w+.8,d:d+.8,y:y+h+.4});
   if(japanese)for(const side of [-1,1]){const yy=y+h+.35,oX=x+side*w*.26;box('#577b7d',oX,yy,z,w*.58,.26,d+1);}
   for(let floor=0;floor<Math.floor(h/2.6);floor++)for(let i=0;i<Math.floor(w/1.8);i++){
    const xx=x-w/2+1+i*1.8,yy=y+1.4+floor*2.6;
-   for(const side of [-1,1]){box(style==='ruin'?'#556f65':night?'#e1bf81':'#92afb3',xx,yy,z+side*(d/2+.025),1.05,1.35,.06,0,night);box('#e4dfc9',xx,yy-.74,z+side*(d/2+.16),1.2,.12,.32)}
+   for(const side of [-1,1]){box(style==='ruin'?'#556f65':night?'#e1bf81':'#92afb3',xx,yy,z+side*(d/2+.025),1.05,1.35,.06,0,night||japanese);box('#e4dfc9',xx,yy-.74,z+side*(d/2+.16),1.2,.12,.32)}
   }
-  for(const side of [-1,1])for(let j=0;j<Math.floor(d/2);j++)box(night?'#cfb785':'#90aab0',x+side*(w/2+.025),y+h*.55,z-d/2+1+j*2,.06,1.35,1.1,0,night);
+  for(const side of [-1,1])for(let j=0;j<Math.floor(d/2);j++)box(night?'#cfb785':'#90aab0',x+side*(w/2+.025),y+h*.55,z-d/2+1+j*2,.06,1.35,1.1,0,night||japanese);
   box('#677f77',x,y+1,z+d/2+.05,1.1,2,.08);
   if(style==='ruin'){for(let j=0;j<12;j++)ball('#789461',x+R(-w/2,w/2),y+h+.35,z+R(-d/2,d/2),R(.4,1),R(.3,.8),R(.4,1));tree(x+w*.25,z-d*.2,.8)}
   else{box('#91aaa0',x,y+h+.72,z,1.4,1,1.2);if(!night)shrub(x-w*.5,z+d*.6,.8)}
  }
  function road(axis,offset,width=5){const segments=Math.abs(offset)<core?[[-64,-core],[core,64]]:[[-64,64]];for(const [lo,hi] of segments){box(kind==='rainy'?'#3a455c':'#7d8b8e',axis?(lo+hi)/2:offset,cfg.top+.025,axis?offset:(lo+hi)/2,axis?hi-lo:width,.045,axis?width:hi-lo);for(let t=lo+1;t<hi-1;t+=3.2)box('#e6ddbc',axis?t:offset,cfg.top+.055,axis?offset:t,axis?1.5:.10,.012,axis?.10:1.5)}}
- function lamp(x,z){const y=land(x,z);cylinder('#7d9292',x,y+2.8,z,.07,5.6);box(kind==='rainy'?'#ffe0a5':'#e8e4ce',x+.45,y+5.5,z,1.05,.18,.5,0,kind==='rainy');}
+ function lamp(x,z){const y=land(x,z);cylinder('#7d9292',x,y+2.8,z,.07,5.6);box(kind==='rainy'?'#ffe0a5':'#e8e4ce',x+.45,y+5.5,z,1.05,.18,.5,0,kind==='rainy'||kind==='onsen');}
  function furniture(x,z){const y=land(x,z);box('#c5b68d',x,y+.02,z,12,.04,10);for(const side of [-1,1]){box('#a0b6a2',x+side*3.8,y+.8,z,1.7,1.4,5);box('#bac8b0',x+side*4.3,y+1.6,z,.5,1.2,5)}box('#ac8f6a',x,y+.55,z,3.2,1.1,2);box('#eddfbe',x,y+1.15,z,1.2,.1,.8);}
  function library(x,z){const y=land(x,z);box('#b29570',x,y+2.4,z,8,4.8,1.2);for(let row=0;row<4;row++){box('#725f4e',x,y+.5+row*1.1,z+.63,7.5,.09,.08);for(let j=0;j<22;j++){box(pick(['#9bb4ac','#d0aa7d','#d3bfb3','#7c959c','#c0bb92']),x-3.5+j*.33,y+.95+row*1.1,z+.64,.24,R(.6,.9),.48);stats.books++}}}
  function cactus(x,z,h=3){const y=land(x,z);cylinder('#85a184',x,y+h/2,z,.25,h);ball('#85a184',x,y+h,z,.25,.27,.25);for(const side of [-1,1]){rod([x,y+h*.5,z],[x+side*.7,y+h*.56,z],.14,'#85a184');cylinder('#85a184',x+side*.7,y+h*.65,z,.14,h*.4)}stats.shrubs++;}

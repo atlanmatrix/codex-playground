@@ -1,3 +1,4 @@
+import {expandWorld,expandedFit} from './world-expansion.js';
 import * as THREE from 'three';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
@@ -18,7 +19,7 @@ document.body.appendChild(renderer.domElement);renderer.domElement.setAttribute(
 const camera=new THREE.PerspectiveCamera(33,iw/ih,.4,420);
 const controls=new OrbitControls(camera,renderer.domElement);controls.target.set(0,6.0,0);controls.enableDamping=!reduced;controls.dampingFactor=.065;controls.enabled=!preview;controls.enablePan=false;
 controls.minDistance=42;controls.maxDistance=300;controls.minPolarAngle=.24;controls.maxPolarAngle=Math.PI*.445;
-const fit=a=>Math.max(64,80/a),distance=fit(camera.aspect);camera.position.set(distance*.62,6.0+distance*.74,distance*.85);camera.lookAt(controls.target);
+const fit=a=>expandedFit(a),distance=fit(camera.aspect);camera.position.set(distance*.62,6.0+distance*.74,distance*.85);camera.lookAt(controls.target);
 const skyLight=new THREE.HemisphereLight('#d8f2ee','#667652',1.73);skyLight.name='onsen-sky-light';scene.add(skyLight);
 const sun=new THREE.DirectionalLight('#ffe1a1',3.0);sun.name='onsen-key-light';sun.position.set(-24,44,20);sun.castShadow=true;sun.shadow.mapSize.set(preview?1024:2048,preview?1024:2048);Object.assign(sun.shadow.camera,{left:-29,right:29,top:30,bottom:-29,near:.5,far:110});sun.shadow.normalBias=.035;sun.shadow.bias=-.00013;sun.shadow.radius=2;scene.add(sun);
 const fill=new THREE.DirectionalLight('#b1d9d6',.47);fill.position.set(10,12,-6);scene.add(fill);
@@ -335,7 +336,7 @@ const dayWater=new THREE.Color('#a4dfd3'),nightWater=new THREE.Color('#739cae');
 function applyLighting(amount){
  renderer.shadowMap.needsUpdate=true;
  skyLight.color.lerpColors(daySky,nightSky,amount);skyLight.groundColor.lerpColors(dayGround,nightGround,amount);skyLight.intensity=THREE.MathUtils.lerp(1.73,.48,amount);
- sun.color.lerpColors(daySun,nightSun,amount);sun.intensity=THREE.MathUtils.lerp(3.0,.66,amount);sun.position.set(THREE.MathUtils.lerp(-24,24,amount),44,THREE.MathUtils.lerp(20,-16,amount));
+ sun.color.lerpColors(daySun,nightSun,amount);sun.intensity=THREE.MathUtils.lerp(3.0,.66,amount);sun.position.set(THREE.MathUtils.lerp(-24,24,amount),44,THREE.MathUtils.lerp(20,-16,amount)).multiplyScalar(4);
  fill.intensity=THREE.MathUtils.lerp(.47,.17,amount);renderer.toneMappingExposure=THREE.MathUtils.lerp(1.02,1.01,amount);
  warmLights.forEach(light=>{light.intensity=THREE.MathUtils.lerp(light.userData.dayIntensity,light.userData.nightIntensity,amount)});
  m.shoji.emissiveIntensity=THREE.MathUtils.lerp(.08,.24,amount);m.light.color.lerpColors(dayLamp,nightLamp,amount).multiplyScalar(THREE.MathUtils.lerp(.72,.92,amount));
@@ -353,7 +354,9 @@ function setPeriod(period,immediate=false){
 }
 periodButtons.forEach(button=>button.addEventListener('click',event=>{event.stopPropagation();setPeriod(button.dataset.time)}));
 setPeriod(params.get('time')==='night'?'night':'day',true);animate(0);
+const expandedWorld=expandWorld({kind:'onsen',scene,model,camera,controls,renderer,preview,reduced,nativeHeight:landY});
 function renderFrame(ms){
+ expandedWorld.update(ms*.001);
  if(start===null)start=ms;controls.update();
  const changing=Math.abs(nightBlend-nightTarget)>.00001;
  if(reduced&&renderedOnce&&!modeDirty&&!changing&&lastPosition.distanceToSquared(camera.position)<1e-12&&Math.abs(lastQuaternion.dot(camera.quaternion))>1-1e-12)return;

@@ -77,3 +77,5 @@ Each completed expansion retains its original detailed core and adds a contiguou
 - **Rooftop**: expanded to 128×128 with a larger shop-and-home district, an elevated railway viaduct, streets, trees and an additional two-car train.
 
 - **Rainy**: expanded to 128×128 with a wider wet night neighborhood, lit shops and windows, street lights and roof-aware rainfall.
+
+- **Onsen**: expanded to 128×128 with a mountain woodland, additional timber guest houses, stone paths, rest terraces and lanterns.
