@@ -109,3 +109,5 @@ Expansions are redesigned around each original scene’s intent, using varied, d
 - Rooftop: the original commuter train now uses a continuous supported rooftop line. Independently furnished coffee/record/flower/cycle/ramen/bakery shops, elevated platform, stairs/lift, roof utilities, laundry, canal bridge and sagging cables form a layered Japanese street.
 
 - Rainy: roof-aware new rainfall, reflective wet boulevard and irregular bus-stop mirror puddle, last-bus shelter, furnished laundromat and pharmacy, shuttered garage, apartment/cafe and vehicle-specific silhouettes.
+
+- Onsen: a ravine landscape with post-supported timber guest houses, shoji lattices, hillside stepping paths, creek bridge, secluded rock bath and cedar tubs, bamboo/cedar/pine/maple layers, lanterns and steam.

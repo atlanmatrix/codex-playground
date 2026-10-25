@@ -53,11 +53,11 @@
     },
     "onsen": {
       "file": "thumbnails/onsen.webp",
-      "source_sha256": "4bec307ff213e8286dab9d6237941e7b0757cf23d6db50753e493ba6b56ab4c2",
-      "sha256": "47f586469b1373307a3b36196da545aec1be42419c4ef0cbe589d40d4cb4d139",
+      "source_sha256": "8f7bbbf72783fbf447bdaf6f4bf62a6d596c7673512656d8dae0bb9ceccafc6b",
+      "sha256": "fbb6b9461a960c5317d479c686fb7e3fe56e694b7f5ea1cb2f9bb207d71fe617",
       "width": 1280,
       "height": 720,
-      "bytes": 32480
+      "bytes": 22492
     },
     "study": {
       "file": "thumbnails/study.webp",
