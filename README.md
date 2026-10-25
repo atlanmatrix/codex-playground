@@ -103,3 +103,5 @@ Expansions are redesigned around each original scene’s intent, using varied, d
 - Lakeside: curved bays, detailed weeping willow boughs, a bank-following path, reading pavilion, bird hide, furnished fishing piers, a moored canoe with paddle and rope, reed/lily beds and distinct fish schools.
 
 - Courtyard: varied apartment wings with balcony rails, condensers, laundry and mailboxes frame connected walks, a fenced half court, chess pavilion, slide/sandbox, gatehouse, bike shelter, lockers and sorting station.
+
+- Sakura: detailed blossom canopies, a country branch platform and train, train-aware crossing booms, tile-roof homes, irrigated vegetable patches, stream and arched wooden footbridge replace a copied village grid.

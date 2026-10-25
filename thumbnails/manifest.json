@@ -29,11 +29,11 @@
     },
     "sakura": {
       "file": "thumbnails/sakura.webp",
-      "source_sha256": "0dc8f7e38c3e520e0f3d76d3f7580b81facf9b5a6bc0a2a30fe9acb4213f6ae0",
-      "sha256": "41447de51761a4da80f6be97e00845a64a0c5d9a5bb3d613fe3558b1fcfff9bc",
+      "source_sha256": "e26b78bfeabe382b0266862b07adf70e25ef647c9f411dbe9d4b63e0cb50ea53",
+      "sha256": "2e774abae44a23776a96df28fd246db1080c67d6c6dc3d5343ee2172f269a7c5",
       "width": 1280,
       "height": 720,
-      "bytes": 22682
+      "bytes": 12930
     },
     "rooftop": {
       "file": "thumbnails/rooftop.webp",
