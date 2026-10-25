@@ -107,3 +107,5 @@ Expansions are redesigned around each original scene’s intent, using varied, d
 - Sakura: detailed blossom canopies, a country branch platform and train, train-aware crossing booms, tile-roof homes, irrigated vegetable patches, stream and arched wooden footbridge replace a copied village grid.
 
 - Rooftop: the original commuter train now uses a continuous supported rooftop line. Independently furnished coffee/record/flower/cycle/ramen/bakery shops, elevated platform, stairs/lift, roof utilities, laundry, canal bridge and sagging cables form a layered Japanese street.
+
+- Rainy: roof-aware new rainfall, reflective wet boulevard and irregular bus-stop mirror puddle, last-bus shelter, furnished laundromat and pharmacy, shuttered garage, apartment/cafe and vehicle-specific silhouettes.

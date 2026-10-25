@@ -441,7 +441,7 @@ try{
   const extraFish=scene.getObjectByName('expanded-fish-schools');
   if(extraFish){assert.equal(extraFish.count,name==='ocean'?288:192);const a=extraFish.instanceMatrix.array;for(let i=0;i<extraFish.count;i++){const x=a[i*16+12],y=a[i*16+13],z=a[i*16+14];assert(Math.abs(x)<62&&Math.abs(z)<62&&y<0&&y>(name==='ocean'?-5.5:-2.5),'Additional schools must remain inside the water volume')}}
   if(name==='ocean'&&model.userData.expansion.detailVersion!==2){const extras=[];model.traverse(o=>{if(o.name==='expanded-breaching-dolphin')extras.push(o)});assert.equal(extras.length,6);assert(model.userData.expansion.corals>60)}
-  const moving=['expanded-weather','expanded-fish-schools','expanded-neighborhood-traffic'].map(n=>scene.getObjectByName(n)).filter(Boolean);
+  const moving=['expanded-weather','expanded-fish-schools','expanded-neighborhood-traffic','detailed-weather','detailed-boxdynamic','detailed-cyldynamic','detailed-spheredynamic'].map(n=>scene.getObjectByName(n)).filter(Boolean);
   if(!isPreview&&moving.length){const before=moving.map(o=>Array.from(o.instanceMatrix.array));globalThis.frame(231000);moving.forEach((o,i)=>{const after=Array.from(o.instanceMatrix.array);if(isReduced)assert.deepEqual(after,before[i]);else assert(after.some((v,j)=>Math.abs(v-before[i][j])>.01),'New elements must animate across the expanded world')})}
  }
  scene.updateMatrixWorld(true);camera.updateMatrixWorld(true);
