@@ -12,6 +12,7 @@ const pages = [
   {entry: 'src/rooftop.js', template: 'src/rooftop.html', output: 'rooftop/index.html'},
   {entry: 'src/rainy.js', template: 'src/rainy.html', output: 'rainy/index.html'},
   {entry: 'src/onsen.js', template: 'src/onsen.html', output: 'onsen/index.html'},
+  {entry: 'src/intersection.js', template: 'src/intersection.html', output: 'intersection/index.html'},
   {entry: 'src/study.js', template: 'src/study.html', output: 'study/index.html'}
 ];
 const sceneHashes = new Map();

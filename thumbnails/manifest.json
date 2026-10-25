@@ -66,6 +66,14 @@
       "width": 1280,
       "height": 720,
       "bytes": 32528
+    },
+    "intersection": {
+      "file": "thumbnails/intersection.webp",
+      "source_sha256": "1ea68093a5e75dab73c3e015f9e497b2ed693e7a7b04594be687b35cc1d17a3f",
+      "sha256": "4fcbd3305f9c9fe844ee8bdcc5ba10cd9e130383dfa2dd9c869f11201e3c5305",
+      "width": 1280,
+      "height": 720,
+      "bytes": 38454
     }
   }
 }

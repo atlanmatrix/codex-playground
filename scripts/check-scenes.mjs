@@ -10,7 +10,7 @@ import assert from 'node:assert/strict';
 const name=process.argv[2]||'lakeside';
 const width=Number(process.argv[3]||1440),height=Number(process.argv[4]||1000);
 const isPreview=process.argv.includes('--preview'),isReduced=process.argv.includes('--reduced'),isNight=process.argv.includes('--night');
-assert(['city','lakeside','courtyard','sakura','rooftop','rainy','onsen','study'].includes(name));
+assert(['city','lakeside','courtyard','sakura','rooftop','rainy','onsen','study','intersection'].includes(name));
 const root=resolve(import.meta.dirname,'..');
 const temp=await mkdtemp(join(tmpdir(),'little-worlds-check-'));
 const realThree=JSON.stringify(pathToFileURL(join(root,'node_modules/three/build/three.module.js')).href);
@@ -42,6 +42,35 @@ try{
  const {scene,camera}=globalThis.rendered;
  const model=name==='city'?scene.children.find(o=>o.isGroup):scene.getObjectByName(`${name}-miniature`);
  assert(model);
+ if(name==='intersection'){
+  assert.equal(model.userData.baseSize,32);
+  const cars=[];model.traverse(o=>{if(o.name==='moving-traffic-car')cars.push(o)});
+  assert.equal(cars.length,12);assert.equal(new Set(cars.map(c=>c.userData.lane)).size,4);
+  const before=cars.map(c=>c.position.clone()),crossings=[0,0,0,0],wraps=[0,0,0,0];
+  if(!isPreview&&!isReduced){
+   for(let ms=25;ms<=180000;ms+=25){
+    const old=cars.map(c=>({...c.userData}));globalThis.frame(ms);
+    cars.forEach((c,i)=>{
+     const p=c.userData.progress,prev=old[i].progress,{axis,state}=model.userData.signalPhase;
+     if(prev<=-7.85&&!(axis===c.userData.axis&&state==='green'))assert(p<=-7.85+1e-7,'Vehicles must wait behind the stop line on red/amber');
+     if(prev<0&&p>=0)crossings[c.userData.lane]++;
+     if(p<prev-10)wraps[c.userData.lane]++;
+     assert(Number.isFinite(p)&&c.userData.speed>=0);
+    });
+    for(let lane=0;lane<4;lane++){
+     const queue=cars.filter(c=>c.userData.lane===lane).map(c=>c.userData.progress).sort((a,b)=>a-b);
+     for(let j=1;j<queue.length;j++)assert(queue[j]-queue[j-1]>=3.74,'Traffic queues must preserve spacing');
+    }
+    // AABB footprints of orthogonal cars may never intersect in the junction.
+    for(const a of cars.filter(c=>c.userData.axis===0))for(const b of cars.filter(c=>c.userData.axis===1))assert(Math.abs(a.position.x-b.position.x)>2.01||Math.abs(a.position.z-b.position.z)>2.01,'Cross traffic collision');
+   }
+   assert(crossings.every(n=>n>9)&&wraps.every(n=>n>8),'Traffic must keep circulating from all four directions');
+  }else {
+   if(!isPreview)for(const ms of [1000,5000,17000,34000])globalThis.frame(ms);
+   cars.forEach((c,i)=>assert(c.position.equals(before[i]),'Previews and reduced motion must stay still'));
+  }
+  console.log(JSON.stringify({trafficCars:cars.length,crossings,wraps}));
+ }
  if(name==='study'){
   assert.equal(model.userData.baseSize,32);
   for(const n of ['wall-of-books','corner-reading-sofa','video-editing-workstation','editing-timeline-monitor','portrait-notes-monitor','ergonomic-editing-chair','open-reading-book','tiny-desk-robot','sleepy-cat-figurine','color-puzzle-cube','video-camera-tripod'])assert(scene.getObjectByName(n),n);
@@ -328,7 +357,7 @@ try{
    projected.left=Math.min(projected.left,point.x);projected.right=Math.max(projected.right,point.x);projected.bottom=Math.min(projected.bottom,point.y);projected.top=Math.max(projected.top,point.y);
   }
  });
- assert.equal(invalid,0);assert(instances>(name==='rooftop'?500:name==='rainy'?1000:name==='onsen'?2200:name==='study'?800:3000));assert(meshes<260);
+ assert.equal(invalid,0);assert(instances>(name==='rooftop'?500:name==='rainy'?1000:name==='onsen'?2200:name==='study'?800:name==='intersection'?2000:3000));assert(meshes<260);
  if(name==='lakeside')assert(minWorldY < -3.0&&minWorldY > -3.1,'The deeper soil and water section must be retained');
  if(process.env.SCENE_SHADER_OUTPUT){
   const shaders=[];const expand=s=>s.replace(/#include <(\w+)>/g,(_,name)=>expand(ShaderChunk[name]));
@@ -356,7 +385,7 @@ try{
   }
  }
  assert.equal(testControls.enabled,!isPreview);
- if(name==='rooftop'||name==='rainy'||name==='onsen'||name==='study'){
+ if(name==='rooftop'||name==='rainy'||name==='onsen'||name==='study'||name==='intersection'){
   const before=camera.position.clone(),aspect=camera.aspect;
   for(const [w,h] of [[0,330],[624,0],[0,0]]){
    globalThis.innerWidth=w;globalThis.innerHeight=h;listeners.get('resize')();
