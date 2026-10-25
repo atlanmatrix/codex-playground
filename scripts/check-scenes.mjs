@@ -10,7 +10,7 @@ import assert from 'node:assert/strict';
 const name=process.argv[2]||'lakeside';
 const width=Number(process.argv[3]||1440),height=Number(process.argv[4]||1000);
 const isPreview=process.argv.includes('--preview'),isReduced=process.argv.includes('--reduced'),isNight=process.argv.includes('--night');
-assert(['city','lakeside','courtyard','sakura','rooftop','rainy','onsen','study','intersection'].includes(name));
+assert(['city','lakeside','courtyard','sakura','rooftop','rainy','onsen','study','intersection','summit'].includes(name));
 const root=resolve(import.meta.dirname,'..');
 const temp=await mkdtemp(join(tmpdir(),'little-worlds-check-'));
 const realThree=JSON.stringify(pathToFileURL(join(root,'node_modules/three/build/three.module.js')).href);
@@ -42,6 +42,38 @@ try{
  const {scene,camera}=globalThis.rendered;
  const model=name==='city'?scene.children.find(o=>o.isGroup):scene.getObjectByName(`${name}-miniature`);
  assert(model);
+ if(name==='summit'){
+  assert.equal(model.userData.baseSize,32);
+  const terrain=scene.getObjectByName('faceted-snowy-summit'),section=scene.getObjectByName('square-mountain-section');
+  assert(terrain&&section&&scene.getObjectByName('summit-stone-cairn'));
+  assert(terrain.userData.snowyFaces>4000&&terrain.userData.rockFaces>100,'Both snow cover and exposed rock must exist');
+  terrain.geometry.computeBoundingBox();const bounds=terrain.geometry.boundingBox;
+  assert.equal(bounds.min.x,-16);assert.equal(bounds.max.x,16);assert.equal(bounds.min.z,-16);assert.equal(bounds.max.z,16);assert(bounds.max.y>12);
+  const shrubs=[],roots=[];model.traverse(o=>{if(o.name==='wind-bent-juniper')shrubs.push(o);if(o.name==='alpine-shrub-root')roots.push(o)});
+  assert.equal(shrubs.length,30);assert.equal(roots.length,30);
+  const sock=scene.getObjectByName('fluttering-windsock-cloth'),flakes=scene.getObjectByName('wind-driven-snow'),drift=scene.getObjectByName('ridge-spindrift');
+  assert(sock&&flakes.count===780&&drift.count===160);
+  const originalCloth=Array.from(sock.geometry.attributes.position.array),originalFlakes=Array.from(flakes.instanceMatrix.array),originalRoots=roots.map(o=>o.position.clone()),originalShrubs=shrubs.map(o=>o.rotation.clone());
+  const wind=[];const times=isPreview?[]:[1000,3500,7000,15000];
+  for(const ms of times){
+   globalThis.frame(ms);wind.push(model.userData.windStrength);
+   flakes.instanceMatrix.array.forEach(n=>assert(Number.isFinite(n)));
+   for(let i=0;i<flakes.count;i++){const matrix=flakes.instanceMatrix.array,x=matrix[i*16+12],y=matrix[i*16+13],z=matrix[i*16+14];assert(Math.abs(x)<=15&&Math.abs(z)<=15);assert(y>model.userData.terrainHeight(x,z)+.35,'Snowflakes must remain above the mountain');}
+   roots.forEach((root,i)=>assert(root.position.equals(originalRoots[i]),'Wind must not uproot shrubs'));
+   // The cloth inlet is fixed to the hoop while downstream vertices flutter.
+   for(let i=0;i<15*3;i++)assert.equal(sock.geometry.attributes.position.array[i],originalCloth[i]);
+  }
+  if(!isPreview&&!isReduced){
+   assert(Math.max(...wind)-Math.min(...wind)>.1,'Wind must gust over time');
+   assert(shrubs.some((o,i)=>Math.abs(o.rotation.z-originalShrubs[i].z)>.01));
+   assert(originalCloth.some((v,i)=>Math.abs(v-sock.geometry.attributes.position.array[i])>.01));
+   assert(originalFlakes.some((v,i)=>Math.abs(v-flakes.instanceMatrix.array[i])>.1));
+  }else{
+   assert.deepEqual(Array.from(sock.geometry.attributes.position.array),originalCloth);assert.deepEqual(Array.from(flakes.instanceMatrix.array),originalFlakes);
+   shrubs.forEach((o,i)=>assert.deepEqual(o.rotation.toArray(),originalShrubs[i].toArray()));
+  }
+  console.log(JSON.stringify({alpineShrubs:shrubs.length,snowflakes:flakes.count,spindrift:drift.count,snowyFaces:terrain.userData.snowyFaces,rockFaces:terrain.userData.rockFaces,wind}));
+ }
  if(name==='intersection'){
   assert.equal(model.userData.baseSize,32);
   const cars=[];model.traverse(o=>{if(o.name==='moving-traffic-car')cars.push(o)});
@@ -340,7 +372,7 @@ try{
   for(const n of p.array)if(!Number.isFinite(n))invalid++;
   if(o.isInstancedMesh){
    for(const n of o.instanceMatrix.array)if(!Number.isFinite(n))invalid++;
-   if(name==='courtyard'||name==='sakura'||name==='rooftop'||name==='onsen'||name==='study'){
+   if(name==='courtyard'||name==='sakura'||name==='rooftop'||name==='onsen'||name==='study'||name==='summit'){
     o.geometry.computeBoundingBox();const bounds=o.geometry.boundingBox,im=new Matrix4(),world=new Matrix4();
     for(let i=0;i<o.count;i++){
      o.getMatrixAt(i,im);world.multiplyMatrices(o.matrixWorld,im);
@@ -357,7 +389,7 @@ try{
    projected.left=Math.min(projected.left,point.x);projected.right=Math.max(projected.right,point.x);projected.bottom=Math.min(projected.bottom,point.y);projected.top=Math.max(projected.top,point.y);
   }
  });
- assert.equal(invalid,0);assert(instances>(name==='rooftop'?500:name==='rainy'?1000:name==='onsen'?2200:name==='study'?800:name==='intersection'?2000:3000));assert(meshes<260);
+ assert.equal(invalid,0);assert(instances>(name==='rooftop'?500:name==='rainy'?1000:name==='onsen'?2200:name==='study'?800:name==='intersection'?2000:name==='summit'?1800:3000));assert(meshes<260);
  if(name==='lakeside')assert(minWorldY < -3.0&&minWorldY > -3.1,'The deeper soil and water section must be retained');
  if(process.env.SCENE_SHADER_OUTPUT){
   const shaders=[];const expand=s=>s.replace(/#include <(\w+)>/g,(_,name)=>expand(ShaderChunk[name]));
@@ -385,7 +417,7 @@ try{
   }
  }
  assert.equal(testControls.enabled,!isPreview);
- if(name==='rooftop'||name==='rainy'||name==='onsen'||name==='study'||name==='intersection'){
+ if(name==='rooftop'||name==='rainy'||name==='onsen'||name==='study'||name==='intersection'||name==='summit'){
   const before=camera.position.clone(),aspect=camera.aspect;
   for(const [w,h] of [[0,330],[624,0],[0,0]]){
    globalThis.innerWidth=w;globalThis.innerHeight=h;listeners.get('resize')();

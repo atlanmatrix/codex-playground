@@ -1,6 +1,6 @@
 # 小景 · Little Worlds
 
-Nine explorable, toon-shaded Three.js miniatures. Every scene is procedural geometry, with no external assets or runtime CDN requests.
+Ten explorable, toon-shaded Three.js miniatures. Every scene is procedural geometry, with no external assets or runtime CDN requests.
 
 - `/` — scene selection using pre-rendered WebP covers. The gallery contains no iframes, JavaScript or WebGL canvases; 3D starts only after following a scene link.
 - `/city/` — **被自然收回的城市街角**: a banyan tree growing through a furnished, ruined building.
@@ -16,6 +16,8 @@ Nine explorable, toon-shaded Three.js miniatures. Every scene is procedural geom
 - `/study/` — **剪辑师的午后书房**: a bright 32×32 cutaway interior with 359 individually modeled books, an 18-piece figurine display cabinet, a window-side sofa turned clockwise against a low cutaway side wall, reading ottoman, coffee table and media cart. The warm oak floor uses short, staggered boards with subtle per-board honey and amber variations. The solid-wall editing area and window-side reading area have swapped positions, including their chairs, rugs and accessories. Eight cabinet-top pots feature monstera, fern, snake plant, succulent, cactus and trailing pothos silhouettes. The editing desk has a timeline display, portrait notes monitor, keyboard, jog/fader controller, audio interface, nearfield speakers, headphones, microphone, cameras and small robot/cat/space toys. A domestic-scale casement window opens inward without an exterior backdrop, and two folded curtains gently billow with fixed top edges. The wall clock follows the viewing device’s local time with continuously moving hour, minute and second hands, including when ambient motion is reduced. The study defaults to device-local daytime from 06:00 (inclusive) until 18:00 (exclusive). At night its window closes, curtains overlap, and warm desk/reading lamps light the room. The small clock/sun/moon controls restore automatic mode or manually hold day/night until another selection or reload; `?time=day` and `?time=night` provide explicit scene links. Transitions are sequential and smooth, with instant reduced-motion states. Generated gallery covers pin the study to daylight for a stable preview.
 
 - `/intersection/` — **午后十字路口**: a 32×32 neighborhood with four corner shops, sidewalk tiles, trees, cafe tables, four zebra crossings and overhead signals. Twelve pastel cars and small vans circulate on four right-hand lanes, decelerating into queues and accelerating on green. A 34-second signal cycle includes amber and all-red clearance intervals. Vehicle bodies are clipped to the square edges; fixed-step simulation maintains spacing on slow frames. Preview and reduced-motion views show a still traffic tableau.
+
+- `/summit/` — **风雪之巅**: a 32×32 snow-covered summit with faceted rock faces, a continuous square mountain section, a cairn, a stony approach, 30 dwarf junipers and five windswept alpine pines. Coherent gusts flex shrub crowns, flutter a red-and-cream windsock and drive 780 snowflakes and 160 low spindrift streaks across the ridge. Roots and the windsock inlet remain anchored; snow stays above terrain. Preview and reduced-motion views remain still.
 
 The onsen has two compact sun/moon buttons; the other scene routes contain no visible UI. Drag to orbit, scroll or pinch to zoom. The lakeside camera stays above ground and outside the model. Motion respects the system's reduced-motion preference. The thumbnail generator opens `?preview=1` to render each scene once, then saves a static WebP cover. Gallery image URLs carry a content hash, the first row loads eagerly, and subsequent covers load lazily. Fixed image dimensions reserve the cover space while images decode.
 
@@ -34,7 +36,7 @@ npm run build
 npm run dev
 ```
 
-Open http://localhost:4173. Sources are in `src/`. The build generates `index.html`, `city/index.html`, `lakeside/index.html`, `courtyard/index.html`, `sakura/index.html`, `rooftop/index.html`, `rainy/index.html`, `onsen/index.html`, `study/index.html`, and `intersection/index.html`. Each scene embeds its bundled JavaScript using literal replacement and validates the final script before writing HTML.
+Open http://localhost:4173. Sources are in `src/`. The build generates `index.html`, `city/index.html`, `lakeside/index.html`, `courtyard/index.html`, `sakura/index.html`, `rooftop/index.html`, `rainy/index.html`, `onsen/index.html`, `study/index.html`, `intersection/index.html`, and `summit/index.html`. Each scene embeds its bundled JavaScript using literal replacement and validates the final script before writing HTML.
 
 `npm run check` exercises real Three.js geometry and animation with browser I/O stubbed. It checks finite geometry, framing on desktop and mobile, water coverage and diagonal shoreline, fish containment and direction changes, section depth, breathing, ear timing, courtyard equipment, foliage motion, stable base sections, hollow tunnel clearance, railcar/barrier timing, rooftop rail/slab alignment, train wheel alignment, rain coverage over roofs, independent ripple timing, stocked store interiors, mountainside elevation and terraces, enlarged bath area, dim amber night lighting, independently timed steam, roof tiles and drifting leaves, the furnished editing desk, book counts, open window, anchored curtain tops and moving hems, four-way traffic spacing, stop-line compliance, cross-traffic clearance, sustained vehicle recycling, static previews, and reduced motion. It does not replace GPU rendering or browser visual verification.
 
@@ -52,6 +54,6 @@ This requires Python with `playwright` and `Pillow`, plus Chromium (`CHROMIUM_PA
 
 ## Publishing
 
-Pushing to `main` runs `.github/workflows/pages.yml`, publishing the gallery, `thumbnails/`, and all nine route directories to GitHub Pages. Folder routes also support direct navigation and refresh under a GitHub project path.
+Pushing to `main` runs `.github/workflows/pages.yml`, publishing the gallery, `thumbnails/`, and all ten route directories to GitHub Pages. Folder routes also support direct navigation and refresh under a GitHub project path.
 
 Three.js is MIT licensed; its notice is embedded in every generated scene page.
