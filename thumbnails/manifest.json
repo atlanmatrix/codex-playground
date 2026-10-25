@@ -5,11 +5,11 @@
   "scenes": {
     "city": {
       "file": "thumbnails/city.webp",
-      "source_sha256": "bebd68de4ce13f81704f5b3c0899e6ce0af01e3e179efc644c9d0b60191ab6f1",
-      "sha256": "12dedaf966df7660f089d2360cc69efaf9588fb38802db0307e6e2cb9e1a6caa",
+      "source_sha256": "05d70b344e6a8c63a1a7ae50d06e2823592d7b3f6ba64d3f1f9aa5ed214d78e0",
+      "sha256": "8b57b594400fd7b319183a4ada20db31e07e3c7287a8c608aed503bbe87181d9",
       "width": 1280,
       "height": 720,
-      "bytes": 28778
+      "bytes": 15196
     },
     "lakeside": {
       "file": "thumbnails/lakeside.webp",
@@ -69,7 +69,7 @@
     },
     "intersection": {
       "file": "thumbnails/intersection.webp",
-      "source_sha256": "c4acbdb7fc724395c46fa3c232d6ded797c34514b2040fe92920f08133d95fd2",
+      "source_sha256": "e0aca2a2a16ccac04aac4e6638dbeb8875da9225a66554fb37502b91cbfd4020",
       "sha256": "08b9712c5e79912fb343070ddc81ef3abc04919995476fa09c6d3152b0e176bf",
       "width": 1280,
       "height": 720,
@@ -77,7 +77,7 @@
     },
     "summit": {
       "file": "thumbnails/summit.webp",
-      "source_sha256": "81383c5b269a4c44611d3173f0d0e250ea43a3114d4c2d17b7e01a7a87ddae4b",
+      "source_sha256": "cb721743a0157afe64aee32d4f36a7949aceb0b679417d95c82a33769dc16f36",
       "sha256": "d0e6a17846d2f86ed270ecd4ebef0e67f8ccbf3d6c9b1a7c74f1e523c067305f",
       "width": 1280,
       "height": 720,
