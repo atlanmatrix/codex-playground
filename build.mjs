@@ -38,7 +38,8 @@ for (const page of pages) {
 if (process.argv.includes('--scenes-only')) process.exit(0);
 const thumbnails = JSON.parse(await readFile('thumbnails/manifest.json','utf8'));
 let gallery = await readFile('src/index.html','utf8');
-if (/<(?:iframe|canvas|script)\b/i.test(gallery)) throw new Error('The gallery must use static covers without scene runtimes');
+for (const [, script] of gallery.matchAll(/<script>([\s\S]*?)<\/script>/g)) new Script(script, {filename:'gallery'});
+if (/<(?:iframe|canvas)\b/i.test(gallery.replace(/<script>[\s\S]*?<\/script>/g, ''))) throw new Error('The gallery must use static covers without scene runtimes');
 for (const page of pages) {
   const route=page.output.split('/')[0];
   if (!gallery.includes(`href="./${route}/"`)) throw new Error(`Missing gallery route: ${route}`);

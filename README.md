@@ -2,7 +2,7 @@
 
 Twelve explorable, toon-shaded Three.js miniatures, each on a complete 128×128 base. Every scene is procedural geometry, with no external assets or runtime CDN requests.
 
-- `/` — scene selection using pre-rendered WebP covers. The gallery contains no iframes, JavaScript or WebGL canvases; 3D starts only after following a scene link.
+- `/` — scene selection using pre-rendered WebP covers. The gallery contains no iframes or WebGL canvases; its small script only copies embed codes; 3D starts only after following a scene link.
 - `/city/` — **被自然收回的城市街角**: a banyan tree growing through a furnished, ruined building.
 - `/lakeside/` — **柳荫下的湖畔午睡**: a deep lake with a diagonal shore, six weeping willows, a broken wooden footbridge and woven fishing basket, and a plump tabby sleeping on an open book on a wooden chaise. Twenty-four koi, goldfish, silverfish, and perch swim on distinct underwater routes.
 - `/courtyard/` — **小区健身区一角**: seven familiar blue-and-yellow fitness stations on a rubber court, with benches, shade trees, a bicycle, and a modest apartment facade. Equipment stays still while trees, grass and a few falling leaves move.
@@ -89,3 +89,9 @@ Expansions are redesigned around each original scene’s intent, using varied, d
 - Desert: asymmetric high dunes with slope-following ripple ribbons, stratified mesa and undercut hoodoos, gravel wadi and salt pan, palm spring, rope well, woven rest shade, ribbed/flowering cactus species and rolling tumbleweeds.
 
 - Ocean: shallow coral shelves and a deep basin, branching/table/brain/fan/anemone colonies, open reef grotto, rooted kelp, distinct bream/silver/butterfly schools, sea turtles, spotted rays and six additional detailed dolphins with independent rings, spray and airborne trails.
+
+## Embedding scenes
+
+Each gallery card has a keyboard-accessible copy-embed icon. It copies an iframe with the scene's absolute URL, accessible title, full width, 480px height, lazy loading and fullscreen permission. The URL is resolved from the current gallery address, preserving GitHub Pages project subpaths and custom domains. Copying requires HTTPS (or localhost); if clipboard access is unavailable or denied, a dialog provides selectable code for manual copying.
+
+GitHub Pages supports hosting these self-contained static 3D scenes and embedding them in other HTML pages, including another GitHub Pages site. Paste the code into HTML that permits iframes (GitHub README Markdown does not render iframes). The host page must permit the scene origin in its CSP `frame-src`; restrictive iframe sandbox settings must allow scripts for WebGL interaction. This does not require CORS permission. Thumbnails remain static WebP images and the gallery never initializes a scene runtime.
