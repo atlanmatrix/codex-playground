@@ -13,7 +13,7 @@ const CONFIG = {
 
 // Extend a detailed central diorama with new, full-scale surroundings. Objects are
 // instanced by geometry, so hundreds of buildings/trees need only a few draw calls.
-export function expandWorld({kind,scene,model,camera,controls,renderer,preview,reduced,nativeHeight,wave,dolphinPath,detail=false,designHeight,designColor,designBottom}) {
+export function expandWorld({kind,scene,model,camera,controls,renderer,preview,reduced,nativeHeight,wave,dolphinPath,detail=false,designHeight,designColor,designBottom,designStructuralTop}) {
  const cfg={...CONFIG[kind],...(designBottom!==undefined?{bottom:designBottom}:{})},core=cfg.size/2,H=64,world=new THREE.Group();world.name=`expanded-${kind}-world`;model.add(world);
  model.userData.coreBaseSize=cfg.size;model.userData.baseSize=128;
  const stats={baseSize:128,coreSize:cfg.size,trees:0,buildings:0,shrubs:0,corals:0,books:0,vehicles:0};world.userData=stats;model.userData.expansion=stats;
@@ -30,7 +30,7 @@ export function expandWorld({kind,scene,model,camera,controls,renderer,preview,r
  function cylinder(color,x,y,z,r,h){put('cyl',color,x,y,z,r,h,r)}
  function rod(a,b,r,color){const from=new THREE.Vector3(...a),to=new THREE.Vector3(...b),delta=to.clone().sub(from),mid=from.add(to).multiplyScalar(.5);const key='rod';if(!parts.has(key))parts.set(key,{type:'cyl',items:[]});parts.get(key).items.push({p:mid.toArray(),s:[r,delta.length(),r],q:new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,1,0),delta.normalize()),color})}
  function rectangles(lo,hi,color){const s=H-core;for(const [x,z,w,d] of [[0,-(H+core)/2,128,s],[0,(H+core)/2,128,s],[-(H+core)/2,0,s,cfg.size],[(H+core)/2,0,s,cfg.size]])box(color,x,(lo+hi)/2,z,w,hi-lo,d)}
- const structuralTop=kind==='lakeside'?-2.77:kind==='ocean'?(designBottom!==undefined?designBottom+.7:-6.35):kind==='desert'?-.25:cfg.top-.12;
+ const structuralTop=designStructuralTop??(kind==='lakeside'?-2.77:kind==='ocean'?(designBottom!==undefined?designBottom+.7:-6.35):kind==='desert'?-.25:cfg.top-.12);
  rectangles(cfg.bottom,structuralTop,kind==='ocean'?'#789ca0':kind==='summit'?'#8c9fae':kind==='desert'?'#bf875a':kind==='study'?'#a68b68':'#8a8871');
  const originalHeight=nativeHeight||(()=>cfg.top);
  function land(x,z){

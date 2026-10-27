@@ -35,10 +35,10 @@ function frame(){
 frame();
 scene.add(new THREE.HemisphereLight(0xf5fff3,0x60756a,2.25));
 const sun=new THREE.DirectionalLight(0xffedb0,4.0);
-sun.position.set(-8,21,12);sun.castShadow=true;
-sun.shadow.mapSize.set(isPreview?1024:2048,isPreview?1024:2048);
-Object.assign(sun.shadow.camera,{left:-13,right:13,top:15,bottom:-12,near:.5,far:55});
-sun.shadow.normalBias=.035;sun.shadow.bias=-.00015;sun.shadow.radius=3;scene.add(sun);
+sun.position.set(-40,100,60);sun.castShadow=true;
+sun.shadow.mapSize.set(2048,2048);
+Object.assign(sun.shadow.camera,{left:-90,right:90,top:90,bottom:-90,near:.5,far:250});
+sun.shadow.normalBias=.15;sun.shadow.bias=-.0005;sun.shadow.radius=3;scene.add(sun);
 const fill=new THREE.DirectionalLight(0xaee7df,1.05);fill.position.set(10,9,-8);scene.add(fill);
 const model=new THREE.Group();scene.add(model);
 let seed=80721;const rnd=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296};
@@ -384,7 +384,7 @@ for(let i=0;i<5;i++){
 }
 const fish=[];
 for(let i=0;i<5;i++){
- const f=new THREE.Group();model.add(f);
+ const f=new THREE.Group();f.name='core-city-fish';model.add(f);
  ell(0,0,0,.18,.04,.065,i%2?M.cream:M.red,f,geometries.sphere);
  const tail=mesh(new THREE.ConeGeometry(.08,.15,3),M.red,-.2,0,0,f);tail.rotation.z=1.57;tail.scale.z=.3;
  ell(.11,.025,.035,.016,.015,.015,M.dark,f,geometries.sphere);
@@ -428,11 +428,14 @@ moteGeo.setAttribute('position',new THREE.BufferAttribute(motePos,3));
 const motes=new THREE.Points(moteGeo,new THREE.PointsMaterial({color:0xfff3b4,size:.035,transparent:true,opacity:.65,depthWrite:false}));model.add(motes);
 let previous=0;const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
 const expandedWorld=expandWorld({kind:'city',scene,model,camera,controls,renderer,preview:isPreview,reduced});
+controls.minDistance=22;controls.maxPolarAngle=1.36;controls.enablePan=true;controls.screenSpacePanning=false;
+// District casters are static; canopy shadow movement is smaller than a texel.
+renderer.shadowMap.autoUpdate=false;renderer.shadowMap.needsUpdate=true;
 function renderFrame(ms){
  expandedWorld.update(ms*.001);
- const t=ms*.001,dt=Math.min(t-previous,.05);previous=t;
+ const t=reduced?0:ms*.001,dt=Math.min(t-previous,.05);previous=t;
  controls.update();
- if(!reduced){
+ if(!reduced||t===0){
   waterMaterial.uniforms.time.value=t;
   fish.forEach(({f,a,r,speed})=>{const theta=t*speed+a;f.position.set(3.95+Math.cos(theta)*r,.171,5.1+Math.sin(theta)*r*.65);f.rotation.y=-Math.atan2(Math.cos(theta)*.65,-Math.sin(theta));});
   ripples.forEach((r,i)=>{const p=(t*.18+i*.23)%1;r.scale.setScalar(.3+p*1.7);r.material.opacity=(1-p)*.24});

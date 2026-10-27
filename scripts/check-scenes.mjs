@@ -51,7 +51,7 @@ try{
   const extension=scene.getObjectByName(`expanded-${name}-world`);assert(extension&&extension.userData.staticInstances>800);
   const terrain=extension.getObjectByName('expanded-terrain-ring');terrain.geometry.computeBoundingBox();const bounds=terrain.geometry.boundingBox;
   assert.equal(bounds.min.x,-64);assert.equal(bounds.max.x,64);assert.equal(bounds.min.z,-64);assert.equal(bounds.max.z,64);
-  assert(testControls.minDistance>=100&&camera.far>=1500);
+  assert(testControls.minDistance>=(name==='city'?22:100)&&camera.far>=1500);
   console.log(JSON.stringify({expandedScene:name,baseSize:128,coreSize:model.userData.coreBaseSize,additionalInstances:extension.userData.staticInstances,additionalBuildings:extension.userData.buildings,additionalTrees:extension.userData.trees}));
  }
  if(name==='ocean'){
@@ -445,6 +445,33 @@ try{
   assert(area/256>.73&&area/256<.77,`Lake fraction ${area/256}`);
   console.log(JSON.stringify({lakeFraction:Number((area/256).toFixed(3)),fish:fish.length,species:4,breathing:[smallest,largest],earTwitches:events.length}));
  }
+ if(name==='city'){
+  const {CITY_PARCELS,CITY_ROADS}=await import(pathToFileURL(join(root,'src/expansions/city-plan.js')));
+  const d=model.userData.cityDistrict;assert.equal(d.districtVersion,3);assert.equal(d.buildings,31);assert.equal(d.totalBuildings,32);assert.equal(d.trees,159);
+  assert.deepEqual(d.zones,{civic:8,industry:7,market:9,wetland:5,edge:2});
+  assert(d.modeledUnits>145000&&d.modeledUnits<190000);assert(d.inventory.rooms>=120&&d.inventory.books>=2000&&d.inventory.vines===220&&d.inventory.groundPlants===1200);
+  assert.equal(d.inventory.totalFish,24);assert(d.inventory.rootSystems>=80);assert.equal(d.inventory.inspectionPits,2);
+  const roots=[],fish=[];model.traverse(o=>{if(o.name==='city-rooted-tree')roots.push(o);if(o.name==='city-wetland-fish')fish.push(o);});
+  assert.equal(roots.length,159);assert.equal(fish.length,19);const coreFish=[];model.traverse(o=>{if(o.name==='core-city-fish')coreFish.push(o);});assert.equal(coreFish.length,5);coreFish.forEach(o=>assert(o.position.x>2.6&&o.position.x<5.3&&o.position.z>4&&o.position.z<6.2,'Core fish need valid still poses in reduced motion too'));
+  for(let i=0;i<CITY_PARCELS.length;i++){
+   const a=CITY_PARCELS[i];assert(Math.abs(a.x)+a.w/2<64&&Math.abs(a.z)+a.d/2<64);
+   assert(Math.abs(a.x)-a.w/2>=8||Math.abs(a.z)-a.d/2>=8,'Expansion buildings must preserve the original core');
+   for(const b of CITY_PARCELS.slice(i+1))assert(Math.abs(a.x-b.x)>=(a.w+b.w)/2||Math.abs(a.z-b.z)>=(a.d+b.d)/2,'Building footprints must not overlap');
+  }
+  assert(CITY_ROADS.some(r=>r.type==='alley')&&CITY_ROADS.some(r=>r.type==='walk'));
+  const beforeFish=fish.map(o=>o.position.clone()),beforeRoots=roots.map(o=>o.position.clone());
+  for(const ms of isPreview?[]:[1000,9000,31000]){globalThis.frame(ms);fish.forEach(o=>{const w=o.userData.water;assert(Math.hypot((o.position.x-w.x)/w.rx,(o.position.z-w.z)/w.rz)<.55);assert(o.position.y<w.y-.03&&o.position.y>d.height(o.position.x,o.position.z)+.04,'Fish must be below water and above basin soil');});}
+  roots.forEach((o,i)=>assert(o.position.equals(beforeRoots[i]),'Tree roots must remain anchored'));
+  if(isReduced||isPreview){fish.forEach((o,i)=>assert(o.position.equals(beforeFish[i])));assert.equal(d.wind.value,0);}else{assert(fish.some((o,i)=>o.position.distanceTo(beforeFish[i])>.1));assert(d.wind.value>0);}
+  const {Raycaster,Vector3}=await import(pathToFileURL(join(root,'node_modules/three/build/three.module.js')));scene.updateMatrixWorld(true);
+  const plates=[];model.getObjectByName('expanded-city-world').traverse(o=>{if(o.name==='city-merged-architecture'&&o.material.color.getHexString()==='c5c8ae')plates.push(o);});
+  assert(plates.length);const hole=new Vector3(-31+23*.15,3.15,-26),solid=new Vector3(-31,3.15,-26+4);
+  assert.equal(new Raycaster(hole,new Vector3(0,-1,0),0,.5).intersectObjects(plates).length,0,'The library banyan must pass through a real floor aperture');
+  assert(new Raycaster(solid,new Vector3(0,-1,0),0,.5).intersectObjects(plates).length>0,'The surrounding library floor must remain solid');
+  const depotFloors=[];model.getObjectByName('expanded-city-world').traverse(o=>{if(o.name==='city-merged-architecture'&&o.material.color.getHexString()==='9ea98f')depotFloors.push(o);});assert(depotFloors.length);
+  assert.equal(new Raycaster(new Vector3(31,.65,-29),new Vector3(0,-1,0),0,.5).intersectObjects(depotFloors).length,0,'Tram inspection pits must be real openings');assert(d.height(31,-29)<-.6);
+  console.log(JSON.stringify({cityDistrict:{buildings:d.totalBuildings,trees:d.inventory.totalTrees,rooms:d.inventory.rooms,books:d.inventory.books,modeledUnits:d.modeledUnits,fish:d.inventory.totalFish}}));
+ }
  if(expanded){
   const extraFish=scene.getObjectByName('expanded-fish-schools');
   if(extraFish){assert.equal(extraFish.count,name==='ocean'?288:192);const a=extraFish.instanceMatrix.array;for(let i=0;i<extraFish.count;i++){const x=a[i*16+12],y=a[i*16+13],z=a[i*16+14];assert(Math.abs(x)<62&&Math.abs(z)<62&&y<0&&y>(name==='ocean'?-5.5:-2.5),'Additional schools must remain inside the water volume')}}
@@ -456,6 +483,7 @@ try{
  const {Vector3,Matrix4,ShaderChunk}=await import(pathToFileURL(join(root,'node_modules/three/build/three.module.js')));
  const point=new Vector3();let meshes=0,instances=0,vertices=0,invalid=0,minWorldY=Infinity;
  const projected={left:Infinity,right:-Infinity,bottom:Infinity,top:-Infinity};
+ const cityExtent={x:0,z:0};const recordCityExtent=p=>{if(name==='city'){cityExtent.x=Math.max(cityExtent.x,Math.abs(p.x));cityExtent.z=Math.max(cityExtent.z,Math.abs(p.z));}};
  model.traverse(o=>{
   if(!o.isMesh)return;
   if(name==='sakura'||name==='rooftop'){for(let p=o;p&&p!==model;p=p.parent)if(!p.visible)return;}
@@ -470,7 +498,7 @@ try{
     for(let i=0;i<o.count;i++){
      o.getMatrixAt(i,im);world.multiplyMatrices(o.matrixWorld,im);
      for(const x of [bounds.min.x,bounds.max.x])for(const y of [bounds.min.y,bounds.max.y])for(const z of [bounds.min.z,bounds.max.z]){
-      point.set(x,y,z).applyMatrix4(world).project(camera);
+      point.set(x,y,z).applyMatrix4(world);recordCityExtent(point);point.project(camera);
       projected.left=Math.min(projected.left,point.x);projected.right=Math.max(projected.right,point.x);projected.bottom=Math.min(projected.bottom,point.y);projected.top=Math.max(projected.top,point.y);
      }
     }
@@ -478,10 +506,11 @@ try{
    return;
   }
   for(let i=0;i<p.count;i++){
-   point.fromBufferAttribute(p,i).applyMatrix4(o.matrixWorld);minWorldY=Math.min(minWorldY,point.y);if(name==='rooftop'&&o.material.clippingPlanes?.some(p=>p.distanceToPoint(point)<-.0001))continue;point.project(camera);
+   point.fromBufferAttribute(p,i).applyMatrix4(o.matrixWorld);recordCityExtent(point);minWorldY=Math.min(minWorldY,point.y);if(name==='rooftop'&&o.material.clippingPlanes?.some(p=>p.distanceToPoint(point)<-.0001))continue;point.project(camera);
    projected.left=Math.min(projected.left,point.x);projected.right=Math.max(projected.right,point.x);projected.bottom=Math.min(projected.bottom,point.y);projected.top=Math.max(projected.top,point.y);
   }
  });
+ if(name==='city')assert(cityExtent.x<=64.15&&cityExtent.z<=64.15,`City details exceed the base: ${JSON.stringify(cityExtent)}`);
  assert.equal(invalid,0);assert(instances>(name==='rooftop'?500:name==='rainy'?1000:name==='onsen'?2200:name==='study'?800:name==='intersection'?2000:name==='summit'?1800:name==='desert'?1800:name==='ocean'?2200:3000));assert(meshes<(expanded?360:260));
  if(name==='lakeside')assert(minWorldY < -3.0&&minWorldY > -3.1,'The deeper soil and water section must be retained');
  if(process.env.SCENE_SHADER_OUTPUT){

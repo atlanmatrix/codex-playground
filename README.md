@@ -3,7 +3,7 @@
 Twelve explorable, toon-shaded Three.js miniatures, each on a complete 128×128 base. Every scene is procedural geometry, with no external assets or runtime CDN requests.
 
 - `/` — scene selection using pre-rendered WebP covers. The gallery contains no iframes or WebGL canvases; its small script only copies embed codes; 3D starts only after following a scene link.
-- `/city/` — **被自然收回的城市街角**: a banyan tree growing through a furnished, ruined building.
+- `/city/` — **被自然收回的城市街角**: a banyan growing through its original furnished ruin, surrounded by a planned, detailed reclaimed district of 32 buildings.
 - `/lakeside/` — **柳荫下的湖畔午睡**: a deep lake with a diagonal shore, six weeping willows, a broken wooden footbridge and woven fishing basket, and a plump tabby sleeping on an open book on a wooden chaise. Twenty-four koi, goldfish, silverfish, and perch swim on distinct underwater routes.
 - `/courtyard/` — **小区健身区一角**: seven familiar blue-and-yellow fitness stations on a rubber court, with benches, shade trees, a bicycle, and a modest apartment facade. Equipment stays still while trees, grass and a few falling leaves move.
 - `/sakura/` — **樱风小站**: a pastel spring station with eight outlined cherry trees, two hollow grass-covered tunnels, a corrugated canopy, overhead wires, village houses, and a vegetable patch. Drifting petals and an occasional green railcar animate the scene; the road barriers close before it reaches the crossing.
@@ -89,6 +89,18 @@ Expansions are redesigned around each original scene’s intent, using varied, d
 - Desert: asymmetric high dunes with slope-following ripple ribbons, stratified mesa and undercut hoodoos, gravel wadi and salt pan, palm spring, rope well, woven rest shade, ribbed/flowering cactus species and rolling tumbleweeds.
 
 - Ocean: shallow coral shelves and a deep basin, branching/table/brain/fan/anemone colonies, open reef grotto, rooted kelp, distinct bream/silver/butterfly schools, sea turtles, spotted rays and six additional detailed dolphins with independent rings, spray and airborne trails.
+
+## Reclaimed city district
+
+The city retains its original **16×16 core at its original scale**, inside the complete 128×128 base. `src/expansions/city-plan.js` defines 31 irregular outer parcels and five street levels: main streets, collectors, local streets, service alleys and pedestrian paths. The outer buildings are distributed across civic/residential (8), industrial (7), market (9), wetland/public (5) and edge/gateway (2) areas. Footprints do not overlap; paths connect real entrances and route around their own buildings when the nearest street is behind them.
+
+The three-storey library has individually stocked shelves, reading tables, catalogue drawers, stairs and a real tree aperture through its slabs. Residential and mixed-use buildings contain beds, kitchens with taps and burners, bathrooms, bookcases, furniture, internal doors, balconies, condensers and drainage pipes. The arcade has six furnished tenancies, striped awnings and laundry. Warehouses have exposed pitched trusses and stacked crates; the tram depot has two inspection pits, tools, machinery and an abandoned tram. The bathhouse has lockers, tubs and a tall chimney. Schools have desks, blackboards and a stopped exterior clock.
+
+Four new recessed water bodies join the original core pool. The flooded court retains hoops, fencing and court lines beneath the water. Drainage channels connect the district towards reed and lily beds. Trees form groves and wall-side succession rather than a uniform grid; three secondary banyans pass through actual building apertures. Wind bends leaf tips while roots remain fixed. Nineteen new fish and the five original fish retain valid still poses in preview and reduced-motion modes.
+
+The measured world contains **173,450 modeling units**, including the original 5,402-unit core, **32 buildings, 160 trees and 24 fish**. The outer inventory includes 142 functional areas (open cutaway zones, rather than enclosed room counts), 89 shelving units, 2,348 books, 220 vine curtains, 1,200 ground-plant clusters, 120 reed clusters and 240 lily pads. Counts describe modeled parts before instancing/merging, not GPU draw calls. The original core adds its own furniture, books and plants. Thin foliage uses two-triangle instanced leaves; opaque slabs and paving share material batches. Current instantiated geometry is approximately 1.1 million triangles including the core. Shadow maps are cached after the initial render; canopy sway has sub-texel shadow movement at this world scale.
+
+City inspection supports orbiting, wheel/pinch zoom down to a 22-unit camera radius, and right-drag/two-finger panning on the ground plane. The entire base remains framed by default on desktop and mobile. `node scripts/check-scenes.mjs city 1440 1000` checks quantities, parcel separation, world bounds, real slab apertures, anchored roots and swimming containment. Run it at `390 844`, with `--preview`, and with `--reduced` for the other modes. `python scripts/check-city-browser.py` verifies actual local Chromium/WebGL rendering, zoom, pan, view replay and static reduced-motion capture. These checks use local fixtures and do not establish that a public deployment is live.
 
 ## Embedding scenes
 

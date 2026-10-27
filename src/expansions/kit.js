@@ -6,7 +6,7 @@ export function detailedWorld(options,design){
  const core=kind==='city'||kind==='courtyard'||kind==='lakeside'?8:['sakura','rooftop','rainy'].includes(kind)?9:16;
  const native=options.nativeHeight||(()=>kind==='ocean'?-6:kind==='lakeside'?.07:.12);
  const height=design.height?((x,z)=>{const d=Math.max(Math.abs(x),Math.abs(z))-core;if(d<=0)return native(x,z);const e=native(THREE.MathUtils.clamp(x,-core,core),THREE.MathUtils.clamp(z,-core,core));return THREE.MathUtils.lerp(e,design.height(x,z),THREE.MathUtils.smoothstep(d,0,design.blend||9))}):undefined;
- const base=baseWorld({...options,detail:true,designHeight:height,designColor:design.color,designBottom:design.bottom});
+ const base=baseWorld({...options,detail:true,designHeight:height,designColor:design.color,designBottom:design.bottom,designStructuralTop:design.structuralTop});
  const world=model.getObjectByName(`expanded-${kind}-world`),stats=world.userData;stats.detailVersion=2;stats.intent=design.intent;stats.landmarks=[];stats.vehicleTypes=[];
  const land=stats.height,parts=new Map(),motions=[],roots=[],meshes=[],dummy=new THREE.Object3D();let seed=design.seed||52819;
  const random=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296},R=(a,b)=>a+random()*(b-a),pick=a=>a[Math.floor(random()*a.length)];
