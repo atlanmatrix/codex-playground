@@ -29,7 +29,7 @@ jobs:
         run: |
           mkdir _site
           cp index.html _site/index.html
-          cp -R city lakeside courtyard sakura rooftop rainy onsen study intersection summit desert ocean thumbnails _site/
+          cp -R city rainy onsen study summit desert ocean thumbnails _site/
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site

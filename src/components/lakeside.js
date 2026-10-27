@@ -1,38 +1,10 @@
-import {installSceneCapture} from './scene-capture.js';
-import {expandWorld,expandedFit} from './expansions/lakeside.js';
 import * as THREE from 'three';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { Reflector } from 'three/addons/objects/Reflector.js';
-import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
+import {Reflector} from 'three/addons/objects/Reflector.js';
 
-const preview=['preview','screenshot'].some(key=>new URLSearchParams(location.search).has(key));
-const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
-const scene=new THREE.Scene();
-const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,powerPreference:'high-performance'});
-renderer.setPixelRatio(Math.min(devicePixelRatio,preview?.85:1.8));
-renderer.setSize(innerWidth,innerHeight);
-renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
-renderer.outputColorSpace=THREE.SRGBColorSpace;
-renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.06;
-document.body.appendChild(renderer.domElement);
-renderer.domElement.setAttribute('role','img');
-renderer.domElement.setAttribute('aria-label','柳荫下的湖畔午睡，可以拖拽旋转和缩放的三维微缩景观');
-const camera=new THREE.PerspectiveCamera(33,innerWidth/innerHeight,.35,240);
-const controls=new OrbitControls(camera,renderer.domElement);
-controls.target.set(-.7,0,0);controls.enabled=!preview;
-controls.enableDamping=true;controls.dampingFactor=.065;controls.enablePan=false;
-controls.minDistance=17;controls.maxDistance=160;
-controls.minPolarAngle=.22;controls.maxPolarAngle=Math.PI*.445;
-const fitDistance=aspect=>expandedFit(aspect);
-function frame(){const d=fitDistance(camera.aspect);camera.position.set(d*.66,d*.62,d*.73);camera.lookAt(controls.target)}
-frame();
-scene.add(new THREE.HemisphereLight(0xf1fcff,0x819663,2.0));
-const sun=new THREE.DirectionalLight(0xffefc5,3.1);sun.position.set(-5,16,9);sun.castShadow=true;
-sun.shadow.mapSize.set(preview?1024:2048,preview?1024:2048);
-Object.assign(sun.shadow.camera,{left:-12,right:12,top:12,bottom:-11,near:.5,far:40});
-sun.shadow.normalBias=.025;sun.shadow.bias=-.00015;sun.shadow.radius=3;scene.add(sun);
-const blueFill=new THREE.DirectionalLight(0xc2e8f3,.75);blueFill.position.set(10,8,-8);scene.add(blueFill);
-const model=new THREE.Group();model.name='lakeside-miniature';scene.add(model);
+// Native core extracted as a reusable city component; no renderer, route or UI.
+export function createLakesideComponent({renderer,preview=false,reduced=false,trafficPose,limits,origin=[0,0]}){
+const model=new THREE.Group();model.name='lakeside-miniature';
 const scenery=new THREE.Group();scenery.name='static-landscape';model.add(scenery);
 let seed=163807;const random=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296};
 const R=(a,b)=>a+random()*(b-a),pick=a=>a[Math.floor(random()*a.length)];
@@ -64,27 +36,17 @@ const landY=(x,z)=>{const t=THREE.MathUtils.clamp((shoreX(z)-x)/3.7,0,1);return 
 function geometryGrid(nx,nz,position,color){const ps=[],cs=[],ix=[];for(let j=0;j<=nz;j++)for(let i=0;i<=nx;i++){const p=position(i/nx,j/nz);ps.push(...p);if(color)cs.push(...color(p,i/nx,j/nz))}for(let j=0;j<nz;j++)for(let i=0;i<nx;i++){const a=j*(nx+1)+i,b=a+1,c=a+nx+1,d=c+1;ix.push(a,c,b,b,c,d)}const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(ps,3));if(color)g.setAttribute('color',new THREE.Float32BufferAttribute(cs,3));g.setIndex(ix);g.computeVertexNormals();return g}
 function sideStrip(points,material,bottom=SECTION_FLOOR){const ps=[],ix=[];for(const p of points)ps.push(p[0],p[1],p[2],p[0],bottom,p[2]);for(let i=0;i<points.length-1;i++){const a=i*2;ix.push(a,a+1,a+2,a+1,a+3,a+2)}const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(ps,3));g.setIndex(ix);g.computeVertexNormals();const o=mesh(g,material);o.material.side=THREE.DoubleSide;return o}
 // The base has one structural bottom; soil and water occupy separate footprints.
-box(0,(BASE_BOTTOM+SECTION_FLOOR)/2,0,16,SECTION_FLOOR-BASE_BOTTOM,16,m.deep);
+
 const turfColor=new THREE.Color();
 const terrain=geometryGrid(24,80,(u,w)=>{const z=-8+16*w,x=THREE.MathUtils.lerp(-8,shoreX(z),u);return[x,landY(x,z),z]},(p,u)=>{turfColor.set('#8caf69').lerp(new THREE.Color('#bbcc84'),Math.max(0,1-u)*.35+.06*Math.sin(p[2]*2));return turfColor.toArray()});
 mesh(terrain,toon('#ffffff',{vertexColors:true}));
 const landLeft=[],landFront=[],landBack=[];
 for(let i=0;i<=80;i++){const z=-8+i*.2;landLeft.push([-8,landY(-8,z),z])}
 for(let i=0;i<=24;i++){for(const [z,list] of [[8,landFront],[-8,landBack]]){const x=THREE.MathUtils.lerp(-8,shoreX(z),i/24);list.push([x,landY(x,z),z])}}
-sideStrip(landLeft,m.soil);sideStrip(landFront,m.soil);sideStrip(landBack,m.soil);
+
 const bed=geometryGrid(75,80,(u,w)=>{const z=-8+16*w,x=THREE.MathUtils.lerp(shoreX(z),8,u);return[x,bedY(x,z),z]},(p,u)=>{const c=new THREE.Color('#dbcfa8').lerp(new THREE.Color('#387f8e'),THREE.MathUtils.smoothstep(u,0,.45));return c.toArray()});
 mesh(bed,toon('#ffffff',{vertexColors:true}));
 const waterSide=new THREE.ShaderMaterial({side:THREE.DoubleSide,transparent:true,depthWrite:false,vertexShader:`varying float h;varying vec3 p;void main(){h=position.y;p=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,fragmentShader:`varying float h;varying vec3 p;void main(){float f=smoothstep(-2.77,.16,h);vec3 c=mix(vec3(.16,.43,.49),vec3(.40,.76,.78),f);c+=.018*sin(p.x*3.+p.z*2.);gl_FragColor=vec4(c,mix(.82,.48,f));}`});
-const waterSections=[sideStrip([[8,.16,-8],[8,.16,8]],waterSide)];
-for(const z of [-8,8]){const pts=[];for(let i=0;i<=60;i++)pts.push([THREE.MathUtils.lerp(shoreX(z),8,i/60),.16,z]);waterSections.push(sideStrip(pts,waterSide))}
-for(const section of waterSections){section.name='lake-cutaway-water';section.castShadow=false;section.receiveShadow=false;section.renderOrder=2;}
-const ground=mesh(new THREE.PlaneGeometry(150,150),new THREE.ShadowMaterial({opacity:.13}),0,BASE_BOTTOM-.04,0,scene);ground.rotation.x=-Math.PI/2;ground.castShadow=false;
-// Embedded aggregate and exposed willow roots on the soil section.
-const stones=[[],[]];
-for(let i=0;i<120;i++){const front=random()>.5,z=front?8.012:-8.012,x=R(-7.9,shoreX(z)-.1);stones[i%2].push({p:[x,R(-2.64,.12),z],s:[R(.04,.12),R(.025,.08),R(.035,.08)],r:[R(0,3),R(0,3),R(0,3)]});}
-for(let i=0;i<90;i++)stones[i%2].push({p:[-8.012,R(-2.64,.25),R(-7.85,7.85)],s:[R(.04,.1),R(.03,.08),R(.04,.13)],r:[R(0,3),R(0,3),R(0,3)]});
-for(let i=0;i<2;i++)instances(geo.stone,i?m.stone:m.stone2,stones[i]);
-for(let i=0;i<13;i++){const z=R(-7.7,7.7);tube([[-7.8,.1,z],[-8.025,-.65,z+.1],[-8.035,-1.65,z+.28],[-8.02,-2.55,z+.17]],R(.018,.04),m.trunk)}
 // Actual pebbles beneath the translucent shallows, plus emergent shoreline stones.
 const pebbleBatches=[[],[],[]];
 for(let i=0;i<200;i++){const z=R(-7.8,7.8),d=R(.05,1.38),x=shoreX(z)+d;const y=bedY(x,z);pebbleBatches[i%3].push({p:[x,y+.035,z],s:[R(.04,.16),R(.025,.065),R(.05,.17)],r:[R(-.3,.3),R(0,6.28),R(-.3,.3)]})}
@@ -94,13 +56,13 @@ for(let i=0;i<28;i++){const z=R(-7.8,7.8),x=shoreX(z)-R(.03,.24),s=R(.07,.18);el
 // A planar reflection of the real willows, broken by independent wave trains.
 const waterGeometry=geometryGrid(96,96,(u,w)=>{const z=-8+16*w;return[THREE.MathUtils.lerp(shoreX(z),8,u),0,z]});
 waterGeometry.rotateX(Math.PI/2);
-const waterUniforms={time:{value:0},color:{value:new THREE.Color('#8acfd0')},tDiffuse:{value:null},textureMatrix:{value:new THREE.Matrix4()}};
+const waterUniforms={time:{value:0},componentOrigin:{value:new THREE.Vector2()},color:{value:new THREE.Color('#8acfd0')},tDiffuse:{value:null},textureMatrix:{value:new THREE.Matrix4()}};
 const water=new Reflector(waterGeometry,{
  textureWidth:preview?512:1024,textureHeight:preview?512:1024,clipBias:.002,
  shader:{uniforms:waterUniforms,
- vertexShader:`uniform float time;uniform mat4 textureMatrix;varying vec4 mirrorCoord;varying vec3 worldP;
+ vertexShader:`uniform float time;uniform vec2 componentOrigin;uniform mat4 textureMatrix;varying vec4 mirrorCoord;varying vec3 worldP;
  float shore(float z){return -4.02+.38*z+.38*sin(z*.55)+.10*cos(z*.91);}
- void main(){vec4 wp=modelMatrix*vec4(position,1.);float edge=min(min(8.-abs(wp.x),8.-abs(wp.z)),wp.x-shore(wp.z));float fade=smoothstep(0.,.6,edge);wp.y+=fade*(sin(wp.x*3.2+wp.z*1.7+time*.72)*.025+sin(wp.x*-2.1+wp.z*3.6-time*.60)*.014);worldP=wp.xyz;mirrorCoord=textureMatrix*vec4(position,1.);gl_Position=projectionMatrix*viewMatrix*wp;}`,
+ void main(){vec4 wp=modelMatrix*vec4(position,1.);vec2 lp=wp.xz-componentOrigin;float edge=min(min(25.-lp.y,lp.y+29.),lp.x-shore(lp.y));float fade=smoothstep(0.,.6,edge);wp.y+=fade*(sin(lp.x*3.2+lp.y*1.7+time*.72)*.025+sin(lp.x*-2.1+lp.y*3.6-time*.60)*.014);worldP=vec3(lp.x,wp.y,lp.y);mirrorCoord=textureMatrix*vec4(position,1.);gl_Position=projectionMatrix*viewMatrix*wp;}`,
  fragmentShader:`uniform float time;uniform vec3 color;uniform sampler2D tDiffuse;varying vec4 mirrorCoord;varying vec3 worldP;
  float shore(float z){return -4.02+.38*z+.38*sin(z*.55)+.10*cos(z*.91);}
  float waves(vec2 p){return sin(dot(p,vec2(.9,.43))*3.7+time*.72)*.48+sin(dot(p,vec2(-.64,1.18))*5.8-time*.60)*.29+sin(dot(p,vec2(1.12,-.9))*11.3+time*.45)*.14+sin(length(p-vec2(-2.,2.))*6.-time*.85)*.09;}
@@ -511,21 +473,8 @@ function updateScene(t){
  const dt=Math.min(Math.max(t-lastTime,0),.05);lastTime=t;
  for(let i=0;i<30;i++){pollenPositions[i*3+1]+=dt*.025;if(pollenPositions[i*3+1]>5.5)pollenPositions[i*3+1]=.6;}pollenGeo.attributes.position.needsUpdate=true;
 }
-const expandedWorld=expandWorld({kind:'lakeside',scene,model,camera,controls,renderer,preview,reduced});
-function renderFrame(ms){
- expandedWorld.update(ms*.001);
- if(startTime===null)startTime=ms;
- const t=(ms-startTime)*.001;
- controls.update();
- if(!reduced&&!preview)updateScene(t);
- renderer.render(scene,camera);
+for(const o of [...willowBoughs.map(a=>a.g),...grassPatches.map(a=>a.g),belly,...ears.map(a=>a.g)])if(o?.userData)o.userData.componentDynamic=true;
+ for(const o of model.children)if(o.name==='swimming-fish')o.userData.componentDynamic=true;
+ updateFish(0);belly.scale.y=belly.scale.z=1;
+ return {model,water,update:updateScene,cat,trees:6,structures:0};
 }
-installSceneCapture({kind:'lakeside',camera,controls,renderer,preview,render:()=>renderFrame(preview?0:performance.now(),true)});
-if(preview){renderFrame(0)}else{renderer.setAnimationLoop(renderFrame)}
-addEventListener('resize',()=>{
- const aspect=innerWidth/innerHeight,factor=fitDistance(aspect)/fitDistance(camera.aspect);
- camera.position.sub(controls.target).multiplyScalar(factor).add(controls.target);
- camera.aspect=aspect;camera.updateProjectionMatrix();
- renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio,preview?.85:1.8));
- if(preview)renderFrame(0);
-});

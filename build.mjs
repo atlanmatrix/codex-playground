@@ -1,23 +1,12 @@
+import {SCENES} from './src/scene-registry.js';
 import { build } from 'esbuild';
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { Script } from 'node:vm';
 import { createHash } from 'node:crypto';
 
 const notice = await readFile('node_modules/three/LICENSE', 'utf8');
-const pages = [
-  {entry: 'src/scene.js', template: 'src/city.html', output: 'city/index.html'},
-  {entry: 'src/lakeside.js', template: 'src/lakeside.html', output: 'lakeside/index.html'},
-  {entry: 'src/courtyard.js', template: 'src/courtyard.html', output: 'courtyard/index.html'},
-  {entry: 'src/sakura.js', template: 'src/sakura.html', output: 'sakura/index.html'},
-  {entry: 'src/rooftop.js', template: 'src/rooftop.html', output: 'rooftop/index.html'},
-  {entry: 'src/rainy.js', template: 'src/rainy.html', output: 'rainy/index.html'},
-  {entry: 'src/onsen.js', template: 'src/onsen.html', output: 'onsen/index.html'},
-  {entry: 'src/intersection.js', template: 'src/intersection.html', output: 'intersection/index.html'},
-  {entry: 'src/summit.js', template: 'src/summit.html', output: 'summit/index.html'},
-  {entry: 'src/desert.js', template: 'src/desert.html', output: 'desert/index.html'},
-  {entry: 'src/ocean.js', template: 'src/ocean.html', output: 'ocean/index.html'},
-  {entry: 'src/study.js', template: 'src/study.html', output: 'study/index.html'}
-];
+const pages=SCENES.map(({route,entry})=>({entry:`src/${entry}.js`,template:`src/${route}.html`,output:`${route}/index.html`}));
+
 const sceneHashes = new Map();
 for (const page of pages) {
   const bundle = await build({entryPoints:[page.entry], bundle:true, minify:true, write:false, format:'iife', target:'es2020', legalComments:'none'});
@@ -40,6 +29,10 @@ const thumbnails = JSON.parse(await readFile('thumbnails/manifest.json','utf8'))
 let gallery = await readFile('src/index.html','utf8');
 for (const [, script] of gallery.matchAll(/<script>([\s\S]*?)<\/script>/g)) new Script(script, {filename:'gallery'});
 if (/<(?:iframe|canvas)\b/i.test(gallery.replace(/<script>[\s\S]*?<\/script>/g, ''))) throw new Error('The gallery must use static covers without scene runtimes');
+const cardRoutes=[...gallery.matchAll(/class="card-link" href="\.\/([^/]+)\//g)].map(m=>m[1]);
+const cardNumbers=[...gallery.matchAll(/class="number">(\d{2}) \//g)].map(m=>m[1]);
+if(cardRoutes.length!==SCENES.length||SCENES.some((s,i)=>cardRoutes[i]!==s.route||cardNumbers[i]!==s.number))throw new Error('Gallery routes and numbers must match the seven-scene catalogue');
+
 for (const page of pages) {
   const route=page.output.split('/')[0];
   if (!gallery.includes(`href="./${route}/"`)) throw new Error(`Missing gallery route: ${route}`);

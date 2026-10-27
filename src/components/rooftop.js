@@ -1,30 +1,9 @@
-import {installSceneCapture} from './scene-capture.js';
-import {expandWorld,expandedFit} from './expansions/rooftop.js';
 import * as THREE from 'three';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 
-const preview=['preview','screenshot'].some(key=>new URLSearchParams(location.search).has(key));
-const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
-const scene=new THREE.Scene();
-const initialWidth=Math.max(1,innerWidth),initialHeight=Math.max(1,innerHeight);
-const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,powerPreference:'high-performance'});
-renderer.setPixelRatio(Math.min(devicePixelRatio,preview?.85:1.8));renderer.setSize(initialWidth,initialHeight);
-renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.localClippingEnabled=true;
-renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.04;
-document.body.appendChild(renderer.domElement);
-renderer.domElement.setAttribute('role','img');renderer.domElement.setAttribute('aria-label','铁路从商铺房顶通过的日式微缩街道，可以拖拽旋转缩放');
-const camera=new THREE.PerspectiveCamera(33,initialWidth/initialHeight,.35,270);
-const controls=new OrbitControls(camera,renderer.domElement);
-controls.target.set(0,2.0,0);controls.enableDamping=true;controls.dampingFactor=.065;controls.enabled=!preview;controls.enablePan=false;
-controls.minDistance=20;controls.maxDistance=170;controls.minPolarAngle=.22;controls.maxPolarAngle=Math.PI*.44;
-const fit=aspect=>expandedFit(aspect);
-const distance=fit(camera.aspect);camera.position.set(distance*.58,2+distance*.84,distance*.77);camera.lookAt(controls.target);
-scene.add(new THREE.HemisphereLight(0xe4f3ff,0x858f85,1.95));
-const sun=new THREE.DirectionalLight(0xfff0d5,3.25);sun.position.set(-10,22,7);sun.castShadow=true;
-sun.shadow.mapSize.set(preview?1024:2048,preview?1024:2048);Object.assign(sun.shadow.camera,{left:-15,right:15,top:16,bottom:-14,near:.5,far:50});sun.shadow.normalBias=.025;sun.shadow.bias=-.00012;sun.shadow.radius=2;scene.add(sun);
-const fill=new THREE.DirectionalLight(0xb8d7eb,.65);fill.position.set(9,9,-8);scene.add(fill);
-const model=new THREE.Group();model.name='rooftop-miniature';scene.add(model);
+// Native core extracted as a reusable city component; no renderer, route or UI.
+export function createRooftopComponent({renderer,preview=false,reduced=false,trafficPose,limits,origin=[0,0]}){
+const model=new THREE.Group();model.name='rooftop-miniature';
 const scenery=new THREE.Group();scenery.name='static-rooftop-street';model.add(scenery);
 let seed=663281;const random=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296};
 const R=(a,b)=>a+random()*(b-a),pick=a=>a[Math.floor(random()*a.length)],v=(x,y,z)=>new THREE.Vector3(x,y,z);
@@ -52,9 +31,7 @@ function pot(x,y,z,size=.25,parent=scenery){
  mesh(new THREE.CylinderGeometry(size*.52,size*.52,.025,10),m.soil,x,y+size+.012,z,parent);
  for(let i=0;i<5;i++)ell(x+R(-size*.3,size*.3),y+size+R(size*.1,size*.75),z+R(-size*.3,size*.3),size*R(.30,.53),size*R(.38,.62),size*R(.30,.50),i%2?m.leaf:m.leafLight,parent);
 }
-// An intact square section with separate soil, concrete, roadway and curb layers.
-for(const [bottom,top,mat] of [[-1.2,-.35,m.soil],[-.35,.12,m.concrete]])box(0,(bottom+top)/2,0,18,top-bottom,18,mat,scenery,true);
-const ground=mesh(new THREE.PlaneGeometry(180,180),new THREE.ShadowMaterial({opacity:.15}),0,-1.24,0,scene);ground.rotation.x=-Math.PI/2;ground.castShadow=false;
+box(0,.015,0,18,.21,18,m.concrete);
 box(.575,.15,0,3.65,.06,18,m.asphalt);
 box(5.65,.15,-6.0,6.7,.06,1.85,m.asphalt);
 box(-1.88,.205,0,1.25,.17,18,m.paving,scenery,true);
@@ -435,16 +412,5 @@ function animate(t){
 }
 animate(0);
 let start=null;
-const expandedWorld=expandWorld({kind:'rooftop',scene,model,camera,controls,renderer,preview,reduced});
-function renderFrame(ms){
- expandedWorld.update(ms*.001);if(start===null)start=ms;controls.update();if(!preview&&!reduced)animate((ms-start)*.001);renderer.render(scene,camera);}
-installSceneCapture({kind:'rooftop',camera,controls,renderer,preview,render:()=>renderFrame(preview?0:performance.now(),true)});
-if(preview){renderFrame(0)}else{renderer.setAnimationLoop(renderFrame)}
-addEventListener('resize',()=>{
- // Lazy iframes can temporarily collapse during layout or capture. Preserve the
- // last valid camera so a zero width cannot introduce Infinity/NaN into it.
- if(innerWidth<1||innerHeight<1)return;
- const aspect=innerWidth/innerHeight,factor=fit(aspect)/fit(camera.aspect);
- camera.position.sub(controls.target).multiplyScalar(factor).add(controls.target);camera.aspect=aspect;camera.updateProjectionMatrix();
- renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio,preview?.85:1.8));if(preview)renderFrame(0);
-});
+train.userData.componentDynamic=true;streetLamps.forEach(m=>m.userData.componentDynamic=true);for(const a of laundry)a.g.userData.componentDynamic=true;return {model,update:animate,train,wheels,clip:clipPlanes,trees:0,structures:10};
+}

@@ -7,10 +7,10 @@ import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import assert from 'node:assert/strict';
 
-const name=process.argv[2]||'lakeside';
+const name=process.argv[2]||'city';
 const width=Number(process.argv[3]||1440),height=Number(process.argv[4]||1000);
 const isPreview=process.argv.includes('--preview'),isReduced=process.argv.includes('--reduced'),isNight=process.argv.includes('--night');
-assert(['city','lakeside','courtyard','sakura','rooftop','rainy','onsen','study','intersection','summit','desert','ocean'].includes(name));
+assert(['city','rainy','onsen','study','summit','desert','ocean'].includes(name));
 const root=resolve(import.meta.dirname,'..');
 const temp=await mkdtemp(join(tmpdir(),'little-worlds-check-'));
 const realThree=JSON.stringify(pathToFileURL(join(root,'node_modules/three/build/three.module.js')).href);
@@ -51,7 +51,7 @@ try{
   const extension=scene.getObjectByName(`expanded-${name}-world`);assert(extension&&extension.userData.staticInstances>800);
   const terrain=extension.getObjectByName('expanded-terrain-ring');terrain.geometry.computeBoundingBox();const bounds=terrain.geometry.boundingBox;
   assert.equal(bounds.min.x,-64);assert.equal(bounds.max.x,64);assert.equal(bounds.min.z,-64);assert.equal(bounds.max.z,64);
-  assert(testControls.minDistance>=(name==='city'?22:100)&&camera.far>=1500);
+  assert(testControls.minDistance>=(name==='city'||model.userData.expansion.enrichment?22:100)&&camera.far>=1500);
   console.log(JSON.stringify({expandedScene:name,baseSize:128,coreSize:model.userData.coreBaseSize,additionalInstances:extension.userData.staticInstances,additionalBuildings:extension.userData.buildings,additionalTrees:extension.userData.trees}));
  }
  if(name==='ocean'){
@@ -155,39 +155,6 @@ try{
    shrubs.forEach((o,i)=>assert.deepEqual(o.rotation.toArray(),originalShrubs[i].toArray()));
   }
   console.log(JSON.stringify({alpineShrubs:shrubs.length,snowflakes:flakes.count,spindrift:drift.count,snowyFaces:terrain.userData.snowyFaces,rockFaces:terrain.userData.rockFaces,wind}));
- }
- if(name==='intersection'){
-  assert.equal(model.userData.coreBaseSize??model.userData.baseSize,32);
-  const cars=[];model.traverse(o=>{if(o.name==='moving-traffic-car')cars.push(o)});
-  assert.equal(cars.length,12);assert.equal(new Set(cars.map(c=>c.userData.lane)).size,4);
-  const before=cars.map(c=>c.position.clone()),crossings=[0,0,0,0],wraps=[0,0,0,0];
-  if(!isPreview&&!isReduced){
-   for(let ms=25;ms<=180000;ms+=25){
-    const old=cars.map(c=>({...c.userData}));globalThis.frame(ms);
-    cars.forEach((c,i)=>{
-     const p=c.userData.progress,prev=old[i].progress,{axis,state}=model.userData.signalPhase;
-     if(prev<=-7.85&&!(axis===c.userData.axis&&state==='green'))assert(p<=-7.85+1e-7,'Vehicles must wait behind the stop line on red/amber');
-     if(prev<0&&p>=0)crossings[c.userData.lane]++;
-     if(p<prev-10)wraps[c.userData.lane]++;
-     assert(Number.isFinite(p)&&c.userData.speed>=0);
-    });
-    for(let lane=0;lane<4;lane++){
-     const queue=cars.filter(c=>c.userData.lane===lane).map(c=>c.userData.progress).sort((a,b)=>a-b);
-     for(let j=1;j<queue.length;j++)assert(queue[j]-queue[j-1]>=3.74,'Traffic queues must preserve spacing');
-    }
-    if(expanded&&model.userData.expansion.detailVersion!==2&&ms%100===0){
-     const traffic=scene.getObjectByName('expanded-neighborhood-traffic'),m=traffic.instanceMatrix.array;assert.equal(model.userData.expansion.bridges,4);
-     for(let i=0;i<traffic.count;i++)for(const c of cars)assert(Math.abs(m[i*16+13]-(c.position.y+.66))>1.35||Math.abs(m[i*16+12]-c.position.x)>2.05||Math.abs(m[i*16+14]-c.position.z)>2.05,'Grade-separated outer traffic must clear the central avenue traffic');
-    }
-    // AABB footprints of orthogonal cars may never intersect in the junction.
-    for(const a of cars.filter(c=>c.userData.axis===0))for(const b of cars.filter(c=>c.userData.axis===1))assert(Math.abs(a.position.x-b.position.x)>2.01||Math.abs(a.position.z-b.position.z)>2.01,'Cross traffic collision');
-   }
-   assert(crossings.every(n=>n>9)&&wraps.every(n=>n>8),'Traffic must keep circulating from all four directions');
-  }else {
-   if(!isPreview)for(const ms of [1000,5000,17000,34000])globalThis.frame(ms);
-   cars.forEach((c,i)=>assert(c.position.equals(before[i]),'Previews and reduced motion must stay still'));
-  }
-  console.log(JSON.stringify({trafficCars:cars.length,crossings,wraps}));
  }
  if(name==='study'){
   assert.equal(model.userData.coreBaseSize??model.userData.baseSize,32);
@@ -320,157 +287,13 @@ try{
   assert(testControls.minDistance>=21&&testControls.maxPolarAngle<Math.PI/2);
   console.log(JSON.stringify({products:goods.count,rainStreaks:p.count/2,ripples:ripples.count,roofProtectedDrops:covered}));
  }
- if(name==='rooftop'){
-  const train=scene.getObjectByName('rooftop-commuter-train'),railway=scene.getObjectByName('roof-railway');
-  const shops=['corner-coffee','greengrocer','ramen-counter','cycle-workshop','small-general-store'].map(n=>scene.getObjectByName(n));
-  const cars=[],wheels=[],clothes=[];
-  model.traverse(o=>{if(o.name==='commuter-car')cars.push(o);if(o.name==='roof-train-wheel')wheels.push(o);if(o.name==='roof-laundry')clothes.push(o)});
-  assert(train&&railway&&shops.every(Boolean));assert.equal(cars.length,2);assert.equal(wheels.length,8);assert.equal(clothes.length,6);
-  assert(testControls.minDistance>=20&&testControls.maxPolarAngle<Math.PI/2);
-  train.traverse(o=>{if(o.isMesh)assert.equal(o.material.clippingPlanes?.length,2)});
-  const initialZ=train.position.z,initialClothes=clothes.map(o=>o.rotation.x);let minZ=initialZ,maxZ=initialZ;
-  if(!isPreview)for(let ms=200;ms<=60000;ms+=200){globalThis.frame(ms);assert(Math.abs(train.position.x+5.05)<1e-6);assert(Math.abs(train.position.y-3.36)<1e-6);minZ=Math.min(minZ,train.position.z);maxZ=Math.max(maxZ,train.position.z);}
-  if(!isPreview&&!isReduced){assert(maxZ-minZ>24);assert(clothes.some((o,i)=>Math.abs(o.rotation.x-initialClothes[i])>.001))}
-  else assert.equal(train.position.z,initialZ);
-  if(!isPreview)globalThis.frame(0);
-  scene.updateMatrixWorld(true);
-  const {Raycaster,Vector3}=await import(pathToFileURL(join(root,'node_modules/three/build/three.module.js')));
-  for(const z of [-7.25,-3.72,-.19,3.34,6.87]){
-   const railRay=new Raycaster(new Vector3(-5.63,4.0,z),new Vector3(0,-1,0));
-   const railHits=railRay.intersectObject(scene.getObjectByName('static-rooftop-street'),true).filter(h=>h.object.isMesh);
-   assert(railHits.length&&Math.abs(railHits[0].point.y-3.78)<.005,'Rail heads must remain on the rooftop track');
-   const slabRay=new Raycaster(new Vector3(-5.05,3.47,z),new Vector3(0,-1,0));
-   const slabHits=slabRay.intersectObject(scene.getObjectByName('static-rooftop-street'),true).filter(h=>h.object.isMesh);
-   assert(slabHits.length&&Math.abs(slabHits[0].point.y-3.44)<.005,'Continuous roof slab must support the track');
-  }
-  for(const wheel of wheels){const p=new Vector3();wheel.getWorldPosition(p);assert(Math.abs(p.y-3.97)<1e-5);assert(Math.min(Math.abs(p.x+5.63),Math.abs(p.x+4.47))<1e-5);}
-  console.log(JSON.stringify({shops:shops.length,cars:cars.length,alignedWheelsets:wheels.length,laundry:clothes.length,trainRange:[minZ,maxZ]}));
- }
- if(name==='sakura'){
-  const train=scene.getObjectByName('local-railcar'),petals=scene.getObjectByName('drifting-cherry-petals');
-  const booms=[],crowns=[];model.traverse(o=>{if(o.name==='crossing-boom')booms.push(o);if(o.name==='cherry-blossom-crown')crowns.push(o)});
-  assert(train&&petals&&scene.getObjectByName('sakura-platform')&&scene.getObjectByName('timber-station-house'));
-  assert.equal(booms.length,2);assert.equal(crowns.length,8);assert(petals.count>=150);
-  assert(testControls.minDistance>=19&&testControls.maxPolarAngle<Math.PI/2);
-  train.traverse(o=>{if(o.isMesh)assert.equal(o.material.clippingPlanes?.length,2,'The railcar must be clipped inside the base')});
-  const before=Array.from(petals.instanceMatrix.array.slice(0,16));let crossings=0;
-  if(!isPreview){
-   for(let ms=100;ms<=64000;ms+=100){
-    globalThis.frame(ms);
-    if(train.visible&&train.position.x+1.8>2.8&&train.position.x-1.8<5.0){
-     assert(booms.every(g=>Math.abs(g.rotation.z)<.01)&&train.userData.crossingProtected,'Crossing must close before the railcar enters');crossings++;
-    }
-   }
-  }
-  if(!isPreview&&!isReduced){assert(crossings>40);assert(before.some((a,i)=>Math.abs(a-petals.instanceMatrix.array[i])>.01))}
-  else assert.deepEqual(Array.from(petals.instanceMatrix.array.slice(0,16)),before);
-  assert(!train.visible,'Preview and the end of the loop should show the empty station');
-  const {Raycaster,Vector3}=await import(pathToFileURL(join(root,'node_modules/three/build/three.module.js')));
-  scene.updateMatrixWorld(true);
-  for(const side of [-1,1])for(const height of [1.2,3.55]){
-   const ray=new Raycaster(new Vector3(side*6,height,0),new Vector3(side,0,0));
-   const hits=ray.intersectObject(scene.getObjectByName('static-station'),true).filter(h=>h.object.isMesh);
-   assert(hits.length&&hits[0].distance>2.5&&hits[0].distance<3.1,`Tunnel clearance ${side}/${height}: ${JSON.stringify(hits.slice(0,3).map(h=>({distance:h.distance,point:h.point.toArray(),color:h.object.material.color?.getHexString()})))}`);
-  }
-  console.log(JSON.stringify({cherryTrees:crowns.length,petals:petals.count,protectedCrossingSamples:crossings}));
- }
- if(name==='courtyard'){
-  const fixtures=['double-air-walker','horse-rider','three-position-waist-twister','double-seated-leg-press','waist-back-massager','upper-body-pulley','parallel-bars'].map(n=>scene.getObjectByName(n));
-  assert(fixtures.every(Boolean),'All seven fitness stations must exist');
-  assert(scene.getObjectByName('residential-facade')&&scene.getObjectByName('parked-bicycle'));
-  assert(testControls.minDistance>=17&&testControls.maxPolarAngle<Math.PI/2);
-  const crowns=[],leaves=[];model.traverse(o=>{if(o.name==='breeze-tree-crown')crowns.push(o);if(o.name==='falling-leaf')leaves.push(o)});
-  assert.equal(crowns.length,3);assert.equal(leaves.length,4);
-  const leafPosition=leaves[0].position.clone();
-  const fixturePoses=fixtures.map(o=>[...o.position.toArray(),...o.rotation.toArray()]);
-  if(!isPreview){for(const ms of [1000,5000,16000,60000])globalThis.frame(ms)}
-  if(!isPreview&&!isReduced){assert(crowns.some(o=>Math.abs(o.rotation.z)>.001));assert(leaves[0].position.distanceTo(leafPosition)>.1)}
-  else assert(leaves[0].position.equals(leafPosition));
-  fixtures.forEach((o,i)=>assert.deepEqual([...o.position.toArray(),...o.rotation.toArray()],fixturePoses[i]));
-  console.log(JSON.stringify({fitnessStations:fixtures.length,trees:crowns.length,fallingLeaves:leaves.length}));
- }
- if(name==='lakeside'){
-  const belly=scene.getObjectByName('breathing-belly');
-  const ears=['left-ear','right-ear'].map(n=>scene.getObjectByName(n));
-  assert(belly&&ears.every(Boolean));
-  assert(testControls.minDistance>16&&testControls.maxPolarAngle<Math.PI/2);
-  const fish=[];let boughs=0,grassPatches=0;
-  model.traverse(o=>{if(o.name==='swimming-fish')fish.push(o);if(o.name==='swaying-willow')boughs++;if(o.name==='breeze-grass')grassPatches++});
-  assert.equal(fish.length,24);assert.equal(new Set(fish.map(f=>f.userData.species)).size,4);
-  assert(boughs>=40&&grassPatches>=24,'Additional trees and ground cover must remain present');
-  assert(scene.getObjectByName('broken-lakeside-bridge')&&scene.getObjectByName('woven-fishing-basket'));
-  assert(scene.getObjectByName('chaise-book-and-sleeping-cat').scale.x<.8);
-  const lake=scene.getObjectByName('reflective-lake'),lakePositions=(lake.userData.coreGeometry||lake.geometry).attributes.position;
-  const rows=new Map();
-  for(let i=0;i<lakePositions.count;i++){
-   const z=Number((-lakePositions.getY(i)).toFixed(5)),x=lakePositions.getX(i);
-   rows.set(z,Math.min(rows.get(z)??Infinity,x));
-  }
-  const edges=[...rows].sort((a,b)=>a[0]-b[0]);
-  assert(edges.at(-1)[1]-edges[0][1]>4.8,'Shoreline must run diagonally across the base');
-  function bankAt(z){
-   const j=Math.min(edges.length-2,Math.max(0,Math.floor((z+8)/16*(edges.length-1))));
-   const [a,b]=[edges[j],edges[j+1]],t=(z-a[0])/(b[0]-a[0]);return a[1]+t*(b[1]-a[1]);
-  }
-  const motion=fish.map(f=>({last:f.position.x,direction:0,reversals:0,min:f.position.x,max:f.position.x}));
-  function checkFish(){fish.forEach((f,i)=>{
-   const {x,y,z}=f.position;
-   assert(Math.abs(z)<7.7&&x>bankAt(z)+.4&&x<7.6,'Fish escaped the water footprint');
-   assert(y<.04&&y>-2.5,'Fish must stay submerged and above the base');
-   const state=motion[i],delta=x-state.last;
-   if(Math.abs(delta)>.00001){const sign=Math.sign(delta);if(state.direction&&sign!==state.direction)state.reversals++;state.direction=sign;}
-   state.last=x;state.min=Math.min(state.min,x);state.max=Math.max(state.max,x);
-  })}
-  checkFish();
-
-  const events=[];let active=[false,false],smallest=1,largest=1;
-  if(!isPreview){
-   for(let ms=20;ms<=90000;ms+=20){
-    globalThis.frame(ms);if(ms%200===0)checkFish();smallest=Math.min(smallest,belly.scale.y);largest=Math.max(largest,belly.scale.y);
-    ears.forEach((e,i)=>{const moving=Math.abs(e.rotation.z-(i===0?-.19:.19))>.0001;if(moving&&!active[i])events.push({t:ms/1000,i});active[i]=moving});
-   }
-  }
-  if(!isPreview&&!isReduced){
-   assert(smallest<.99&&largest>1.01,'Breathing must remain subtle and continuous');
-   assert(motion.every(s=>s.reversals>=2&&s.max-s.min>.8),'Every fish must swim back and forth over time');
-   assert(events.length>=14&&events.length<50,'Ears should twitch intermittently');
-   // Separate two twitches belonging to a follow-up flick from new events.
-   const onsets=events.filter((e,i)=>i===0||e.t-events[i-1].t>1);
-   for(let i=1;i<onsets.length;i++){const dt=onsets[i].t-onsets[i-1].t;assert(dt>=2.98&&dt<=6.04,`Ear interval ${dt}`)}
-   assert(!events.some((e,i)=>i>0&&e.i!==events[i-1].i&&e.t===events[i-1].t),'Ears must not twitch in synchrony');
-  }else assert.equal(belly.scale.y,1);
-  const water=scene.getObjectByName('reflective-lake');assert(water?.isReflector);
-  const g=water.userData.coreGeometry||water.geometry,p=g.attributes.position,idx=g.index;let area=0;
-  for(let i=0;i<idx.count;i+=3){const ids=[idx.getX(i),idx.getX(i+1),idx.getX(i+2)];const [a,b,c]=ids.map(i=>[p.getX(i),p.getY(i)]);area+=Math.abs((b[0]-a[0])*(c[1]-a[1])-(b[1]-a[1])*(c[0]-a[0]))/2;}
-  assert(area/256>.73&&area/256<.77,`Lake fraction ${area/256}`);
-  console.log(JSON.stringify({lakeFraction:Number((area/256).toFixed(3)),fish:fish.length,species:4,breathing:[smallest,largest],earTwitches:events.length}));
- }
- if(name==='city'){
-  const {CITY_PARCELS,CITY_ROADS}=await import(pathToFileURL(join(root,'src/expansions/city-plan.js')));
-  const d=model.userData.cityDistrict;assert.equal(d.districtVersion,3);assert.equal(d.buildings,31);assert.equal(d.totalBuildings,32);assert.equal(d.trees,159);
-  assert.deepEqual(d.zones,{civic:8,industry:7,market:9,wetland:5,edge:2});
-  assert(d.modeledUnits>145000&&d.modeledUnits<190000);assert(d.inventory.rooms>=120&&d.inventory.books>=2000&&d.inventory.vines===220&&d.inventory.groundPlants===1200);
-  assert.equal(d.inventory.totalFish,24);assert(d.inventory.rootSystems>=80);assert.equal(d.inventory.inspectionPits,2);
-  const roots=[],fish=[];model.traverse(o=>{if(o.name==='city-rooted-tree')roots.push(o);if(o.name==='city-wetland-fish')fish.push(o);});
-  assert.equal(roots.length,159);assert.equal(fish.length,19);const coreFish=[];model.traverse(o=>{if(o.name==='core-city-fish')coreFish.push(o);});assert.equal(coreFish.length,5);coreFish.forEach(o=>assert(o.position.x>2.6&&o.position.x<5.3&&o.position.z>4&&o.position.z<6.2,'Core fish need valid still poses in reduced motion too'));
-  for(let i=0;i<CITY_PARCELS.length;i++){
-   const a=CITY_PARCELS[i];assert(Math.abs(a.x)+a.w/2<64&&Math.abs(a.z)+a.d/2<64);
-   assert(Math.abs(a.x)-a.w/2>=8||Math.abs(a.z)-a.d/2>=8,'Expansion buildings must preserve the original core');
-   for(const b of CITY_PARCELS.slice(i+1))assert(Math.abs(a.x-b.x)>=(a.w+b.w)/2||Math.abs(a.z-b.z)>=(a.d+b.d)/2,'Building footprints must not overlap');
-  }
-  assert(CITY_ROADS.some(r=>r.type==='alley')&&CITY_ROADS.some(r=>r.type==='walk'));
-  const beforeFish=fish.map(o=>o.position.clone()),beforeRoots=roots.map(o=>o.position.clone());
-  for(const ms of isPreview?[]:[1000,9000,31000]){globalThis.frame(ms);fish.forEach(o=>{const w=o.userData.water;assert(Math.hypot((o.position.x-w.x)/w.rx,(o.position.z-w.z)/w.rz)<.55);assert(o.position.y<w.y-.03&&o.position.y>d.height(o.position.x,o.position.z)+.04,'Fish must be below water and above basin soil');});}
-  roots.forEach((o,i)=>assert(o.position.equals(beforeRoots[i]),'Tree roots must remain anchored'));
-  if(isReduced||isPreview){fish.forEach((o,i)=>assert(o.position.equals(beforeFish[i])));assert.equal(d.wind.value,0);}else{assert(fish.some((o,i)=>o.position.distanceTo(beforeFish[i])>.1));assert(d.wind.value>0);}
-  const {Raycaster,Vector3}=await import(pathToFileURL(join(root,'node_modules/three/build/three.module.js')));scene.updateMatrixWorld(true);
-  const plates=[];model.getObjectByName('expanded-city-world').traverse(o=>{if(o.name==='city-merged-architecture'&&o.material.color.getHexString()==='c5c8ae')plates.push(o);});
-  assert(plates.length);const hole=new Vector3(-31+23*.15,3.15,-26),solid=new Vector3(-31,3.15,-26+4);
-  assert.equal(new Raycaster(hole,new Vector3(0,-1,0),0,.5).intersectObjects(plates).length,0,'The library banyan must pass through a real floor aperture');
-  assert(new Raycaster(solid,new Vector3(0,-1,0),0,.5).intersectObjects(plates).length>0,'The surrounding library floor must remain solid');
-  const depotFloors=[];model.getObjectByName('expanded-city-world').traverse(o=>{if(o.name==='city-merged-architecture'&&o.material.color.getHexString()==='9ea98f')depotFloors.push(o);});assert(depotFloors.length);
-  assert.equal(new Raycaster(new Vector3(31,.65,-29),new Vector3(0,-1,0),0,.5).intersectObjects(depotFloors).length,0,'Tram inspection pits must be real openings');assert(d.height(31,-29)<-.6);
-  console.log(JSON.stringify({cityDistrict:{buildings:d.totalBuildings,trees:d.inventory.totalTrees,rooms:d.inventory.rooms,books:d.inventory.books,modeledUnits:d.modeledUnits,fish:d.inventory.totalFish}}));
+ if(name==='city')await (await import(pathToFileURL(join(root,'scripts/check-city-fusion.mjs')))).checkCityFusion({scene,model,isPreview,isReduced,frame:globalThis.frame});
+ if(model.userData.expansion?.enrichment){
+  const e=model.userData.expansion.enrichment;assert.equal(e.version,3);assert(e.parts>1000);assert(e.zones.length>=3);assert(e.reference.components&&Object.keys(e.reference.components).length>=5);
+  assert(e.bounds.min.every(Number.isFinite)&&e.bounds.max.every(Number.isFinite));assert(e.bounds.min[0]>=-64.1&&e.bounds.min[2]>=-64.1&&e.bounds.max[0]<=64.1&&e.bounds.max[2]<=64.1,`New detail exceeds the base: ${JSON.stringify(e.bounds)}`);
+  const wind=e.wind.value;if(!isPreview)globalThis.frame(271000);assert(isPreview||isReduced?e.wind.value===0:e.wind.value>wind);
+  for(const [label,x,y,z] of e.anchors){const g=scene.getObjectByName(label);assert(g&&g.position.equals(new (await import(pathToFileURL(join(root,'node_modules/three/build/three.module.js')))).Vector3(x,y,z)),'Detail anchors must remain fixed');}
+  console.log(JSON.stringify({enrichedScene:name,parts:e.parts,components:e.counts}));
  }
  if(expanded){
   const extraFish=scene.getObjectByName('expanded-fish-schools');
@@ -486,6 +309,7 @@ try{
  const cityExtent={x:0,z:0};const recordCityExtent=p=>{if(name==='city'){cityExtent.x=Math.max(cityExtent.x,Math.abs(p.x));cityExtent.z=Math.max(cityExtent.z,Math.abs(p.z));}};
  model.traverse(o=>{
   if(!o.isMesh)return;
+  if(name==='city'){for(let a=o;a;a=a.parent)if(!a.visible)return;}
   if(name==='sakura'||name==='rooftop'){for(let p=o;p&&p!==model;p=p.parent)if(!p.visible)return;}
   meshes++;if(o.isInstancedMesh)instances+=o.count;
   const p=o.geometry.attributes.position;vertices+=p.count;
@@ -506,12 +330,12 @@ try{
    return;
   }
   for(let i=0;i<p.count;i++){
-   point.fromBufferAttribute(p,i).applyMatrix4(o.matrixWorld);recordCityExtent(point);minWorldY=Math.min(minWorldY,point.y);if(name==='rooftop'&&o.material.clippingPlanes?.some(p=>p.distanceToPoint(point)<-.0001))continue;point.project(camera);
+   point.fromBufferAttribute(p,i).applyMatrix4(o.matrixWorld);if(name==='city'&&o.material.clippingPlanes?.some(p=>p.distanceToPoint(point)<-.0001))continue;recordCityExtent(point);minWorldY=Math.min(minWorldY,point.y);if(name==='rooftop'&&o.material.clippingPlanes?.some(p=>p.distanceToPoint(point)<-.0001))continue;point.project(camera);
    projected.left=Math.min(projected.left,point.x);projected.right=Math.max(projected.right,point.x);projected.bottom=Math.min(projected.bottom,point.y);projected.top=Math.max(projected.top,point.y);
   }
  });
  if(name==='city')assert(cityExtent.x<=64.15&&cityExtent.z<=64.15,`City details exceed the base: ${JSON.stringify(cityExtent)}`);
- assert.equal(invalid,0);assert(instances>(name==='rooftop'?500:name==='rainy'?1000:name==='onsen'?2200:name==='study'?800:name==='intersection'?2000:name==='summit'?1800:name==='desert'?1800:name==='ocean'?2200:3000));assert(meshes<(expanded?360:260));
+ assert.equal(invalid,0);assert(instances>(name==='rooftop'?500:name==='rainy'?1000:name==='onsen'?2200:name==='study'?800:name==='intersection'?2000:name==='summit'?1800:name==='desert'?1800:name==='ocean'?2200:3000));assert(meshes<(name==='city'?850:expanded?360:260));
  if(name==='lakeside')assert(minWorldY < -3.0&&minWorldY > -3.1,'The deeper soil and water section must be retained');
  if(process.env.SCENE_SHADER_OUTPUT){
   const shaders=[];const expand=s=>s.replace(/#include <(\w+)>/g,(_,name)=>expand(ShaderChunk[name]));
@@ -519,7 +343,7 @@ try{
   await writeFile(process.env.SCENE_SHADER_OUTPUT,JSON.stringify(shaders));
  }
  assert(Object.values(projected).every(n=>Math.abs(n)<.98),`Camera crops the scene: ${JSON.stringify(projected)}`);
- if(name==='city'||name==='courtyard'){
+ if(name==='city'){
   const minimum=name==='city'?-1.241:-1.651,maximum=name==='city'?.091:.121;
   const planes=new Map(['x:-8','x:8','z:-8','z:8'].map(k=>[k,new Map()]));
   const triangle=[new Vector3(),new Vector3(),new Vector3()];

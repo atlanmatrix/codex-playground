@@ -1,3 +1,4 @@
+import {inComponentBounds,inLakePark,lakeDistrictHeight} from '../components/city-fusion-plan.js';
 // Deliberately irregular parcels. Coordinates retain the 16-unit original core.
 // Buildings are counted as structures, rather than individual shop tenancies.
 export const CITY_PARCELS = [
@@ -32,39 +33,43 @@ export const CITY_PARCELS = [
  ['maintenance','wetland',31,59,9,7,1,'用具室'],
  ['gate','edge',-59,-4,7,6,1,'西町入口'],
  ['gate','edge',58,8,7,5,1,'東町入口']
-].map(([type,zone,x,z,w,d,levels,label,rotation=0],index)=>({id:`city-parcel-${index}`,type,zone,x,z,w,d,levels,label,rotation}));
+].map(([type,zone,x,z,w,d,levels,label,rotation=0],index)=>({id:`city-parcel-${index}`,type,zone,x,z,w,d,levels,label,rotation}))
+ .filter(p=>p.zone!=='industry'&&![4,6,15,16,22,25].includes(Number(p.id.split('-').at(-1))))
+ .map(p=>p.id==='city-parcel-23'?{...p,x:16,z:59,rotation:Math.PI}:p.id==='city-parcel-19'?{...p,z:52}:p.id==='city-parcel-28'?{...p,rotation:Math.PI}:p);
 
 export const CITY_ROADS = [
  {id:'west-main',type:'main',width:7,points:[[-64,5.2],[-36,5.2],[-8,5.2]]},
  {id:'east-main',type:'main',width:7,points:[[8,5.2],[24,6.3],[40,9],[60,16],[64,17.4]]},
  {id:'north-main',type:'main',width:5,points:[[6,-64],[6,-34],[5.9,-8]]},
- {id:'west-collector',type:'collector',width:4.6,points:[[-12.5,-64],[-12.5,-20],[-12.5,20],[-12.5,64]]},
- {id:'east-collector',type:'collector',width:4.6,points:[[47,-64],[47,-12],[47,22],[47,43]]},
- {id:'north-street',type:'local',width:3.8,points:[[-64,-45],[-30,-45],[-12.5,-45]]},
- {id:'depot-access',type:'local',width:3.6,points:[[6,-47],[28,-47],[47,-47]]},
- {id:'market-street',type:'local',width:4.6,points:[[-64,40],[-36,40],[-12.5,40]]},
- {id:'library-alley',type:'alley',width:2,points:[[-45,-45],[-45,-15],[-45,5.2]]},
- {id:'market-alley',type:'alley',width:2,points:[[-64,23],[-45,23],[-20,23],[-12.5,23]]},
- {id:'school-walk',type:'walk',width:1.8,points:[[9,12],[35,12],[43,22],[43,48],[32,51],[13,44],[9,12]]},
- {id:'library-walk',type:'walk',width:1.8,points:[[-31,-16.7],[-21,-14],[-12.5,-14]]},
- {id:'bath-walk',type:'walk',width:1.8,points:[[-12.5,58],[-3,51.5],[-3,53.5]]},
+ {id:'west-collector',type:'collector',width:7.6,points:[[-14,-64],[-14,6],[-13,11],[-8,11.8],[-6,14]]},
+ {id:'south-collector',type:'collector',width:8,points:[[-6,45],[-6,64]]},
+ {id:'east-collector',type:'collector',width:4.6,points:[[47,0],[47,22],[47,43]]},
+ {id:'north-street',type:'local',width:3.8,points:[[-64,-42],[-30,-42],[-14,-42]]},
+ {id:'station-approach',type:'local',width:2.2,points:[[-28.1,-44],[-28.1,-42]]},
+ {id:'roof-street-west',type:'local',width:3.65,points:[[-64,29],[-53,29]]},
+ {id:'roof-street-east',type:'local',width:3.65,points:[[-35,29],[-22,29]]},
+ {id:'cross-east',type:'collector',width:7.6,points:[[10,29],[40,29],[64,29]]},
+ {id:'market-street',type:'local',width:4.6,points:[[-64,40],[-24,40],[-24,29],[-22,29]]},
+ {id:'library-alley',type:'alley',width:2,points:[[-45,-42],[-45,-15],[-45,5.2]]},
+ {id:'school-walk',type:'walk',width:1.8,points:[[12,12],[35,12],[43,22],[43,48],[32,51],[13,45],[12,12]]},
+ {id:'library-walk',type:'walk',width:1.8,points:[[-31,-16.7],[-23,-17],[-14,-17]]},
+ {id:'bath-walk',type:'walk',width:1.8,points:[[-6,54],[16,54]]},
  {id:'pump-walk',type:'walk',width:1.8,points:[[47,43],[50,47],[56,47.5]]}
 ];
 
 export const CITY_WATERS = [
  {id:'rain-filled-overgrown-court',x:30,z:38,rx:10.2,rz:6.6,y:.105,court:true},
  {id:'reed-basin',x:43,z:55,rx:6.1,rz:5.7,y:-.27},
- {id:'seasonal-garden',x:17,z:60,rx:5,rz:2.7,y:-.16},
  {id:'school-rain-garden',x:55,z:42,rx:4.5,rz:3.1,y:-.22}
 ];
 
 export function districtHeight(x,z){
  let h=.09;
+ if(inLakePark(x,z))return lakeDistrictHeight(x,z);
  for(const w of CITY_WATERS){const r=Math.hypot((x-w.x)/w.rx,(z-w.z)/w.rz),t=Math.max(0,Math.min(1,(r-.62)/.56)),s=t*t*(3-2*t);h=Math.min(h,w.y-.36+(.45-w.y)*s);}
- if(z>-38&&z<-20&&[25,31].some(track=>Math.abs(x-track)<.61))h=Math.min(h,-.72);
  return h;
 }
 
-export function insideParcel(x,z,margin=0){return CITY_PARCELS.some(p=>Math.abs(x-p.x)<p.w/2+margin&&Math.abs(z-p.z)<p.d/2+margin);}
+export function insideParcel(x,z,margin=0){return inComponentBounds(x,z,margin)||inLakePark(x,z)||CITY_PARCELS.some(p=>Math.abs(x-p.x)<p.w/2+margin&&Math.abs(z-p.z)<p.d/2+margin);}
 export function segmentDistance(x,z,a,b){const dx=b[0]-a[0],dz=b[1]-a[1],t=Math.max(0,Math.min(1,((x-a[0])*dx+(z-a[1])*dz)/(dx*dx+dz*dz)));return Math.hypot(x-a[0]-t*dx,z-a[1]-t*dz);}
 export function onRoad(x,z,margin=0){return CITY_ROADS.some(r=>r.points.slice(1).some((b,i)=>segmentDistance(x,z,r.points[i],b)<r.width/2+margin));}

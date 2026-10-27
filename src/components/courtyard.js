@@ -1,32 +1,9 @@
-import {installSceneCapture} from './scene-capture.js';
-import {expandWorld,expandedFit} from './expansions/courtyard.js';
 import * as THREE from 'three';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 
-const preview=['preview','screenshot'].some(key=>new URLSearchParams(location.search).has(key));
-const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
-const scene=new THREE.Scene();
-const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,powerPreference:'high-performance'});
-renderer.setPixelRatio(Math.min(devicePixelRatio,preview?.85:1.8));renderer.setSize(innerWidth,innerHeight);
-renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
-renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.08;
-document.body.appendChild(renderer.domElement);
-renderer.domElement.setAttribute('role','img');renderer.domElement.setAttribute('aria-label','普通小区健身角的三维微缩场景，可拖拽旋转和缩放');
-const camera=new THREE.PerspectiveCamera(33,innerWidth/innerHeight,.35,240);
-const controls=new OrbitControls(camera,renderer.domElement);
-controls.target.set(0,1.25,0);controls.enabled=!preview;controls.enablePan=false;
-controls.enableDamping=true;controls.dampingFactor=.065;controls.minDistance=17;controls.maxDistance=160;
-controls.minPolarAngle=.2;controls.maxPolarAngle=Math.PI*.445;
-const fitDistance=aspect=>expandedFit(aspect);
-const d=fitDistance(camera.aspect);camera.position.set(d*.67,1.25+d*.61,d*.76);camera.lookAt(controls.target);
-scene.add(new THREE.HemisphereLight(0xf4fcf3,0x819276,2.05));
-const sun=new THREE.DirectionalLight(0xffe6ae,3.15);sun.position.set(-9,18,10);sun.castShadow=true;
-sun.shadow.mapSize.set(preview?1024:2048,preview?1024:2048);
-Object.assign(sun.shadow.camera,{left:-13,right:13,top:13,bottom:-12,near:.5,far:45});
-sun.shadow.bias=-.00015;sun.shadow.normalBias=.025;sun.shadow.radius=3;scene.add(sun);
-const fill=new THREE.DirectionalLight(0xc5e4e2,.65);fill.position.set(10,8,-7);scene.add(fill);
-const model=new THREE.Group();model.name='courtyard-miniature';scene.add(model);
+// Native core extracted as a reusable city component; no renderer, route or UI.
+export function createCourtyardComponent({renderer,preview=false,reduced=false,trafficPose,limits,origin=[0,0]}){
+const model=new THREE.Group();model.name='courtyard-miniature';
 const scenery=new THREE.Group();scenery.name='static-courtyard';model.add(scenery);
 let seed=927633;const random=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296};
 const R=(a,b)=>a+random()*(b-a),pick=a=>a[Math.floor(random()*a.length)],v=(x,y,z)=>new THREE.Vector3(x,y,z);
@@ -50,15 +27,7 @@ function instances(g,mat,items,parent=scenery,shadow=true){const o=new THREE.Ins
 function pedestal(x,z,parent=scenery){box(x,.05,z,.42,.10,.42,m.blueDark,parent);for(const dx of [-.14,.14])for(const dz of [-.14,.14])rod([x+dx,.10,z+dz],[x+dx,.13,z+dz],.025,m.steel,parent)}
 function equipment(name,x,z,rotation=0){const g=new THREE.Group();g.name=name;g.position.set(x,.24,z);g.rotation.y=rotation;scenery.add(g);return g}
 
-// Non-overlapping strata keep the visible section stable during orbiting.
-for(const [bottom,top,mat] of [[-1.65,-.36,m.soil],[-.36,-.13,m.aggregate],[-.13,.12,m.concrete]])box(0,(bottom+top)/2,0,16,top-bottom,16,mat);
-const ground=mesh(new THREE.PlaneGeometry(150,150),new THREE.ShadowMaterial({opacity:.14}),0,-1.69,0,scene);ground.rotation.x=-Math.PI/2;ground.castShadow=false;
-const aggregate=[];
-for(let i=0;i<210;i++){
- const side=i%4,t=R(-7.85,7.85),x=side<2?t:(side===2?-8.005:8.005),z=side<2?(side===0?-8.005:8.005):t;
- aggregate.push({p:[x,R(-1.52,-.42),z],s:[R(.035,.12),R(.025,.07),R(.035,.11)],r:[R(0,3),R(0,3),R(0,3)]});
-}
-instances(geo.stone,m.aggregate,aggregate);
+box(0,.015,0,16,.21,16,m.concrete);
 // Rubber tiles, in the faded red and muted green common in neighborhood courts.
 const textureCanvas=document.createElement('canvas');textureCanvas.width=textureCanvas.height=256;
 const ctx=textureCanvas.getContext('2d');ctx.fillStyle='#ffffff';ctx.fillRect(0,0,256,256);
@@ -157,48 +126,6 @@ for(const x of [-.52,.52]){
  ell(x,1.4,-1.25,.055,.055,.055,m.yellowLight,bars);ell(x,1.4,1.25,.055,.055,.055,m.yellowLight,bars);
 }
 
-// A modest apartment facade anchors the scene in an ordinary residential block.
-const house=new THREE.Group();house.name='residential-facade';scenery.add(house);
-box(-4.95,2.32,-7.05,5.5,4.4,1.9,m.wall,house);
-box(-4.95,.46,-6.07,5.55,.68,.09,m.wallShade,house);
-for(const y of [2.25,4.51])box(-4.95,y,-6.03,5.65,.13,.14,m.cream,house);
-box(-4.95,4.59,-7.05,5.75,.15,2.1,m.roof,house);
-box(-4.95,4.78,-7.9,5.75,.25,.13,m.wallShade,house);
-for(const x of [-7.71,-2.19])box(x,4.78,-7.05,.13,.25,1.82,m.wallShade,house);
-for(let x=-7.45;x<-2.2;x+=.34)box(x,.47,-6.008,.012,.60,.012,m.brick,house);
-for(const y of [.26,.47,.68])box(-4.95,y,-6.005,5.48,.012,.012,m.brick,house);
-for(const y of [1.35,3.35])for(const x of [-6.63,-4.9,-3.17]){
- if(y<2&&x>-4)continue;
- box(x,y,-6.052,1.21,1.18,.16,m.cream,house);
- box(x,y,-5.961,1.04,1.01,.035,m.window,house);
- box(x-.28,y,-5.934,.37,.89,.012,m.windowLight,house);
- box(x,y,-5.923,.045,1.03,.05,m.cream,house);box(x,y,-5.915,1.03,.045,.05,m.cream,house);
- box(x,y-.63,-5.96,1.38,.10,.31,m.wallShade,house);
- if(y<2){
-  for(let i=0;i<6;i++)rod([x-.48+i*.19,y-.48,-5.81],[x-.48+i*.19,y+.48,-5.81],.014,m.dark,house);
-  for(const dy of [-.48,.48])rod([x-.52,y+dy,-5.81],[x+.52,y+dy,-5.81],.02,m.dark,house);
- }
-}
-box(-3.14,1.02,-6.003,1.15,1.8,.16,m.blueDark,house);
-box(-3.14,1.27,-5.909,.93,1.1,.025,m.window,house);
-for(const x of [-3.58,-3.14,-2.70])box(x,1.02,-5.887,.034,1.68,.04,m.steel,house);
-rod([-2.94,.94,-5.85],[-2.94,1.13,-5.85],.021,m.steel,house);
-box(-3.14,2.03,-5.82,1.6,.10,.7,m.roof,house);
-for(let i=0;i<2;i++)box(-3.14,.20+i*.075,-5.55-i*.18,1.5,.15,.56,m.concrete,house);
-// A small balcony, an aired towel and two boxy condenser units.
-box(-4.9,2.76,-5.84,1.6,.12,.56,m.concrete,house);
-for(const x of [-5.66,-4.14])rod([x,2.8,-5.6],[x,3.62,-5.6],.022,m.dark,house);
-rod([-5.66,3.62,-5.6],[-4.14,3.62,-5.6],.027,m.dark,house);
-for(let x=-5.5;x<-4.2;x+=.17)rod([x,2.8,-5.6],[x,3.6,-5.6],.013,m.dark,house);
-box(-4.7,3.30,-5.565,.43,.58,.035,m.cream,house);box(-4.7,3.05,-5.54,.43,.04,.025,m.red,house);
-for(const x of [-6.65,-3.15]){
- box(x,2.52,-5.78,.78,.5,.36,m.cream,house);
- ring(x-.12,2.52,-5.582,.16,.018,m.roof,house);
- for(const dx of [-.25,.25])rod([x+dx,2.27,-6.07],[x+dx,2.27,-5.61],.02,m.dark,house);
- for(let i=0;i<5;i++)box(x+.21,2.35+i*.075,-5.58,.18,.022,.018,m.dark,house);
- for(let i=0;i<5;i++){const a=i/5*Math.PI*2;rod([x-.12,2.52,-5.56],[x-.12+Math.cos(a)*.14,2.52+Math.sin(a)*.14,-5.56],.012,m.roof,house)}
- tube([[x+.32,2.5,-5.85],[x+.53,2.5,-5.9],[x+.53,.3,-5.95]],.018,m.roof,house);
-}
 // A low wall and an iron fence continue behind the planted strip.
 box(2.9,.47,-7.45,10.0,.69,.25,m.wallShade);
 box(2.9,.85,-7.45,10.1,.10,.34,m.cream);
@@ -343,13 +270,5 @@ function animate(t){
 }
 animate(0);
 let start=null;
-const expandedWorld=expandWorld({kind:'courtyard',scene,model,camera,controls,renderer,preview,reduced});
-function renderFrame(ms){
- expandedWorld.update(ms*.001);if(start===null)start=ms;controls.update();if(!preview&&!reduced)animate((ms-start)*.001);renderer.render(scene,camera);}
-installSceneCapture({kind:'courtyard',camera,controls,renderer,preview,render:()=>renderFrame(preview?0:performance.now(),true)});
-if(preview){renderFrame(0)}else{renderer.setAnimationLoop(renderFrame)}
-addEventListener('resize',()=>{
- const aspect=innerWidth/innerHeight,factor=fitDistance(aspect)/fitDistance(camera.aspect);
- camera.position.sub(controls.target).multiplyScalar(factor).add(controls.target);camera.aspect=aspect;camera.updateProjectionMatrix();
- renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio,preview?.85:1.8));if(preview)renderFrame(0);
-});
+for(const a of [...treeCrowns,...grassPatches])a.g.userData.componentDynamic=true;for(const a of floatingLeaves)a.o.userData.componentDynamic=true;return {model,update:animate,trees:treeCrowns.length,structures:0};
+}

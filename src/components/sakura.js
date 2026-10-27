@@ -1,29 +1,9 @@
-import {installSceneCapture} from './scene-capture.js';
-import {expandWorld,expandedFit} from './expansions/sakura.js';
 import * as THREE from 'three';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 
-const preview=['preview','screenshot'].some(key=>new URLSearchParams(location.search).has(key));
-const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
-const scene=new THREE.Scene();
-const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,powerPreference:'high-performance'});
-renderer.setPixelRatio(Math.min(devicePixelRatio,preview?.85:1.8));renderer.setSize(innerWidth,innerHeight);
-renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.localClippingEnabled=true;
-renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.13;
-document.body.appendChild(renderer.domElement);
-renderer.domElement.setAttribute('role','img');renderer.domElement.setAttribute('aria-label','樱花环绕的乡间铁路小站，可拖拽旋转和缩放');
-const camera=new THREE.PerspectiveCamera(33,innerWidth/innerHeight,.35,260);
-const controls=new OrbitControls(camera,renderer.domElement);
-controls.target.set(0,1.4,0);controls.enabled=!preview;controls.enableDamping=true;controls.dampingFactor=.065;
-controls.enablePan=false;controls.minDistance=19;controls.maxDistance=170;controls.minPolarAngle=.22;controls.maxPolarAngle=Math.PI*.44;
-const fit=aspect=>expandedFit(aspect);
-const distance=fit(camera.aspect);camera.position.set(distance*.65,1.4+distance*.68,distance*.79);camera.lookAt(controls.target);
-scene.add(new THREE.HemisphereLight(0xf9f7ff,0xa0b183,2.05));
-const sun=new THREE.DirectionalLight(0xfff0cc,2.65);sun.position.set(-10,19,12);sun.castShadow=true;
-sun.shadow.mapSize.set(preview?1024:2048,preview?1024:2048);Object.assign(sun.shadow.camera,{left:-15,right:15,top:15,bottom:-14,near:.5,far:48});sun.shadow.normalBias=.025;sun.shadow.bias=-.00015;sun.shadow.radius=3;scene.add(sun);
-const fill=new THREE.DirectionalLight(0xddefff,.7);fill.position.set(8,9,-6);scene.add(fill);
-const model=new THREE.Group();model.name='sakura-miniature';scene.add(model);
+// Native core extracted as a reusable city component; no renderer, route or UI.
+export function createSakuraComponent({renderer,preview=false,reduced=false,trafficPose,limits,origin=[0,0]}){
+const model=new THREE.Group();model.name='sakura-miniature';
 const scenery=new THREE.Group();scenery.name='static-station';model.add(scenery);
 let seed=729480;const random=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296};
 const R=(a,b)=>a+random()*(b-a),pick=a=>a[Math.floor(random()*a.length)],v=(x,y,z)=>new THREE.Vector3(x,y,z);
@@ -52,10 +32,7 @@ function roof(x,y,z,w,d,rise,mat,parent=scenery,corrugated=false){
  rod([x-w/2-.04,y+rise+.04,z],[x+w/2+.04,y+rise+.04,z],.06,m.roofDark,parent);
  if(corrugated)for(let px=x-w/2+.12;px<x+w/2;px+=.25)for(const sign of [-1,1])rod([px,y+rise+.07,z],[px,y+.06,z+sign*d/2],.022,m.metal,parent);
 }
-// The thin wooden rim and bright turf retain the collectible model appearance.
-for(const [bottom,top,mat] of [[-.50,-.25,m.woodDark],[-.25,-.04,m.wood],[-.04,.12,m.grass]])box(0,(bottom+top)/2,0,18,top-bottom,18,mat,scenery,true);
-box(0,-.285,0,18.06,.045,18.06,m.edge,scenery,true);
-const ground=mesh(new THREE.PlaneGeometry(180,180),new THREE.ShadowMaterial({opacity:.11}),0,-.54,0,scene);ground.rotation.x=-Math.PI/2;ground.castShadow=false;
+box(0,.035,0,18,.17,18,m.grass);
 // Continuous rails and sleepers run through real, hollow tunnel shells.
 box(0,.18,0,18,.12,2.25,m.platform,scenery,true);
 const ballast=[];
@@ -382,9 +359,5 @@ function animate(t){
 }
 animate(0);
 let start=null;
-const expandedWorld=expandWorld({kind:'sakura',scene,model,camera,controls,renderer,preview,reduced});
-function renderFrame(ms){
- expandedWorld.update(ms*.001);if(start===null)start=ms;controls.update();if(!preview&&!reduced)animate((ms-start)*.001);renderer.render(scene,camera);}
-installSceneCapture({kind:'sakura',camera,controls,renderer,preview,render:()=>renderFrame(preview?0:performance.now(),true)});
-if(preview){renderFrame(0)}else{renderer.setAnimationLoop(renderFrame)}
-addEventListener('resize',()=>{const aspect=innerWidth/innerHeight,factor=fit(aspect)/fit(camera.aspect);camera.position.sub(controls.target).multiplyScalar(factor).add(controls.target);camera.aspect=aspect;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio,preview?.85:1.8));if(preview)renderFrame(0);});
+for(const a of crowns)a.g.userData.componentDynamic=true;train.userData.componentDynamic=true;airborne.userData.componentDynamic=true;for(const a of crossings){a.arm.userData.componentDynamic=true;a.lamps.forEach(m=>m.userData.componentDynamic=true);}railLenses.forEach(m=>m.userData.componentDynamic=true);return {model,update:animate,train,clip,trees:crowns.length,structures:4,crossings,wheels};
+}

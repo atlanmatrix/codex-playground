@@ -5,43 +5,11 @@
   "scenes": {
     "city": {
       "file": "thumbnails/city.webp",
-      "source_sha256": "14d963a00b8a842b90b40935340bcb59f682b1ab0ae321249baa07012f461588",
-      "sha256": "2d56a51ef341924d3f1cb0af01ae7488f155dafae7740011c8d353713de56f15",
+      "source_sha256": "bac4343cc70a06d3d4b06030c8d1cd6b9d168ea01ea505917083864163de5e33",
+      "sha256": "5eecbd1255b52cbb528e6e449b63ad2ab63e4aa27395b7f3843cd4572fd6846c",
       "width": 1280,
       "height": 720,
-      "bytes": 32604
-    },
-    "lakeside": {
-      "file": "thumbnails/lakeside.webp",
-      "source_sha256": "6bcbeb4e5d2187446926cb9f2daec0ad9b60e6efcb163c708ab0b756775dcb14",
-      "sha256": "709dddc45ec4fd81028e678c592e5d74ff287d31eee3a37f80c178427e09035c",
-      "width": 1280,
-      "height": 720,
-      "bytes": 11972
-    },
-    "courtyard": {
-      "file": "thumbnails/courtyard.webp",
-      "source_sha256": "bd6379510d0e7667a9cf119a7d54d9c688f16b61147b18347269dd2a3ac02c02",
-      "sha256": "a2d348d9926f1ea7d384c8673fdcd19fd896912dffbee1713ab84bcd9a214f50",
-      "width": 1280,
-      "height": 720,
-      "bytes": 15642
-    },
-    "sakura": {
-      "file": "thumbnails/sakura.webp",
-      "source_sha256": "7b3d6ac774cd1ad48523418fda2928ccb4dfa281202986cda2305d66e5f13891",
-      "sha256": "2e774abae44a23776a96df28fd246db1080c67d6c6dc3d5343ee2172f269a7c5",
-      "width": 1280,
-      "height": 720,
-      "bytes": 12930
-    },
-    "rooftop": {
-      "file": "thumbnails/rooftop.webp",
-      "source_sha256": "f28adfc159ee75e9fac9568d04be8e085c9cbcd445f44fcdc4f313119f516d6e",
-      "sha256": "28a0020269247962b5f2e4b0aac013954745036fa30a606b5f4ab64eccebf71d",
-      "width": 1280,
-      "height": 720,
-      "bytes": 16762
+      "bytes": 31342
     },
     "rainy": {
       "file": "thumbnails/rainy.webp",
@@ -66,14 +34,6 @@
       "width": 1280,
       "height": 720,
       "bytes": 21366
-    },
-    "intersection": {
-      "file": "thumbnails/intersection.webp",
-      "source_sha256": "0d44754cbff81994010ecf43d9a4886ac539d88e954a61d2347e02787c9f4d65",
-      "sha256": "08b9712c5e79912fb343070ddc81ef3abc04919995476fa09c6d3152b0e176bf",
-      "width": 1280,
-      "height": 720,
-      "bytes": 30426
     },
     "summit": {
       "file": "thumbnails/summit.webp",

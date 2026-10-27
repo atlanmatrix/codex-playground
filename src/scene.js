@@ -17,7 +17,7 @@ renderer.outputColorSpace=THREE.SRGBColorSpace;
 renderer.toneMapping=THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure=1.16;
 document.body.appendChild(renderer.domElement);
-renderer.domElement.setAttribute('aria-label','可旋转缩放的自然收回城市街角三维微缩场景');
+renderer.domElement.setAttribute('aria-label','可旋转缩放和平移的青葉小城，含榕树废楼、橘猫湖畔、健身区、樱花站、屋顶铁路和十字路口');
 renderer.domElement.setAttribute('role','img');
 const camera=new THREE.PerspectiveCamera(33,innerWidth/innerHeight,.1,300);
 const controls=new OrbitControls(camera,renderer.domElement);
@@ -429,8 +429,8 @@ const motes=new THREE.Points(moteGeo,new THREE.PointsMaterial({color:0xfff3b4,si
 let previous=0;const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
 const expandedWorld=expandWorld({kind:'city',scene,model,camera,controls,renderer,preview:isPreview,reduced});
 controls.minDistance=22;controls.maxPolarAngle=1.36;controls.enablePan=true;controls.screenSpacePanning=false;
-// District casters are static; canopy shadow movement is smaller than a texel.
-renderer.shadowMap.autoUpdate=false;renderer.shadowMap.needsUpdate=true;
+// Imported traffic and trains share the city lighting and moving shadows.
+renderer.shadowMap.autoUpdate=true;renderer.shadowMap.needsUpdate=true;
 function renderFrame(ms){
  expandedWorld.update(ms*.001);
  const t=reduced?0:ms*.001,dt=Math.min(t-previous,.05);previous=t;
