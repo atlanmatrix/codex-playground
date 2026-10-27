@@ -1,10 +1,11 @@
+import {installSceneCapture} from './scene-capture.js';
 import {expandWorld,expandedFit} from './expansions/intersection.js';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { CORE_BASE_SIZE } from './scene-defaults.js';
 
-const preview=new URLSearchParams(location.search).has('preview');
+const preview=['preview','screenshot'].some(key=>new URLSearchParams(location.search).has(key));
 const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
 const scene=new THREE.Scene(),renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});
 renderer.setPixelRatio(Math.min(devicePixelRatio,preview?1:1.8));renderer.setSize(Math.max(1,innerWidth),Math.max(1,innerHeight));
@@ -156,5 +157,6 @@ function renderFrame(ms){
  if(!preview&&!reduced){accumulator+=delta;while(accumulator>=1/60){simulation+=1/60;step(1/60,simulation);accumulator-=1/60}}
  controls.update();renderer.render(scene,camera);
 }
+installSceneCapture({kind:'intersection',camera,controls,renderer,preview,render:()=>renderFrame(preview?0:performance.now(),true)});
 if(preview)renderFrame(0);else renderer.setAnimationLoop(renderFrame);
 addEventListener('resize',()=>{if(innerWidth<1||innerHeight<1)return;const aspect=innerWidth/innerHeight;camera.position.sub(controls.target).multiplyScalar(fit(aspect)/fit(camera.aspect)).add(controls.target);camera.aspect=aspect;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);if(preview)renderFrame(0)});

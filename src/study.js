@@ -1,3 +1,4 @@
+import {installSceneCapture} from './scene-capture.js';
 import {expandWorld,expandedFit} from './expansions/study.js';
 import * as THREE from 'three';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
@@ -5,7 +6,7 @@ import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 import {RoundedBoxGeometry} from 'three/addons/geometries/RoundedBoxGeometry.js';
 import {CORE_BASE_SIZE} from './scene-defaults.js';
 
-const params=new URLSearchParams(location.search),preview=params.has('preview'),reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const params=new URLSearchParams(location.search),preview=(params.has('preview')||params.has('screenshot')),reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
 let periodMode=['day','night'].includes(params.get('time'))?params.get('time'):'auto';
 const localPeriod=date=>date.getHours()>=6&&date.getHours()<18?'day':'night';
 const BASE=CORE_BASE_SIZE,H=BASE/2,iw=Math.max(1,innerWidth),ih=Math.max(1,innerHeight);
@@ -401,18 +402,19 @@ function animate(t){
 syncPeriod(new Date(),true);animate(0);let start=null,lastMs=-Infinity,renderedOnce=false,lastClockTick=-1;
 const lastPosition=new THREE.Vector3(),lastQuaternion=new THREE.Quaternion();
 const expandedWorld=expandWorld({kind:'study',scene,model,camera,controls,renderer,preview,reduced});
-function renderFrame(ms){
+function renderFrame(ms,force=false){
  expandedWorld.update(ms*.001);
  if(start===null)start=ms;controls.update();
- if(!preview&&renderedOnce&&ms-lastMs<32)return;
+ if(!force&&(!preview&&renderedOnce&&ms-lastMs<32))return;
  const now=new Date(),clockTick=Math.floor(now.getTime()/100);syncPeriod(now);
  const changing=Math.abs(nightBlend-nightTarget)>.00001;
- if(reduced&&renderedOnce&&!atmosphereDirty&&!changing&&clockTick===lastClockTick&&lastPosition.distanceToSquared(camera.position)<1e-12&&Math.abs(lastQuaternion.dot(camera.quaternion))>1-1e-12)return;
+ if(!force&&(reduced&&renderedOnce&&!atmosphereDirty&&!changing&&clockTick===lastClockTick&&lastPosition.distanceToSquared(camera.position)<1e-12&&Math.abs(lastQuaternion.dot(camera.quaternion))>1-1e-12))return;
  const dt=Number.isFinite(lastMs)?Math.min(Math.max((ms-lastMs)*.001,0),.12):0;lastMs=ms;
  if(changing){const step=dt/1.35;nightBlend+=Math.sign(nightTarget-nightBlend)*Math.min(Math.abs(nightTarget-nightBlend),step);applyAtmosphere(nightBlend);}
  if(!preview&&(!reduced||atmosphereDirty||changing))animate(reduced?0:(ms-start)*.001);
  updateClock(now);renderer.render(scene,camera);atmosphereDirty=false;
  lastClockTick=clockTick;lastPosition.copy(camera.position);lastQuaternion.copy(camera.quaternion);renderedOnce=true;
 }
+installSceneCapture({kind:'study',camera,controls,renderer,preview,render:()=>renderFrame(preview?0:performance.now(),true),setPeriod:period=>{periodMode=period;syncPeriod(new Date(),true);animate(0)}});
 if(preview)renderFrame(0);else renderer.setAnimationLoop(renderFrame);
 addEventListener('resize',()=>{if(innerWidth<1||innerHeight<1)return;const a=innerWidth/innerHeight,factor=fit(a)/fit(camera.aspect);camera.position.sub(controls.target).multiplyScalar(factor).add(controls.target);camera.aspect=a;camera.updateProjectionMatrix();renderer.setPixelRatio(Math.min(devicePixelRatio,preview?.85:1.6));renderer.setSize(innerWidth,innerHeight);renderedOnce=false;if(preview||reduced)renderFrame(0)});

@@ -1,3 +1,4 @@
+import {installSceneCapture} from './scene-capture.js';
 import {expandWorld,expandedFit} from './expansions/rainy.js';
 import * as THREE from 'three';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
@@ -8,7 +9,7 @@ import {RenderPass} from 'three/addons/postprocessing/RenderPass.js';
 import {UnrealBloomPass} from 'three/addons/postprocessing/UnrealBloomPass.js';
 import {OutputPass} from 'three/addons/postprocessing/OutputPass.js';
 
-const preview=new URLSearchParams(location.search).has('preview');
+const preview=['preview','screenshot'].some(key=>new URLSearchParams(location.search).has(key));
 const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
 const vw=Math.max(1,innerWidth),vh=Math.max(1,innerHeight);
 const scene=new THREE.Scene();scene.background=new THREE.Color('#252e49');
@@ -238,7 +239,8 @@ const composer=new EffectComposer(renderer);composer.addPass(new RenderPass(scen
 const bloom=new UnrealBloomPass(new THREE.Vector2(vw,vh),.32,.43,1.25);composer.addPass(bloom);composer.addPass(new OutputPass());bloom.setSize(vw*.5,vh*.5);
 let started=null,lastRender=-Infinity,renderedOnce=false;const lastPosition=new THREE.Vector3(),lastQuaternion=new THREE.Quaternion();
 const expandedWorld=expandWorld({kind:'rainy',scene,model,camera,controls,renderer,preview,reduced});
-function renderFrame(ms){
- expandedWorld.update(ms*.001);if(started===null)started=ms;const t=preview||reduced?0:(ms-started)*.001;controls.update();if(reduced&&renderedOnce&&lastPosition.distanceToSquared(camera.position)<1e-12&&Math.abs(lastQuaternion.dot(camera.quaternion))>1-1e-12)return;if(!preview&&!reduced&&ms-lastRender<32)return;lastRender=ms;rainMaterial.uniforms.time.value=t;rippleUniforms.time.value=t;reflection.material.uniforms.time.value=t;drips.position.y=-(t*.42% .30);composer.render();lastPosition.copy(camera.position);lastQuaternion.copy(camera.quaternion);renderedOnce=true;}
+function renderFrame(ms,force=false){
+ expandedWorld.update(ms*.001);if(started===null)started=ms;const t=preview||reduced?0:(ms-started)*.001;controls.update();if(!force&&(reduced&&renderedOnce&&lastPosition.distanceToSquared(camera.position)<1e-12&&Math.abs(lastQuaternion.dot(camera.quaternion))>1-1e-12))return;if(!force&&(!preview&&!reduced&&ms-lastRender<32))return;lastRender=ms;rainMaterial.uniforms.time.value=t;rippleUniforms.time.value=t;reflection.material.uniforms.time.value=t;drips.position.y=-(t*.42% .30);composer.render();lastPosition.copy(camera.position);lastQuaternion.copy(camera.quaternion);renderedOnce=true;}
+installSceneCapture({kind:'rainy',camera,controls,renderer,preview,render:()=>renderFrame(preview?0:performance.now(),true)});
 if(preview)renderFrame(0);else renderer.setAnimationLoop(renderFrame);
 addEventListener('resize',()=>{if(innerWidth<1||innerHeight<1)return;const aspect=innerWidth/innerHeight,factor=fit(aspect)/fit(camera.aspect);camera.position.sub(controls.target).multiplyScalar(factor).add(controls.target);camera.aspect=aspect;camera.updateProjectionMatrix();renderer.setPixelRatio(Math.min(devicePixelRatio,preview?.8:1.5));renderer.setSize(innerWidth,innerHeight);composer.setPixelRatio(renderer.getPixelRatio());composer.setSize(innerWidth,innerHeight);bloom.setSize(innerWidth*.5,innerHeight*.5);renderedOnce=false;if(preview||reduced)renderFrame(0)});

@@ -1,9 +1,10 @@
+import {installSceneCapture} from './scene-capture.js';
 import {expandWorld,expandedFit} from './expansions/sakura.js';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
-const preview=new URLSearchParams(location.search).has('preview');
+const preview=['preview','screenshot'].some(key=>new URLSearchParams(location.search).has(key));
 const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
 const scene=new THREE.Scene();
 const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,powerPreference:'high-performance'});
@@ -384,5 +385,6 @@ let start=null;
 const expandedWorld=expandWorld({kind:'sakura',scene,model,camera,controls,renderer,preview,reduced});
 function renderFrame(ms){
  expandedWorld.update(ms*.001);if(start===null)start=ms;controls.update();if(!preview&&!reduced)animate((ms-start)*.001);renderer.render(scene,camera);}
+installSceneCapture({kind:'sakura',camera,controls,renderer,preview,render:()=>renderFrame(preview?0:performance.now(),true)});
 if(preview){renderFrame(0)}else{renderer.setAnimationLoop(renderFrame)}
 addEventListener('resize',()=>{const aspect=innerWidth/innerHeight,factor=fit(aspect)/fit(camera.aspect);camera.position.sub(controls.target).multiplyScalar(factor).add(controls.target);camera.aspect=aspect;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio,preview?.85:1.8));if(preview)renderFrame(0);});

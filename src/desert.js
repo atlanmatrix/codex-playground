@@ -1,10 +1,11 @@
+import {installSceneCapture} from './scene-capture.js';
 import {expandWorld,expandedFit} from './expansions/desert.js';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { CORE_BASE_SIZE } from './scene-defaults.js';
 
-const preview=new URLSearchParams(location.search).has('preview');
+const preview=['preview','screenshot'].some(key=>new URLSearchParams(location.search).has(key));
 const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
 const scene=new THREE.Scene(),renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});
 renderer.setPixelRatio(Math.min(devicePixelRatio,preview?1:1.8));renderer.setSize(Math.max(1,innerWidth),Math.max(1,innerHeight));
@@ -145,5 +146,6 @@ animate(0);let start=null;
 const expandedWorld=expandWorld({kind:'desert',scene,model,camera,controls,renderer,preview,reduced,nativeHeight:height});
 function renderFrame(ms){
  expandedWorld.update(ms*.001);if(start===null)start=ms;if(!preview&&!reduced)animate((ms-start)/1000);controls.update();renderer.render(scene,camera)}
+installSceneCapture({kind:'desert',camera,controls,renderer,preview,render:()=>renderFrame(preview?0:performance.now(),true)});
 if(preview)renderFrame(0);else renderer.setAnimationLoop(renderFrame);
 addEventListener('resize',()=>{if(innerWidth<1||innerHeight<1)return;const aspect=innerWidth/innerHeight;camera.position.sub(controls.target).multiplyScalar(fit(aspect)/fit(camera.aspect)).add(controls.target);camera.aspect=aspect;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);if(preview)renderFrame(0)});

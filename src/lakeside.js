@@ -1,10 +1,11 @@
+import {installSceneCapture} from './scene-capture.js';
 import {expandWorld,expandedFit} from './expansions/lakeside.js';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { Reflector } from 'three/addons/objects/Reflector.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
-const preview=new URLSearchParams(location.search).has('preview');
+const preview=['preview','screenshot'].some(key=>new URLSearchParams(location.search).has(key));
 const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
 const scene=new THREE.Scene();
 const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,powerPreference:'high-performance'});
@@ -519,6 +520,7 @@ function renderFrame(ms){
  if(!reduced&&!preview)updateScene(t);
  renderer.render(scene,camera);
 }
+installSceneCapture({kind:'lakeside',camera,controls,renderer,preview,render:()=>renderFrame(preview?0:performance.now(),true)});
 if(preview){renderFrame(0)}else{renderer.setAnimationLoop(renderFrame)}
 addEventListener('resize',()=>{
  const aspect=innerWidth/innerHeight,factor=fitDistance(aspect)/fitDistance(camera.aspect);

@@ -1,9 +1,10 @@
+import {installSceneCapture} from './scene-capture.js';
 import {expandWorld,expandedFit} from './expansions/city.js';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
-const isPreview = new URLSearchParams(location.search).has('preview');
+const isPreview = ['preview','screenshot'].some(key=>new URLSearchParams(location.search).has(key));
 
 // Aoba: a complete, deterministic miniature. All detail is geometry or painted canvas.
 const scene = new THREE.Scene();
@@ -441,6 +442,7 @@ function renderFrame(ms){
  }
  renderer.render(scene,camera);
 }
+installSceneCapture({kind:'city',camera,controls,renderer,preview:isPreview,render:()=>renderFrame(isPreview?0:performance.now(),true)});
 if(isPreview){renderFrame(0)}else{renderer.setAnimationLoop(renderFrame)}
 addEventListener('resize',()=>{const aspect=innerWidth/innerHeight;const factor=expandedFit(aspect)/expandedFit(camera.aspect);camera.position.sub(controls.target).multiplyScalar(factor).add(controls.target);camera.aspect=aspect;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio,isPreview?.85:1.8));if(isPreview)renderFrame(0);});
 // Keep the composition visible when changing device orientation, without interrupting exploration.

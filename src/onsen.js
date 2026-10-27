@@ -1,3 +1,4 @@
+import {installSceneCapture} from './scene-capture.js';
 import {expandWorld,expandedFit} from './expansions/onsen.js';
 import * as THREE from 'three';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
@@ -5,7 +6,7 @@ import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 import {Reflector} from 'three/addons/objects/Reflector.js';
 
 const params=new URLSearchParams(location.search);
-const preview=params.has('preview');
+const preview=(params.has('preview')||params.has('screenshot'));
 const BASE=32,HALF=BASE/2,BATH_LIFT=2.0,STREAM_Y=.98,nightUniform={value:0},warmLights=[];
 const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
 const iw=Math.max(1,innerWidth),ih=Math.max(1,innerHeight);
@@ -355,16 +356,17 @@ function setPeriod(period,immediate=false){
 periodButtons.forEach(button=>button.addEventListener('click',event=>{event.stopPropagation();setPeriod(button.dataset.time)}));
 setPeriod(params.get('time')==='night'?'night':'day',true);animate(0);
 const expandedWorld=expandWorld({kind:'onsen',scene,model,camera,controls,renderer,preview,reduced,nativeHeight:landY});
-function renderFrame(ms){
+function renderFrame(ms,force=false){
  expandedWorld.update(ms*.001);
  if(start===null)start=ms;controls.update();
  const changing=Math.abs(nightBlend-nightTarget)>.00001;
- if(reduced&&renderedOnce&&!modeDirty&&!changing&&lastPosition.distanceToSquared(camera.position)<1e-12&&Math.abs(lastQuaternion.dot(camera.quaternion))>1-1e-12)return;
- if(!preview&&!reduced&&ms-lastMs<32)return;
+ if(!force&&(reduced&&renderedOnce&&!modeDirty&&!changing&&lastPosition.distanceToSquared(camera.position)<1e-12&&Math.abs(lastQuaternion.dot(camera.quaternion))>1-1e-12))return;
+ if(!force&&(!preview&&!reduced&&ms-lastMs<32))return;
  const dt=lastMs===-Infinity?0:Math.min(.1,Math.max(0,(ms-lastMs)*.001));lastMs=ms;
  if(changing){const step=dt/.8;nightBlend+=Math.sign(nightTarget-nightBlend)*Math.min(Math.abs(nightTarget-nightBlend),step);applyLighting(nightBlend)}
  if(!preview&&!reduced)animate((ms-start)*.001);
  renderer.render(scene,camera);lastPosition.copy(camera.position);lastQuaternion.copy(camera.quaternion);renderedOnce=true;modeDirty=false;
 }
+installSceneCapture({kind:'onsen',camera,controls,renderer,preview,render:()=>renderFrame(preview?0:performance.now(),true),setPeriod:period=>setPeriod(period,true)});
 if(preview)renderFrame(0);else renderer.setAnimationLoop(renderFrame);
 addEventListener('resize',()=>{if(innerWidth<1||innerHeight<1)return;const a=innerWidth/innerHeight,factor=fit(a)/fit(camera.aspect);camera.position.sub(controls.target).multiplyScalar(factor).add(controls.target);camera.aspect=a;camera.updateProjectionMatrix();renderer.setPixelRatio(Math.min(devicePixelRatio,preview?.85:1.6));renderer.setSize(innerWidth,innerHeight);renderedOnce=false;if(preview||reduced)renderFrame(0)});

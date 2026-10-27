@@ -27,7 +27,7 @@ class Gallery(HTMLParser):
 
     def handle_starttag(self, tag, attrs):
         attrs = dict(attrs)
-        if tag == 'a' and 'card' in attrs.get('class', '').split():
+        if tag == 'a' and {'card', 'card-link'}.intersection(attrs.get('class', '').split()):
             href = attrs['href']
             route = href.removeprefix('./').removesuffix('/')
             if href != f'./{route}/' or not route.isalpha():

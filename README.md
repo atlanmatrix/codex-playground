@@ -95,3 +95,71 @@ Expansions are redesigned around each original scene’s intent, using varied, d
 Each gallery card has a keyboard-accessible copy-embed icon. It copies an iframe with the scene's absolute URL, accessible title, full width, 480px height, lazy loading and fullscreen permission. The URL is resolved from the current gallery address, preserving GitHub Pages project subpaths and custom domains. Copying requires HTTPS (or localhost); if clipboard access is unavailable or denied, a dialog provides selectable code for manual copying.
 
 GitHub Pages supports hosting these self-contained static 3D scenes and embedding them in other HTML pages, including another GitHub Pages site. Paste the code into HTML that permits iframes (GitHub README Markdown does not render iframes). The host page must permit the scene origin in its CSP `frame-src`; restrictive iframe sandbox settings must allow scripts for WebGL interaction. This does not require CORS permission. Thumbnails remain static WebP images and the gallery never initializes a scene runtime.
+
+## Saved views and live cover images
+
+All twelve scenes record camera position, orbit angles, distance, target, zoom, viewport aspect and the active day/night period. After orbiting or zooming settles, the scene replaces its current URL's `view` parameter (without adding browser history entries) and saves the last view under `localStorage['little-worlds:view:<scene>']`. Opening the URL restores that view; a bare scene URL still opens the default composition. Storage restrictions in third-party embeds do not prevent URL sharing or capture. Resizing adapts the camera distance to preserve framing on mobile.
+
+The scene exposes a small browser API after `little-worlds:ready`:
+
+```js
+const { state, url, screenshotUrl } = window.littleWorlds.getUrls();
+// url: interactive scene with this exact view and lighting
+// screenshotUrl: same scene with ?screenshot=1&view=... for a still cover
+window.littleWorlds.setState(state);
+const cover = window.littleWorlds.capture({ width: 1280, height: 720, format: 'webp' });
+document.querySelector('img').src = cover.dataUrl;
+```
+
+`getState()` returns the current view. `capture()` returns `dataUrl`, `mimeType`, `width`, `height`, `state`, `url` and `screenshotUrl`. It renders a fresh frame synchronously, including reflections/bloom and the current CSS day/night background, without controls. It works with reduced motion and without preserving WebGL drawing buffers. Output dimensions are integers from 32 to 2048; formats are `png` (default) and `webp`; quality is 0–1 (default .9). The current viewport is fitted into the output without stretching. `transparent: true` omits the CSS background (scenes with an opaque Three.js background remain opaque).
+
+Open a URL such as `/study/?screenshot=1&time=night&width=1280&height=720&format=webp`, optionally with a saved `view`, to generate and display a still image. This disables interaction and ambient animation and exposes the result as `window.littleWorldsScreenshot`; automation can wait for `document.documentElement.dataset.screenshot === 'ready'` (`'error'` on failure). Invalid views fall back to the default composition and set `data-view-error="invalid"`. Preview/capture pages never overwrite the recorded interactive view.
+
+### Cross-origin iframe covers
+
+Third-party hosts can use `postMessage`; they do not need access to the iframe's canvas or local storage. Messages are accepted only from the immediate parent, with an HTTP(S) origin and a string `requestId` of at most 128 characters. Set `parentOrigin` to the host's exact origin to pin it explicitly; otherwise the scene uses the referring origin, or binds to the first valid parent request if referrer information is unavailable. Responses always target that exact origin. Opaque (`null`) origins are unsupported; sandboxed iframes need `allow-scripts allow-same-origin`.
+
+Request types are `little-worlds:get-state`, `little-worlds:set-state` (with `state`) and `little-worlds:capture` (with optional `options`). Responses use `{ type: 'little-worlds:response', requestId, ok, result }`, or `{ ..., ok: false, error }`. Notifications use `little-worlds:ready`, `little-worlds:statechange` and, for screenshot pages, `little-worlds:screenshot`; view notifications include `state`, `url` and `screenshotUrl`.
+
+This example keeps a host-page image in sync with an embedded scene:
+
+```html
+<img id="cover" alt="场景封面" width="1280" height="720">
+<script>
+const sceneUrl = new URL('https://atlanmatrix.github.io/codex-playground/study/');
+sceneUrl.searchParams.set('parentOrigin', location.origin);
+const frame = document.createElement('iframe');
+frame.title = '可交互书房'; frame.width = '100%'; frame.height = '480';
+let sequence = 0, pending;
+window.addEventListener('message', event => {
+  if (event.source !== frame.contentWindow || event.origin !== sceneUrl.origin) return;
+  const message = event.data;
+  if (['little-worlds:ready', 'little-worlds:statechange'].includes(message?.type)) {
+    // Save message.state/message.url/message.screenshotUrl in the host as needed.
+    pending = `cover-${++sequence}`;
+    frame.contentWindow.postMessage({
+      type: 'little-worlds:capture', requestId: pending,
+      options: { width: 1280, height: 720, format: 'webp' }
+    }, sceneUrl.origin);
+  } else if (message?.type === 'little-worlds:response' && message.requestId === pending && message.ok) {
+    document.querySelector('#cover').src = message.result.dataUrl;
+  }
+});
+frame.src = sceneUrl.href; document.body.append(frame);
+</script>
+```
+
+The host's CSP must allow `data:` in `img-src` for data URLs. The gallery continues to use its committed versioned WebP covers and does not initialize WebGL or background scene iframes.
+
+### Direct image HTTP URLs (optional service)
+
+GitHub Pages serves static HTML: a `screenshotUrl` is a browser-rendered image page, not an `image/*` HTTP response. For a URL that can be placed directly in `<img src>`, run the included screenshot service on a server with Python Playwright and Chromium:
+
+```sh
+npm run serve:screenshots
+# http://127.0.0.1:4173/api/screenshot/study.webp?time=night&width=1280&height=720
+```
+
+The service serves the built gallery/scenes and renders a fresh PNG or WebP for `/api/screenshot/<scene>.png` or `.webp`. Pass the same URL-encoded `view` parameter, optional `time=day|night`, `width`, `height` and `quality`. Each request uses a fresh browser context and returns `Cache-Control: no-store` and a public image CORS header. It only renders registered local scenes, blocks external browser requests, limits concurrent renders to one (429 when busy), and rejects invalid views/dimensions. It does not accept arbitrary remote URLs. Use `python scripts/screenshot-server.py --host 0.0.0.0 --port 4173` behind your normal production reverse proxy to expose it; the existing GitHub Pages deployment remains static and does not deploy this service.
+
+`npm run check:capture` verifies real Chromium rendering, pointer/wheel input, persisted views, desktop/mobile URL replay, PNG/WebP output, day/night backgrounds, cross-origin messaging, blocked storage, invalid inputs and actual local HTTP image responses. These tests use local fixtures/service, not the public deployment.
