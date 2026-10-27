@@ -288,6 +288,7 @@ try{
   console.log(JSON.stringify({products:goods.count,rainStreaks:p.count/2,ripples:ripples.count,roofProtectedDrops:covered}));
  }
  if(name==='city')await (await import(pathToFileURL(join(root,'scripts/check-city-fusion.mjs')))).checkCityFusion({scene,model,isPreview,isReduced,frame:globalThis.frame});
+ if(name==='city')(await import(pathToFileURL(join(root,'scripts/check-city-roads.mjs')))).checkCityRoads({scene,model});
  if(model.userData.expansion?.enrichment){
   const e=model.userData.expansion.enrichment;assert.equal(e.version,3);assert(e.parts>1000);assert(e.zones.length>=3);assert(e.reference.components&&Object.keys(e.reference.components).length>=5);
   assert(e.bounds.min.every(Number.isFinite)&&e.bounds.max.every(Number.isFinite));assert(e.bounds.min[0]>=-64.1&&e.bounds.min[2]>=-64.1&&e.bounds.max[0]<=64.1&&e.bounds.max[2]<=64.1,`New detail exceeds the base: ${JSON.stringify(e.bounds)}`);
@@ -322,7 +323,7 @@ try{
     for(let i=0;i<o.count;i++){
      o.getMatrixAt(i,im);world.multiplyMatrices(o.matrixWorld,im);
      for(const x of [bounds.min.x,bounds.max.x])for(const y of [bounds.min.y,bounds.max.y])for(const z of [bounds.min.z,bounds.max.z]){
-      point.set(x,y,z).applyMatrix4(world);recordCityExtent(point);point.project(camera);
+      point.set(x,y,z).applyMatrix4(world);if(name==='city'&&o.material.clippingPlanes?.some(p=>p.distanceToPoint(point)<-.0001))continue;recordCityExtent(point);point.project(camera);
       projected.left=Math.min(projected.left,point.x);projected.right=Math.max(projected.right,point.x);projected.bottom=Math.min(projected.bottom,point.y);projected.top=Math.max(projected.top,point.y);
      }
     }

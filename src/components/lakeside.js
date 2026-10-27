@@ -58,7 +58,7 @@ const waterGeometry=geometryGrid(96,96,(u,w)=>{const z=-8+16*w;return[THREE.Math
 waterGeometry.rotateX(Math.PI/2);
 const waterUniforms={time:{value:0},componentOrigin:{value:new THREE.Vector2()},color:{value:new THREE.Color('#8acfd0')},tDiffuse:{value:null},textureMatrix:{value:new THREE.Matrix4()}};
 const water=new Reflector(waterGeometry,{
- textureWidth:preview?512:1024,textureHeight:preview?512:1024,clipBias:.002,
+ textureWidth:512,textureHeight:512,clipBias:.002,
  shader:{uniforms:waterUniforms,
  vertexShader:`uniform float time;uniform vec2 componentOrigin;uniform mat4 textureMatrix;varying vec4 mirrorCoord;varying vec3 worldP;
  float shore(float z){return -4.02+.38*z+.38*sin(z*.55)+.10*cos(z*.91);}

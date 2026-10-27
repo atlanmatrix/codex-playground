@@ -32,37 +32,8 @@ function pot(x,y,z,size=.25,parent=scenery){
  for(let i=0;i<5;i++)ell(x+R(-size*.3,size*.3),y+size+R(size*.1,size*.75),z+R(-size*.3,size*.3),size*R(.30,.53),size*R(.38,.62),size*R(.30,.50),i%2?m.leaf:m.leafLight,parent);
 }
 box(0,.015,0,18,.21,18,m.concrete);
-box(.575,.15,0,3.65,.06,18,m.asphalt);
-box(5.65,.15,-6.0,6.7,.06,1.85,m.asphalt);
-box(-1.88,.205,0,1.25,.17,18,m.paving,scenery,true);
-box(2.92,.205,1.9625,1.04,.17,14.075,m.paving,scenery,true);
-box(2.92,.205,-7.9625,1.04,.17,2.075,m.paving,scenery,true);
-for(let z=-8.6;z<9;z+=.58){box(-1.29,.245,z,.12,.09,.54,m.edge);if(z<-7||z>-4.9)box(2.47,.245,z,.12,.09,.54,m.edge);}
-for(const x of [-1.13,2.25]){
- if(x<0)box(x,.19,0,.045,.018,17.9,m.white);
- else{box(x,.19,2.03,.045,.018,13.8,m.white);box(x,.19,-8.06,.045,.018,1.72,m.white)}
-}
-for(let z=-8.1;z<8.6;z+=1.4){if(z>-6.8&&z<-4.8)continue;box(.58,.19,z,.065,.018,.62,m.white);}
-for(let i=0;i<7;i++)box(-.96+i*.48,.195,-5.94,.31,.024,.79,m.white);
-box(.58,.195,-4.95,3.3,.024,.09,m.white);
-for(const x of [.61,2.10])box(x,.195,4.40,.055,.025,3.8,m.yellow);
-for(const z of [2.50,4.40,6.30])box(1.35,.195,z,1.54,.025,.055,m.yellow);
-for(const z of [-2.9,.9,7.0]){
- mesh(new THREE.CylinderGeometry(.27,.27,.025,32),m.dark,.05,.2,z);
- const r=ring(.05,.218,z,.21,.012,m.steel);r.rotation.x=Math.PI/2;
- for(let i=0;i<4;i++)box(.05,.221,z-.11+i*.075,.28,.01,.018,m.roofDark);
-}
-for(const z of [-3.6,1.8,6.7]){
- box(-1.36,.19,z,.23,.025,.5,m.dark);
- for(let i=0;i<5;i++)box(-1.36,.21,z-.19+i*.09,.20,.013,.02,m.steel);
-}
-function cone(x,z){
- box(x,.21,z,.32,.06,.32,m.rubber);
- mesh(new THREE.ConeGeometry(.13,.39,12),m.orange,x,.435,z);
- mesh(new THREE.CylinderGeometry(.045,.070,.075,12),m.white,x,.475,z);
-}
-for(const z of [2.95,4.45,6.05])cone(2.04,z);
-rod([2.04,.61,4.45],[2.04,.61,6.05],.025,m.yellow);
+// The former motor street is a continuous pedestrian shopping court.
+box(.47,.205,0,5.94,.17,18,m.paving);
 
 // Five low shops carry one continuous railway deck on their roof beams.
 const SHOP_Z=[-7.25,-3.72,-.19,3.34,6.87];

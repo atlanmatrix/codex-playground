@@ -5,11 +5,11 @@
   "scenes": {
     "city": {
       "file": "thumbnails/city.webp",
-      "source_sha256": "bac4343cc70a06d3d4b06030c8d1cd6b9d168ea01ea505917083864163de5e33",
-      "sha256": "5eecbd1255b52cbb528e6e449b63ad2ab63e4aa27395b7f3843cd4572fd6846c",
+      "source_sha256": "89c74d32f34b0e5c2e12ca36d8fdc0add5a5426a1f7e7ee65ad306c27e6246c7",
+      "sha256": "a6bddb39537129ae7f086e142ee3b86aa0e0b684fa317653f118d34353e18529",
       "width": 1280,
       "height": 720,
-      "bytes": 31342
+      "bytes": 28144
     },
     "rainy": {
       "file": "thumbnails/rainy.webp",

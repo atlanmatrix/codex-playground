@@ -23,31 +23,8 @@ function sign(text,x,y,z,w,h,bg,rotation=0,parent=scenery){
  const c=document.createElement('canvas');c.width=512;c.height=128;const ctx=c.getContext('2d');ctx.fillStyle=bg;ctx.fillRect(0,0,512,128);ctx.fillStyle='#fff6dc';ctx.font='600 70px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(text,256,65,480);
  const tex=new THREE.CanvasTexture(c);tex.colorSpace=THREE.SRGBColorSpace;const o=box(x,y,z,w,h,.06,new THREE.MeshToonMaterial({map:tex,gradientMap:ramp}),parent);o.rotation.y=rotation;return o;
 }
-// A complete square section. Both streets continue naturally to the four cut edges.
-box(0,-.02,0,32,.12,32,m.base);
-box(0,.07,0,8,.06,32,m.road);box(-10,.07,0,12,.06,8,m.road);box(10,.07,0,12,.06,8,m.road);
-const tiles=[],dummy=new THREE.Object3D();
-for(const sx of [-1,1])for(const sz of [-1,1]){
- box(sx*10,.18,sz*10,12,.25,12,m.paving);
- for(let i=0;i<24;i++)for(let j=0;j<24;j++)tiles.push([sx*(4.25+i*.5),sz*(4.25+j*.5)]);
- for(let p=4.3;p<16;p+=.62){box(sx*4.07,.29,sz*p,.16,.18,.58,m.curb);box(sx*p,.29,sz*4.07,.58,.18,.16,m.curb)}
-}
-const tileMesh=new THREE.InstancedMesh(geo.box,m.paving,tiles.length);tiles.forEach(([x,z],i)=>{dummy.position.set(x,.313,z);dummy.scale.set(.478,.016,.478);dummy.updateMatrix();tileMesh.setMatrixAt(i,dummy.matrix);tileMesh.setColorAt(i,new THREE.Color(i%5===0?'#cecbb5':i%3===0?'#e6dfc7':'#dbd7c0'))});tileMesh.receiveShadow=true;scenery.add(tileMesh);
-// Four zebra crossings, double center lines, stop bars and directional arrows.
-for(let axis=0;axis<2;axis++){
- const g=new THREE.Group();g.rotation.y=axis*Math.PI/2;scenery.add(g);
- for(const side of [-1,1]){
-  for(let x=-3.35;x<3.6;x+=.67)box(x,.115,side*5.25,.36,.024,1.45,m.white,g);
-  box(-side*2,.116,side*6.4,3.5,.025,.14,m.white,g);
-  for(const x of [-.13,.13])box(x,.115,side*11.35,.055,.024,9.3,m.yellow,g);
-  for(const z of [8.4,12.3]){
-   const arrow=new THREE.Group();arrow.position.set(-side*2,.12,side*z);arrow.rotation.y=side>0?Math.PI:0;g.add(arrow);
-   box(0,0,0,.12,.02,1.1,m.white,arrow);for(const s of [-1,1]){const a=box(s*.17,0,.4,.1,.02,.48,m.white,arrow);a.rotation.y=s*.8}
-  }
- }
-}
 // Low corner shops leave the junction and all four approaches visible.
-const shops=[[-10,-11,7,7,5.6,m.cream,'珈 琲 角','#6c9484'],[10,-11,7,6,7.5,m.mint,'青 空 书 店','#688a9b'],[-11,10,6,7,4.4,m.pink,'花 与 日 常','#ab7d6e'],[11,11,6,6,5.6,m.cream,'日 和 商 店','#c28e57']];
+const shops=[[-15,-15,7,7,5.6,m.cream,'珈 琲 角','#6c9484'],[15,-15,7,6,7.5,m.mint,'青 空 书 店','#688a9b'],[-15,15,6,7,4.4,m.pink,'花 与 日 常','#ab7d6e'],[15,15,6,6,5.6,m.cream,'日 和 商 店','#c28e57']];
 shops.forEach(([x,z,w,d,h,mat,title,color],index)=>{
  const g=new THREE.Group();g.name=`corner-shop-${index}`;scenery.add(g);
  box(x,.43,z,w+.5,.22,d+.5,m.curb,g);box(x,h/2+.5,z,w,h,d,mat,g);box(x,h+.56,z,w+.35,.22,d+.35,m.curb,g);
@@ -74,29 +51,22 @@ shops.forEach(([x,z,w,d,h,mat,title,color],index)=>{
  if(index===0)for(const dx of [-1.6,1.6]){const pz=fz+front*1.7;pole(x+dx,.78,pz,.055,.85,m.dark,g);pole(x+dx,1.23,pz,.57,.09,m.wood,g);for(const a of [-1,1]){box(x+dx+a*.8,.76,pz,.48,.12,.48,m.wood,g);for(const dz of [-.15,.15])pole(x+dx+a*.8,.5,pz+dz,.025,.5,m.dark,g)}}
 });
 function tree(x,z,size=1){pole(x,1.8,z,.14,3,m.wood);for(let i=0;i<7;i++){const a=i*2.4;ball(x+Math.cos(a)*.7*size,3.4+(i%3)*.4*size,z+Math.sin(a)*.7*size,.95*size,.95*size,.95*size,i%2?m.leaf:m.leafLight)}box(x,.38,z,1.8,.16,1.8,m.soil)}
-for(const [x,z] of [[-5.4,-9],[-5.4,-14.3],[5.5,-14.1],[14.2,-5.5],[-14.2,5.5],[-5.5,14.2],[5.5,9],[14.2,5.5]])tree(x,z,.9);
-for(const [x,z] of [[-6.1,6.1],[6.1,-6.1]]){
- box(x,.67,z,1.7,.13,.58,m.wood);box(x,.97,z+.25,1.7,.48,.09,m.wood);for(const dx of [-.6,.6])box(x+dx,.46,z,.1,.5,.44,m.dark);
-}
-for(const sx of [-1,1])for(const sz of [-1,1]){
- const x=sx*4.8,z=sz*7.0;pole(x,2.8,z,.065,5,m.steel);box(x-sx*.38,5.3,z,.85,.14,.3,m.curb);
- box(sx*7.3,.7,sz*5,.45,.8,.45,m.mint);
- for(let i=0;i<3;i++)pole(sx*(5+i*.65),.64,sz*4.65,.055,.75,m.dark);
-}
+for(const [x,z] of [[-12,-20],[-20,-12],[12,-20],[20,-12],[-12,20],[-20,12],[12,20],[20,12]])tree(x,z,.65);
 batch(scenery);
 // Signal heads are separate so their lit lenses can change without rebuilding scenery.
 const signals=[];
 for(let lane=0;lane<4;lane++){
  const axis=lane<2?0:1,dir=lane%2===0?1:-1;
  const g=new THREE.Group();g.name=`traffic-signal-${lane}`;g.rotation.y=(axis?Math.PI/2:0)+(dir<0?Math.PI:0);model.add(g);
- pole(-4.65,2.4,-6.25,.085,4.2,m.dark,g);box(-2.65,4.5,-6.25,4.15,.1,.1,m.dark,g);box(-2.05,4.28,-6.25,1.28,.48,.4,m.dark,g);
- const lights=[];for(let i=0;i<3;i++){const mat=toon('#3c5050');mat.emissive=new THREE.Color(0);lights.push(mat);const lens=pole(-2.47+i*.42,4.28,-6.48,.155,.06,mat,g);lens.rotation.x=Math.PI/2}
- signals.push({axis,lights,g});
+ pole(-8.5,2.8,-11.2,.085,4.9,m.dark,g);box(-5.1,5.25,-11.2,6.9,.1,.1,m.dark,g);for(const x of [-2,-4.6])box(x,5.03,-11.2,1.28,.48,.4,m.dark,g);
+ const pedestrian=toon('#cd7161');box(-8.5,2.65,-11.42,.4,.7,.2,m.dark,g);box(-8.5,2.65,-11.54,.22,.42,.03,pedestrian,g);
+ const lights=[];for(const x of [-2,-4.6])for(let i=0;i<3;i++){const mat=toon('#3c5050');mat.emissive=new THREE.Color(0);lights.push(mat);const lens=pole(x-.42+i*.42,5.03,-11.43,.155,.06,mat,g);lens.rotation.x=Math.PI/2}
+ signals.push({axis,lights,g,pedestrian});
 }
 const edgePlanes=[new THREE.Plane(new THREE.Vector3(1,0,0),64),new THREE.Plane(new THREE.Vector3(-1,0,0),64),new THREE.Plane(new THREE.Vector3(0,0,1),64),new THREE.Plane(new THREE.Vector3(0,0,-1),64)];
 const cars=[],lanes=[];const colors=['#e0b354','#bd7467','#8bb5a5','#eee5cb','#91afc0','#adbd85'];
-for(let lane=0;lane<4;lane++){
- const axis=lane<2?0:1,dir=lane%2===0?1:-1,list=[];lanes.push(list);
+for(let lane=0;lane<8;lane++){
+ const axis=lane<4?0:1,dir=lane%4<2?1:-1,track=lane%2,list=[];lanes.push(list);
  for(let i=0;i<3;i++){
   const g=new THREE.Group();g.name='moving-traffic-car';model.add(g);const body=toon(colors[(lane*2+i)%colors.length]),van=(lane+i)%4===0;
   box(0,.66,0,1.35,.6,2.65,body,g);box(0,1.12,van?-.15:-.08,1.17,van?.75:.57,van?1.95:1.42,body,g);
@@ -110,14 +80,14 @@ for(let lane=0;lane<4;lane++){
    // A spoke makes the rolling motion visible.
    box(side*.098,0,0,.018,.22,.045,m.steel,pivot);batch(pivot);pivot.traverse(o=>{if(o.isMesh){o.material=o.material.clone();o.material.clippingPlanes=edgePlanes}});wheels.push(pivot);
   }
-  const u=axis===0?[-.8,-9,-13.8][i]:[-8.1,-12.3,-16.5][i];
-  const car={g,lane,axis,dir,u,v:axis===0?3.3:0,wheels,travel:0};cars.push(car);list.push(car);g.userData={lane,axis,dir};
+  const u=[-13,-22,-31][i]-track*1.5;
+  const car={g,lane,axis,dir,track,u,v:0,wheels,travel:0};cars.push(car);list.push(car);g.userData={lane,axis,dir,track};
  }
 }
 // Right-hand lanes in both directions. Fixed steps keep queues stable on slow devices.
 function pose(c){const p=trafficPose(c);c.g.position.set(p.x-origin[0],p.y,p.z-origin[1]);c.g.rotation.y=p.heading;c.wheels.forEach(w=>w.rotation.x=c.travel/.29);c.g.userData.progress=c.u;c.g.userData.speed=c.v;}
-function phase(t){const p=t%34;return p<10?[0,'green']:p<12?[0,'amber']:p<17?[-1,'red']:p<27?[1,'green']:p<29?[1,'amber']:[-1,'red']}
-function lamps(t){const [axis,state]=phase(t);model.userData.signalPhase={axis,state};signals.forEach(s=>{const active=s.axis===axis?(state==='green'?2:1):0;s.g.userData.state=active;for(let i=0;i<3;i++){const color=i===active?['#ed7961','#ffd16b','#87d0ac'][i]:'#3c5050';s.lights[i].color.set(color);s.lights[i].emissive.set(i===active?color:'#000000');s.lights[i].emissiveIntensity=.3}})}
+function phase(t){const p=t%70;return p<18?[0,'green']:p<21?[0,'amber']:p<28?[-1,'red']:p<46?[1,'green']:p<49?[1,'amber']:p<56?[-1,'red']:[-1,'walk']}
+function lamps(t){const [axis,state]=phase(t);model.userData.signalPhase={axis,state,pedestrian:state==='walk'};signals.forEach(s=>{s.pedestrian.color.set(state==='walk'?'#87d0ac':'#cd7161');const active=s.axis===axis?(state==='green'?2:1):0;s.g.userData.state=active;for(let i=0;i<s.lights.length;i++){const color=i%3===active?['#ed7961','#ffd16b','#87d0ac'][i%3]:'#3c5050';s.lights[i].color.set(color);s.lights[i].emissive.set(i%3===active?color:'#000000');s.lights[i].emissiveIntensity=.3}})}
 function step(dt,t){
  const [active,state]=phase(t);
  for(const list of lanes){
@@ -125,7 +95,7 @@ function step(dt,t){
   for(let i=0;i<sorted.length;i++){
    const c=sorted[i],leader=sorted[i-1];let limit=leader?leader.u-3.75:Infinity;
    // A front bumper already past the stop line commits through the clearance interval.
-   if(c.u<=-7.85&&!(c.axis===active&&state==='green'))limit=Math.min(limit,-7.85);
+   if(c.u<=-12.7&&!(c.axis===active&&state==='green'))limit=Math.min(limit,-12.7);
    const gap=limit-c.u,target=Math.min(3.3,Math.sqrt(Math.max(0,2*2.8*gap)));
    c.v=Math.max(0,c.v+THREE.MathUtils.clamp(target-c.v,-3.5*dt,1.6*dt));
    const movement=Math.max(0,Math.min(c.v*dt,gap));c.u+=movement;c.travel+=movement;if(gap<.002)c.v=0;

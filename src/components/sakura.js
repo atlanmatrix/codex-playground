@@ -73,12 +73,9 @@ function tunnel(side){
  }
 }
 tunnel(-1);tunnel(1);
-// A quiet road crosses the single track, then bends towards the village houses.
-box(3.9,.155,0,2.2,.07,18,m.asphalt);
-box(6.45,.16,5.95,4.9,.08,2.1,m.asphalt);
-for(const x of [2.86,4.94])for(const [z,length] of [[-5.35,7.0],[5.35,7.0]])box(x,.198,z,.045,.012,length,m.line);
-for(let z=-8.4;z<8.5;z+=1.32){if(Math.abs(z)<2.5)continue;box(3.9,.202,z,.055,.014,.55,m.line)}
-for(const z of [-2.25,2.25])box(3.9,.205,z,1.95,.016,.10,m.line);
+// Protected pedestrian approach; the real plank crossing and barriers remain.
+box(3.9,.155,0,2.2,.07,18,m.paving);
+box(6.95,.155,5.95,3.9,.07,2.1,m.paving);
 for(const z of [-.99,0,.99])box(3.9,.365,z,2.16,.06,z===0?.88:.52,m.platform,scenery,true);
 for(const sign of [-1,1]){
  const s=new THREE.Shape();s.moveTo(1.27,.395);s.lineTo(1.92,.19);s.lineTo(1.92,.12);s.lineTo(1.27,.12);s.closePath();

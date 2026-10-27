@@ -8,6 +8,7 @@ import json
 import sys
 
 MOBILE_ONLY = '--mobile-only' in sys.argv
+STILL_ONLY = '--still-only' in sys.argv
 
 ROOT = Path(__file__).resolve().parent.parent
 WORK = ROOT / 'work'
@@ -49,7 +50,7 @@ with sync_playwright() as p:
         return Image.open(io.BytesIO(page.screenshot(path=str(WORK / f'city-verified-{name}.png')))).convert('RGB')
 
     zoomed, panned, still_difference = {'distance': None}, {'target': None}, None
-    if not MOBILE_ONLY:
+    if not MOBILE_ONLY and not STILL_ONLY:
         page.goto('http://little-worlds.test/city/')
         page.wait_for_function('window.littleWorlds !== undefined')
         initial = state()
@@ -82,10 +83,10 @@ with sync_playwright() as p:
 
         for name, target, position in [
             ('cat', [33, 1, -32.7], [46, 12, -18]),
-            ('fitness', [-33, 1, -7], [-17, 14, 12]),
-            ('station', [-32, 2, -53], [-14, 17, -34]),
-            ('rooftop', [-44, 2, 30], [-22, 20, 51]),
-            ('junction', [-6, 2, 29], [24, 28, 57])]:
+            ('fitness', [-46, 1, -5], [-30, 14, 14]),
+            ('station', [-46, 2, -52], [-28, 17, -33]),
+            ('rooftop', [-48, 2, 49], [-26, 20, 70]),
+            ('junction', [-20, 2, 27], [10, 28, 55])]:
             page.evaluate('''([target,position]) => {
                 const s=window.littleWorlds.getState();s.position=position;s.target=target;s.zoom=1;
                 window.littleWorlds.setState(s);
@@ -95,14 +96,17 @@ with sync_playwright() as p:
         gl = page.evaluate('''() => {const gl=document.querySelector('canvas').getContext('webgl2');
             return {lost:gl.isContextLost(),error:gl.getError()};}''')
         assert gl == {'lost': False, 'error': 0}, gl
+    if not MOBILE_ONLY:
         page.emulate_media(reduced_motion='reduce')
         page.goto('http://little-worlds.test/city/')
         page.wait_for_function('window.littleWorlds !== undefined')
         a = capture('reduced')
+        idle_frames = page.evaluate('window.cityPerformance.renderedFrames')
         page.wait_for_timeout(250)
         b = capture('reduced-later')
         still_difference = sum(ImageStat.Stat(ImageChops.difference(a, b)).mean)
         assert still_difference < .01, still_difference
+        assert page.evaluate('window.cityPerformance.renderedFrames') == idle_frames, 'Reduced-motion idle must skip GPU rendering'
     # A fresh context prevents several retained software WebGL renderers from
     # competing with the phone navigation. The app and the viewport stay real.
     context.close()
@@ -116,6 +120,11 @@ with sync_playwright() as p:
     page.goto('http://little-worlds.test/city/?preview=1')
     page.wait_for_function('window.littleWorlds !== undefined')
     capture('mobile')
+    perf = page.evaluate('({...window.cityPerformance})')
+    assert perf['atlasSigns'] > 20 and perf['staticBatches'] < 100, perf
+    assert perf['coarseBatches'] > 0, 'The full-map camera should use distant geometry'
+    page.evaluate('''() => {const s=window.littleWorlds.getState();s.position=[46,12,-18];s.target=[33,1,-32.7];window.littleWorlds.setState(s);}''')
+    assert page.evaluate('window.cityPerformance.coarseBatches') < perf['coarseBatches'], 'A still/capture camera must restore nearby detail'
     gl = page.evaluate('''() => {const g=document.querySelector('canvas').getContext('webgl2');return {lost:g.isContextLost(),error:g.getError()};}''')
     assert gl == {'lost': False, 'error': 0}, gl
     page.goto('http://little-worlds.test/')
@@ -129,6 +138,6 @@ with sync_playwright() as p:
     assert not [e for e in errors if '404' not in e], errors
     print(json.dumps({'verification': 'local Chromium/WebGL fixtures', 'zoomDistance': zoomed['distance'],
                       'panTarget': panned['target'], 'reducedMotionDifference': still_difference,
-                      'webgl': gl, 'scope': 'mobile and catalog' if MOBILE_ONLY else 'full', 'retiredRoutes': 5, 'errors': [e for e in errors if '404' not in e]}))
+                      'webgl': gl, 'cityPerformance': perf, 'scope': 'mobile and catalog' if MOBILE_ONLY else 'still and mobile' if STILL_ONLY else 'full', 'retiredRoutes': 5, 'errors': [e for e in errors if '404' not in e]}))
     context.close()
     browser.close()

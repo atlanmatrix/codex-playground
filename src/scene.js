@@ -1,3 +1,4 @@
+import {optimizeCity} from './components/city-performance.js';
 import {installSceneCapture} from './scene-capture.js';
 import {expandWorld,expandedFit} from './expansions/city.js';
 import * as THREE from 'three';
@@ -9,7 +10,7 @@ const isPreview = ['preview','screenshot'].some(key=>new URLSearchParams(locatio
 // Aoba: a complete, deterministic miniature. All detail is geometry or painted canvas.
 const scene = new THREE.Scene();
 const renderer = new THREE.WebGLRenderer({antialias:true,alpha:true,powerPreference:'high-performance'});
-renderer.setPixelRatio(Math.min(devicePixelRatio,isPreview?.85:1.8));
+renderer.setPixelRatio(Math.min(devicePixelRatio,isPreview?.85:innerWidth<600?1:1.35));
 renderer.setSize(innerWidth,innerHeight);
 renderer.shadowMap.enabled=true;
 renderer.shadowMap.type=THREE.PCFSoftShadowMap;
@@ -84,16 +85,11 @@ for(const {bottom,top,material} of baseStrata){
  box(0,(bottom+top)/2,0,16,top-bottom,16,material,model,true);
 }
 box(-2,.12,-2.1,11,.25,10.6,M.edge,model,true);
-const ground=mesh(new THREE.PlaneGeometry(200,200),new THREE.ShadowMaterial({opacity:.14}),0,-1.36,0,scene);ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;
+const ground=mesh(new THREE.PlaneGeometry(200,200),new THREE.ShadowMaterial({opacity:.14}),0,-3.25,0,scene);ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;
 for(let i=0;i<170;i++){const side=Math.floor(R(0,4)),a=R(-7.8,7.8);const x=side<2?a:(side===2?-8.01:8.01),z=side<2?(side===0?8.01:-8.01):a;instance('rock',pick([M.broken,M.edge,M.soil]),[x,R(-1.1,-.23),z],[R(.07,.24),R(.04,.12),R(.06,.2)],[R(0,3),R(0,3),R(0,3)]);if(i%9===0){const end=[x*.99,-1.2,z*.99];curve([[x,.04,z],[x*1.006,-.4,z*1.006],end],.04,M.root)}}
 for(let i=0;i<18;i++){const x=R(-7.8,7.8);rod([x,-.22,7.88],[x+R(-.2,.2),-.38,8.09],.015,M.rust);if(i%2===0)ivy([[x,.15,7.8],[x+.2,-.4,8.02],[x+.05,-1.2,8.05]])}
-// The right-angled roadway and chipped paving.
-for(let z=-6.9;z<7.6;z+=1.05)box(3.6,.19,z,.32,.29,.91,M.edge,model,true);
-for(let x=-7.5;x<3.4;x+=1.05)box(x,.19,2.95,.92,.29,.32,M.edge,model,true);
-for(let i=0;i<6;i++)box(-6.6+i*.82,.103,6.7,.43,.015,1.3,M.cream);
-for(let i=0;i<4;i++)box(6.55,.104,-6.6+i*1.55,.1,.018,.7,M.yellow);
-for(let i=0;i<68;i++){const x=R(-7.3,3.1),z=R(-7.1,2.55);if(x>-5.9&&x<2&&z>-5.4&&z<1.1)continue;box(x,.255,z,R(.45,.8),.025,R(.4,.7),rnd()>.3?M.concrete:M.broken,model,true)}
-for(let i=0;i<26;i++){const x=R(-7.7,7.7),z=R(3.25,7.6);curve([[x,.1,z],[x+.3,.11,z-.3],[x+.25,.11,z-.7],[x+.65,.11,z-1]],.017,M.dark);if(i%2===0)grass(x+.3,.12,z-.3,.28)}
+// The old L-road is now the original core's pedestrian forecourt.
+M.asphalt.color.set('#afb99e');
 
 // A jagged, three-storey shell with a central opening for the banyan.
 const floorShape=[[-6.4,-5.6],[2.35,-5.6],[2.35,-2.1],[1.7,-1.8],[1.95,-.8],[.95,-.3],[1.25,.8],[-.1,1.18],[-1.3,.92],[-2.2,1.6],[-6.4,1.6]];
@@ -217,7 +213,7 @@ for(let i=0;i<11;i++){
  crowns.push([x,y+.8,z]);
 }
 crowns.push([-1.5,11.8,-2.2],[-2.4,11.1,-3.8],[.3,11.3,-2]);
-const canopy=new THREE.Group();model.add(canopy);
+const canopy=new THREE.Group();canopy.name='core-banyan-canopy';model.add(canopy);
 for(const [x,y,z] of crowns){
  for(let j=0;j<5;j++){
   const sx=R(1.05,1.65),sy=R(.6,1.05),sz=R(.9,1.5);
@@ -396,7 +392,7 @@ for(let i=0;i<5;i++){const r=mesh(new THREE.RingGeometry(.27,.28,32),rippleMat.c
 // Merge the immobile architecture by material; preserve independently animated objects.
 // This retains the detail while avoiding thousands of separate GPU draw calls.
 model.updateMatrixWorld(true);
-const dynamicRoots=new Set([canopy,...fish.map(o=>o.f),...ripples]);
+const dynamicRoots=new Set([canopy,...fish.map(o=>o.f),...ripples]);dynamicRoots.forEach(o=>o.userData.componentDynamic=true);
 const staticGroups=new Map(),staticLines=[],remove=[];
 function isDynamic(o){for(let n=o;n&&n!==model;n=n.parent)if(dynamicRoots.has(n))return true;return false}
 model.traverse(o=>{
@@ -429,12 +425,20 @@ const motes=new THREE.Points(moteGeo,new THREE.PointsMaterial({color:0xfff3b4,si
 let previous=0;const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
 const expandedWorld=expandWorld({kind:'city',scene,model,camera,controls,renderer,preview:isPreview,reduced});
 controls.minDistance=22;controls.maxPolarAngle=1.36;controls.enablePan=true;controls.screenSpacePanning=false;
-// Imported traffic and trains share the city lighting and moving shadows.
-renderer.shadowMap.autoUpdate=true;renderer.shadowMap.needsUpdate=true;
-function renderFrame(ms){
+camera.near=.7;camera.far=1600;camera.updateProjectionMatrix();controls.maxDistance=1000;
+const cityPerformance=optimizeCity({model,renderer,camera,preview:isPreview,reduced});
+if(renderer.info)renderer.info.autoReset=false;
+let lastRender=-Infinity,dirty=true,slowFrames=0,quality=renderer.getPixelRatio(),lastQualityChange=0;
+controls.addEventListener?.('change',()=>dirty=true);
+if(typeof window!=='undefined')window.cityPerformance=cityPerformance.report;
+function renderFrame(ms,force=false){
+ controls.update();
+ if(typeof window!=='undefined'&&!force&&!isPreview){if(document.hidden||reduced&&!dirty||ms-lastRender<(innerWidth<600?1000/30:1000/60)-1)return;}
+ const started=performance.now(),interval=ms-lastRender;lastRender=ms;dirty=false;
+ if(force)cityPerformance.force();
+ renderer.info?.reset();
  expandedWorld.update(ms*.001);
  const t=reduced?0:ms*.001,dt=Math.min(t-previous,.05);previous=t;
- controls.update();
  if(!reduced||t===0){
   waterMaterial.uniforms.time.value=t;
   fish.forEach(({f,a,r,speed})=>{const theta=t*speed+a;f.position.set(3.95+Math.cos(theta)*r,.171,5.1+Math.sin(theta)*r*.65);f.rotation.y=-Math.atan2(Math.cos(theta)*.65,-Math.sin(theta));});
@@ -443,10 +447,14 @@ function renderFrame(ms){
   motes.rotation.y=Math.sin(t*.08)*.025;
   for(let i=0;i<90;i++){motePos[i*3+1]+=dt*.025;if(motePos[i*3+1]>11.5)motePos[i*3+1]=.5}moteGeo.attributes.position.needsUpdate=true;
  }
+ cityPerformance.update(reduced||isPreview?0:ms*.001);
  renderer.render(scene,camera);
+ if(renderer.info){Object.assign(cityPerformance.report,{renderedFrames:(cityPerformance.report.renderedFrames||0)+1,drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,pixelRatio:quality,cpuMilliseconds:performance.now()-started});
+  if(!reduced&&!isPreview&&Number.isFinite(interval)){slowFrames=interval>45?slowFrames+1:Math.max(0,slowFrames-1);if(slowFrames>80&&ms-lastQualityChange>6000&&quality>.8){quality=Math.max(.8,quality-.15);renderer.setPixelRatio(quality);lastQualityChange=ms;slowFrames=0;}}
+ }
 }
 installSceneCapture({kind:'city',camera,controls,renderer,preview:isPreview,render:()=>renderFrame(isPreview?0:performance.now(),true)});
 if(isPreview){renderFrame(0)}else{renderer.setAnimationLoop(renderFrame)}
-addEventListener('resize',()=>{const aspect=innerWidth/innerHeight;const factor=expandedFit(aspect)/expandedFit(camera.aspect);camera.position.sub(controls.target).multiplyScalar(factor).add(controls.target);camera.aspect=aspect;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio,isPreview?.85:1.8));if(isPreview)renderFrame(0);});
+addEventListener('resize',()=>{const aspect=innerWidth/innerHeight;const factor=expandedFit(aspect)/expandedFit(camera.aspect);camera.position.sub(controls.target).multiplyScalar(factor).add(controls.target);camera.aspect=aspect;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);quality=Math.min(devicePixelRatio,isPreview?.85:innerWidth<600?1:1.35);renderer.setPixelRatio(quality);dirty=true;cityPerformance.force();renderFrame(isPreview?0:performance.now(),true);});
 // Keep the composition visible when changing device orientation, without interrupting exploration.
 addEventListener('orientationchange',()=>requestAnimationFrame(frame));
