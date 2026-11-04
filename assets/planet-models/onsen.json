@@ -1,0 +1,15 @@
+{
+  "route": "onsen",
+  "source_sha256": "6207acd8ccda40abba64295636b326fb364c4e57ccc16fc39821d41fa7ccc8d2",
+  "sourceMeshes": 86,
+  "sourceTriangles": 2197501,
+  "triangles": 271216,
+  "vertices": 287141,
+  "baseSize": 128,
+  "pose": "static-daylight-preview",
+  "cell": 0.45,
+  "file": "assets/planet-models/onsen.glb.gz",
+  "bytes": 3120860,
+  "uncompressedBytes": 11296724,
+  "sha256": "8d31363812eac5e299e90c1133808718c80120811118647c5f766ea757de2326"
+}

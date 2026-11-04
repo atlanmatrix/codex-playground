@@ -1,0 +1,15 @@
+{
+  "route": "study",
+  "source_sha256": "58cac82b122962f53f0e5a3923cd6cde35443e63a2a135f7f2f0f24583bcd9b4",
+  "sourceMeshes": 229,
+  "sourceTriangles": 408142,
+  "triangles": 104813,
+  "vertices": 119207,
+  "baseSize": 128,
+  "pose": "static-daylight-preview",
+  "cell": 0.28,
+  "file": "assets/planet-models/study.glb.gz",
+  "bytes": 774839,
+  "uncompressedBytes": 4597760,
+  "sha256": "2309299c075d25028d183ecd8aca5a291da230f9e6591f7a27467790efc224d9"
+}

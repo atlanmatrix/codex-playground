@@ -1,0 +1,15 @@
+{
+  "route": "summit",
+  "source_sha256": "e418e529e187d5d31c253ddf8d838f6c2389ba91266ef623706979374c2807d6",
+  "sourceMeshes": 167,
+  "sourceTriangles": 493768,
+  "triangles": 77652,
+  "vertices": 80487,
+  "baseSize": 128,
+  "pose": "static-daylight-preview",
+  "cell": 0.45,
+  "file": "assets/planet-models/summit.glb.gz",
+  "bytes": 1004044,
+  "uncompressedBytes": 3187608,
+  "sha256": "fe37c92cc9cbf7a6ce55a2b0ac141bf6a73472d418d415d75631d34c5c01262b"
+}

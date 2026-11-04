@@ -34,7 +34,16 @@ const regionDefinitions=JSON.parse(await readFile('src/globe-regions.json','utf8
 if(regionDefinitions.length!==SCENES.length||SCENES.some(s=>!regionDefinitions.some(r=>r.route===s.route)))throw new Error('Planet regions must map every scene');
 const terrain=await readFile('assets/globe-terrain.webp');
 const terrainHash=createHash('sha256').update(terrain).digest('hex').slice(0,12);
-const globeBundle=await build({define:{__GLOBE_TEXTURE_URL__:JSON.stringify(`./assets/globe-terrain.webp?v=${terrainHash}`)},entryPoints:['src/globe.js'],bundle:true,minify:true,write:false,format:'iife',target:'es2020',legalComments:'none'});
+const planetManifest=await readFile('assets/planet-models/manifest.json');
+const planetManifestHash=createHash('sha256').update(planetManifest).digest('hex').slice(0,12);
+const planetModels=JSON.parse(planetManifest).models;
+for(const s of SCENES){
+ const record=planetModels[s.route];
+ if(!record||record.source_sha256!==sceneHashes.get(s.route))throw new Error(`Stale planet model: ${s.route}; run npm run planet-models`);
+ const bytes=await readFile(record.file);
+ if(bytes.length!==record.bytes||createHash('sha256').update(bytes).digest('hex')!==record.sha256)throw new Error(`Corrupt planet model: ${s.route}`);
+}
+const globeBundle=await build({define:{__PLANET_MANIFEST_URL__:JSON.stringify(`./assets/planet-models/manifest.json?v=${planetManifestHash}`),__GLOBE_TEXTURE_URL__:JSON.stringify(`./assets/globe-terrain.webp?v=${terrainHash}`)},entryPoints:['src/globe.js'],bundle:true,minify:true,write:false,format:'iife',target:'es2020',legalComments:'none'});
 const globeScript=globeBundle.outputFiles[0].text.replaceAll('</script','<\\/script').replace(/[ \t]+$/gm,'');
 new Script(globeScript,{filename:'globe'});
 if(!homepage.includes('/* GLOBE */'))throw new Error('Missing homepage globe mount');

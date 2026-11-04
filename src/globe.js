@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 import {SCENES} from './scene-registry.js';
 import definitions from './globe-regions.json';
+import {mountPlanetModels} from './planet-models.js';
 
 const host=document.querySelector('#globe-view');
 const reduced=matchMedia('(prefers-reduced-motion: reduce)');
@@ -30,15 +31,17 @@ function start(){
  renderer.setClearColor(0,0);renderer.outputColorSpace=THREE.SRGBColorSpace;
  host.append(renderer.domElement);
  const scene=new THREE.Scene();
- const camera=new THREE.PerspectiveCamera(38,1,.1,100);camera.position.set(0,3.3,10.8);
+ const camera=new THREE.PerspectiveCamera(38,1,.1,100);camera.position.set(0,3.3,10.8).multiplyScalar(1.2);
  const controls=new OrbitControls(camera,renderer.domElement);
  controls.enableDamping=!reduced.matches;controls.dampingFactor=.09;
- controls.minDistance=4.5;controls.maxDistance=19;controls.panSpeed=.6;controls.zoomSpeed=.8;
+ controls.minDistance=5.4;controls.maxDistance=24;controls.panSpeed=.6;controls.zoomSpeed=.8;
  controls.minPolarAngle=.1;controls.maxPolarAngle=Math.PI-.1;
  scene.add(new THREE.HemisphereLight(0xffffff,0x829797,2));
  const sun=new THREE.DirectionalLight(0xfff9eb,2.1);sun.position.set(-5,7,8);scene.add(sun);
  const material=new THREE.MeshStandardMaterial({color:0xffffff,roughness:1,metalness:0});
  const sphere=new THREE.Mesh(new THREE.SphereGeometry(R,192,128),material);scene.add(sphere);
+ const models=new Map(),pickables=[sphere];
+ let modelsReady=false;
  let frame=0,pointer=null,down=null,active=null,loaded=false,frames=0;
  const outlines=new Map();
  for(const r of regions){
@@ -53,8 +56,8 @@ function start(){
  const ray=new THREE.Raycaster(),mouse=new THREE.Vector2();
  function hit(x,y){
   const box=renderer.domElement.getBoundingClientRect();mouse.set((x-box.left)/box.width*2-1,-(y-box.top)/box.height*2+1);
-  ray.setFromCamera(mouse,camera);const result=ray.intersectObject(sphere,false)[0];
-  return result?regionAt(result.point.clone().normalize()):null;
+  ray.setFromCamera(mouse,camera);const result=ray.intersectObjects(pickables,true)[0];
+  return result?(result.object.userData.planetRoute||regionAt(result.point.clone().normalize())):null;
  }
  function select(route){
   if(route===active)return;active=route;host.dataset.active=route||'';
@@ -112,6 +115,7 @@ function start(){
  },undefined,()=>{host.dataset.failed='true';});
  renderer.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();host.dataset.failed='true';cancelAnimationFrame(frame);});
  renderer.domElement.addEventListener('webglcontextrestored',()=>{delete host.dataset.failed;invalidate();});
- window.__globe={camera,controls,regions,outlines,renderer,scene,sphere,get loaded(){return loaded;},get frames(){return frames;}};
+ mountPlanetModels({scene,regions,radius:R,invalidate,pickables,models}).then(()=>{modelsReady=true;host.dataset.modelsReady='true';invalidate();}).catch(error=>{host.dataset.modelsFailed='true';console.error(error);});
+ window.__globe={camera,controls,regions,outlines,renderer,scene,sphere,models,get modelsReady(){return modelsReady;},get loaded(){return loaded;},get frames(){return frames;}};
 }
 try{start();}catch(error){host.dataset.failed='true';console.error(error);}

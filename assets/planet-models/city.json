@@ -1,0 +1,15 @@
+{
+  "route": "city",
+  "source_sha256": "89c74d32f34b0e5c2e12ca36d8fdc0add5a5426a1f7e7ee65ad306c27e6246c7",
+  "sourceMeshes": 418,
+  "sourceTriangles": 1734342,
+  "triangles": 228462,
+  "vertices": 419368,
+  "baseSize": 128,
+  "pose": "static-daylight-preview",
+  "cell": 0.55,
+  "file": "assets/planet-models/city.glb.gz",
+  "bytes": 3463691,
+  "uncompressedBytes": 14486044,
+  "sha256": "313b40248040f1091d66e247228f5c0706a849be605e0434a693b9efac031dd4"
+}

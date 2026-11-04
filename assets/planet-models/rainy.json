@@ -1,0 +1,15 @@
+{
+  "route": "rainy",
+  "source_sha256": "85c3490f919c790893e2b1a3540732d841d8cf92bedb19de49190290548a293b",
+  "sourceMeshes": 86,
+  "sourceTriangles": 291129,
+  "triangles": 75500,
+  "vertices": 71009,
+  "baseSize": 128,
+  "pose": "static-daylight-preview",
+  "cell": 0.45,
+  "file": "assets/planet-models/rainy.glb.gz",
+  "bytes": 491653,
+  "uncompressedBytes": 2896412,
+  "sha256": "39b20ca132e213e0108b6bd4dc69de9828586d2aa39882677ac0230d1197cb34"
+}

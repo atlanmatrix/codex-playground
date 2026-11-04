@@ -1,0 +1,15 @@
+{
+  "route": "ocean",
+  "source_sha256": "c6d8f58f76b71ab12225f0698ad44e149f17751c256d64541b077374e56a124d",
+  "sourceMeshes": 208,
+  "sourceTriangles": 1311744,
+  "triangles": 130482,
+  "vertices": 115193,
+  "baseSize": 128,
+  "pose": "static-daylight-preview",
+  "cell": 0.45,
+  "file": "assets/planet-models/ocean.glb.gz",
+  "bytes": 1548945,
+  "uncompressedBytes": 4793408,
+  "sha256": "6b810ee9d67080c10dd5b0a2baa107154dd21e222431c938ad32853199863f0b"
+}

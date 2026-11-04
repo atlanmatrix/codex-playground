@@ -1,0 +1,15 @@
+{
+  "route": "desert",
+  "source_sha256": "1305eff9eb02b3b170805add1fa6ec4ba1edc67e131e0d27b9c3ffbd74172748",
+  "sourceMeshes": 155,
+  "sourceTriangles": 767326,
+  "triangles": 79029,
+  "vertices": 75725,
+  "baseSize": 128,
+  "pose": "static-daylight-preview",
+  "cell": 0.45,
+  "file": "assets/planet-models/desert.glb.gz",
+  "bytes": 970283,
+  "uncompressedBytes": 3070852,
+  "sha256": "e23353d683fba1f42eabb12f3bfe0aa260984956c57c7b102ce6b9f7c9f7f204"
+}

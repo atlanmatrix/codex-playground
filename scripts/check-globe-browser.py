@@ -2,7 +2,7 @@
 from pathlib import Path
 from urllib.parse import urlsplit
 from playwright.sync_api import sync_playwright
-import json
+import json, mimetypes
 ROOT=Path(__file__).resolve().parent.parent
 OUT=ROOT/'work'/'globe-checks';OUT.mkdir(parents=True,exist_ok=True)
 with sync_playwright() as p:
@@ -17,16 +17,16 @@ with sync_playwright() as p:
     route.fulfill(body='<title>Scene navigation destination fixture</title>',content_type='text/html');return
    target=(ROOT/path.lstrip('/')).resolve();assert target.is_relative_to(ROOT)
    if path.endswith('/'):target/='index.html'
-   route.fulfill(body=target.read_bytes(),content_type='text/html' if target.suffix=='.html' else 'image/webp')
+   route.fulfill(body=target.read_bytes(),content_type=mimetypes.guess_type(target.name)[0] or 'application/octet-stream')
   context.route('**/*',fixture);page=context.new_page();errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
   def load():
-   page.goto('http://little-worlds.test/');page.wait_for_function('window.__globe?.loaded');page.wait_for_timeout(300)
+   page.goto('http://little-worlds.test/');page.wait_for_function('window.__globe?.loaded && window.__globe.modelsReady',timeout=120000);page.wait_for_timeout(500)
   load()
   assert page.locator('canvas').count()==1
   assert page.locator('button,.card,.intro,header,footer,img').count()==0
   assert page.evaluate('document.documentElement.scrollWidth===innerWidth && document.documentElement.scrollHeight===innerHeight')
-  info=page.evaluate('''()=>{let meshes=0;__globe.scene.traverse(o=>{if(o.isMesh)meshes++});return {meshes,texture:[__globe.sphere.material.map.image.width,__globe.sphere.material.map.image.height],dpr:__globe.renderer.getPixelRatio(),center:__globe.sphere.position.clone().project(__globe.camera).toArray()}}''')
-  assert info['meshes']==1 and info['texture']==[8192,4096] and info['dpr']>=2,info
+  info=page.evaluate('''()=>{let meshes=0;__globe.scene.traverse(o=>{if(o.isMesh)meshes++});return {meshes,models:__globe.models.size,triangles:__globe.renderer.info.render.triangles,texture:[__globe.sphere.material.map.image.width,__globe.sphere.material.map.image.height],dpr:__globe.renderer.getPixelRatio(),center:__globe.sphere.position.clone().project(__globe.camera).toArray()}}''')
+  assert info['meshes']>=8 and info['models']==7 and info['texture']==[8192,4096] and info['dpr']>=2,info
   assert abs(info['center'][0])<.001 and abs(info['center'][1])<.001
   assert not any('/thumbnails/' in path or path.endswith('/scene.js') for path in requested),requested
   page.screenshot(path=str(OUT/f'{width}-texture.png'))
@@ -45,8 +45,12 @@ with sync_playwright() as p:
    page.evaluate('''route=>{const g=__globe,r=g.regions.find(r=>r.route===route);g.controls.target.set(0,0,0);g.camera.position.copy(r.normal).multiplyScalar(11.3);g.controls.update()}''',route)
    page.mouse.move(cx,cy);page.wait_for_function('(r)=>document.querySelector("#globe-view").dataset.active===r',arg=route)
    assert page.evaluate('(r)=>__globe.outlines.get(r).visible',route)
-   # Validate every route is opened by clicking; destination scene HTML is intentionally stubbed.
-   page.mouse.click(cx,cy);page.wait_for_url(f'**/{route}/');load();page.emulate_media(reduced_motion='reduce');page.mouse.move(0,0)
+   if width>500:page.screenshot(path=str(OUT/f'planet-{route}.png'))
+   page.mouse.move(0,0)
+  # A real click opens the independent scene URL. Full iframe rendering for all
+  # seven routes is covered separately by check-planet-embeds.py.
+  page.mouse.click(cx,cy);page.wait_for_url('**/ocean/')
+  load();page.emulate_media(reduced_motion='reduce')
   if width<500:
    session=context.new_cdp_session(page);before=position()
    def touch(kind,spread,shift=0):
@@ -56,6 +60,6 @@ with sync_playwright() as p:
    touch('touchEnd',65);page.wait_for_timeout(150);assert position()!=before
    assert page.url=='http://little-worlds.test/'
   assert not errors,errors
-  print(json.dumps({'viewport':[width,height],'local_fixture':True,'meshes':info['meshes'],'texture':info['texture'],'pixelRatio':info['dpr'],'regions_clicked':7,'orbit_pan_zoom':True,'idle_rendering':False,'errors':errors}),flush=True)
+  print(json.dumps({'viewport':[width,height],'local_fixture':True,'models':info['models'],'meshes':info['meshes'],'texture':info['texture'],'pixelRatio':info['dpr'],'regions_picked':7,'click_navigation':True,'orbit_pan_zoom':True,'idle_rendering':False,'errors':errors}),flush=True)
   context.close()
  browser.close()
