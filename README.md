@@ -2,7 +2,7 @@
 
 Seven explorable, toon-shaded Three.js miniatures, each on a complete 128×128 base. Every scene is procedural geometry, with no external assets or runtime CDN requests.
 
-- `/` — an interactive toon-style terrain planet with seven mapped regions: green city, rainy coast, forest hot springs, afternoon dwelling, polar mountains, golden desert and coral ocean. Hover highlights a region boundary; click enters the corresponding existing scene. Drag to orbit, wheel/pinch to zoom, right-drag or two-finger drag to pan. Buttons provide zoom/reset and named region positioning, with an explicit scene link. The static WebP gallery and embed-copy controls remain below as an accessible fallback, including on devices without WebGL. No individual scene runtime is initialized on the homepage.
+- `/` — a single centered, smooth globe using a baked **8192×4096 terrain texture**. No cards, visible labels, controls, miniature models or scene previews. Drag to orbit, wheel/pinch to zoom, right-drag/two-finger drag to pan. Hover highlights region coastlines; click opens the corresponding existing 3D scene. Keyboard arrows rotate, +/- zoom and Enter opens the region at the center; screen-reader scene links have no visible UI. Only one textured sphere is rendered, on demand when the view or hover changes. Real scene models load only after navigation.
 - `/city/` — **被自然收回的城市街角**: a unified 128×128 town retaining its banyan ruin, orange-cat lakeside, seven-station fitness court, cherry railway station, rooftop railway street and a working signal intersection.
 
 - `/rainy/` — **雨夜便利店**: a luminous corner shop with stocked aisles, drink refrigerators and a checkout. Falling rain stops above the roof and canopy; irregular puddles reflect the real scene, with independent expanding raindrop rings. Wet parking bays, vending machines, bicycles, overhead cables and quiet neighbors complete the midnight street.
@@ -18,7 +18,7 @@ Seven explorable, toon-shaded Three.js miniatures, each on a complete 128×128 b
 
 - `/ocean/` — **蓝海跃影**: a 128×128 translucent ocean section with a sandy floor, reef rocks, 12 coral clusters, starfish and anchored waving seagrass. Seventy-two fish in three central schools and 176 fish in six outer schools swim at different depths. Nine modeled dolphins take turns breaching on 18-second loops, pitching along continuous flight/dive paths and leaving expanding rings and spray on takeoff and landing. Surface waves, glints and rising bubbles animate independently; preview and reduced-motion modes hold still.
 
-The onsen and study have compact day/night controls; the other scene routes contain no visible UI. Drag to orbit, scroll or pinch to zoom. Motion respects the system's reduced-motion preference. The thumbnail generator opens `?preview=1` to render each scene once, then saves a static WebP cover. Gallery image URLs carry a content hash, the first row loads eagerly, and subsequent covers load lazily. Fixed image dimensions reserve the cover space while images decode.
+The onsen and study have compact day/night controls; the other scene routes contain no visible UI. Drag to orbit, scroll or pinch to zoom. Motion respects the system's reduced-motion preference. The offline thumbnail generator opens `?preview=1` to render each scene once, then saves a static WebP cover. Gallery image URLs carry a content hash, the first row loads eagerly, and subsequent covers load lazily. Fixed image dimensions reserve the cover space while images decode.
 
 ## Defaults for future scenes
 
@@ -53,7 +53,7 @@ This requires Python with `playwright` and `Pillow`, plus Chromium (`CHROMIUM_PA
 
 ## Publishing
 
-Pushing to `main` runs `.github/workflows/pages.yml`, publishing the gallery, `thumbnails/`, and all seven route directories to GitHub Pages. Folder routes also support direct navigation and refresh under a GitHub project path.
+Pushing to `main` runs `.github/workflows/pages.yml`, publishing the single-globe homepage, `assets/`, `thumbnails/`, and all seven route directories to GitHub Pages. Folder routes also support direct navigation and refresh under a GitHub project path.
 
 Three.js is MIT licensed; its notice is embedded in every generated scene page.
 
@@ -112,9 +112,9 @@ City rendering batches static colored architecture into 24-unit spatial cells, a
 
 ## Embedding scenes
 
-Each gallery card has a keyboard-accessible copy-embed icon. It copies an iframe with the scene's absolute URL, accessible title, full width, 480px height, lazy loading and fullscreen permission. The URL is resolved from the current gallery address, preserving GitHub Pages project subpaths and custom domains. Copying requires HTTPS (or localhost); if clipboard access is unavailable or denied, a dialog provides selectable code for manual copying.
+The homepage has no card or copy controls. Scene routes can still be embedded directly with a normal iframe, for example `<iframe src="https://atlanmatrix.github.io/codex-playground/onsen/" title="山中温泉旅馆" width="100%" height="480" style="border:0" loading="lazy" allowfullscreen></iframe>`.
 
-GitHub Pages supports hosting these self-contained static 3D scenes and embedding them in other HTML pages, including another GitHub Pages site. Paste the code into HTML that permits iframes (GitHub README Markdown does not render iframes). The host page must permit the scene origin in its CSP `frame-src`; restrictive iframe sandbox settings must allow scripts for WebGL interaction. This does not require CORS permission. Thumbnails remain static WebP images and the gallery never initializes a scene runtime.
+GitHub Pages supports hosting these self-contained static 3D scenes and embedding them in other HTML pages, including another GitHub Pages site. Paste the code into HTML that permits iframes (GitHub README Markdown does not render iframes). The host page must permit the scene origin in its CSP `frame-src`; restrictive iframe sandbox settings must allow scripts for WebGL interaction. This does not require CORS permission. Thumbnail files remain available, but the homepage loads only the terrain atlas and never initializes scene runtimes.
 
 ## Saved views and live cover images
 
@@ -169,7 +169,7 @@ frame.src = sceneUrl.href; document.body.append(frame);
 </script>
 ```
 
-The host's CSP must allow `data:` in `img-src` for data URLs. The gallery continues to use its committed versioned WebP covers and does not initialize WebGL or background scene iframes.
+The host's CSP must allow `data:` in `img-src` for data URLs. The homepage uses only its own textured globe; it does not request these covers or initialize background scene iframes.
 
 ### Direct image HTTP URLs (optional service)
 
@@ -186,4 +186,6 @@ The service serves the built gallery/scenes and renders a fresh PNG or WebP for 
 
 ## Homepage globe
 
-`src/globe.js` builds a separate lightweight procedural planet, not seven embedded scene runtimes. Spherical terrain patches, coastal outlines and miniature landmarks map the existing scene catalogue onto seven regions. `build.mjs` bundles it locally into the homepage; it needs no external assets or CDN. Homepage-only changes do not change scene covers or their source hashes. Run `python scripts/check-globe-browser.py` after `npm run build` for desktop/mobile interaction and fallback checks.
+`src/globe.js` draws one smooth sphere with the baked `assets/globe-terrain.webp` (8K). `src/globe-regions.json` is the shared geographic definition for the static texture generator and runtime picking/borders, so hover and clicks follow the texture coastlines. No scene models are constructed, fetched or rendered on the homepage. Rendering sleeps when stationary, with damping only during interactions. Canvas resolution uses 2–3× pixel density and texture anisotropic filtering.
+
+Run `python scripts/generate-globe-texture.py` (NumPy and Pillow) after changing region definitions or terrain art, then `npm run build`. The build versions the texture URL, validates all seven mappings and retains the unchanged scene thumbnail/source checks. The Pages workflow copies `assets/`. Run `python scripts/check-globe-browser.py` for real Chromium desktop/mobile framing, picking/navigation, orbit/pan/zoom, touch, resolution and idle-render checks against local HTTP fixtures.

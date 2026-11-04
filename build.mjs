@@ -26,32 +26,28 @@ for (const page of pages) {
 // Capture covers after building changed scenes with npm run thumbnails.
 if (process.argv.includes('--scenes-only')) process.exit(0);
 const thumbnails = JSON.parse(await readFile('thumbnails/manifest.json','utf8'));
-let gallery = await readFile('src/index.html','utf8');
-for (const [, script] of gallery.matchAll(/<script>([\s\S]*?)<\/script>/g)) new Script(script, {filename:'gallery'});
+let homepage = await readFile('src/index.html','utf8');
+for (const [, script] of homepage.matchAll(/<script>([\s\S]*?)<\/script>/g)) new Script(script, {filename:'homepage'});
 // The homepage has one dedicated globe; individual scene runtimes remain isolated.
-if (/<iframe\b/i.test(gallery.replace(/<script>[\s\S]*?<\/script>/g, ''))) throw new Error('Do not embed scene runtimes on the homepage');
-const globeBundle=await build({entryPoints:['src/globe.js'],bundle:true,minify:true,write:false,format:'iife',target:'es2020',legalComments:'none'});
+if (/<iframe\b/i.test(homepage.replace(/<script>[\s\S]*?<\/script>/g, ''))) throw new Error('Do not embed scene runtimes on the homepage');
+const regionDefinitions=JSON.parse(await readFile('src/globe-regions.json','utf8'));
+if(regionDefinitions.length!==SCENES.length||SCENES.some(s=>!regionDefinitions.some(r=>r.route===s.route)))throw new Error('Planet regions must map every scene');
+const terrain=await readFile('assets/globe-terrain.webp');
+const terrainHash=createHash('sha256').update(terrain).digest('hex').slice(0,12);
+const globeBundle=await build({define:{__GLOBE_TEXTURE_URL__:JSON.stringify(`./assets/globe-terrain.webp?v=${terrainHash}`)},entryPoints:['src/globe.js'],bundle:true,minify:true,write:false,format:'iife',target:'es2020',legalComments:'none'});
 const globeScript=globeBundle.outputFiles[0].text.replaceAll('</script','<\\/script').replace(/[ \t]+$/gm,'');
 new Script(globeScript,{filename:'globe'});
-if(!gallery.includes('/* GLOBE */'))throw new Error('Missing homepage globe mount');
-gallery=gallery.replace('/* GLOBE */',()=>globeScript);
-gallery=gallery.replace('</head>',()=>`<!-- Three.js license\n${notice}\n-->\n</head>`);
-const cardRoutes=[...gallery.matchAll(/class="card-link" href="\.\/([^/]+)\//g)].map(m=>m[1]);
-const cardNumbers=[...gallery.matchAll(/class="number">(\d{2}) \//g)].map(m=>m[1]);
-if(cardRoutes.length!==SCENES.length||SCENES.some((s,i)=>cardRoutes[i]!==s.route||cardNumbers[i]!==s.number))throw new Error('Gallery routes and numbers must match the seven-scene catalogue');
-
+if(!homepage.includes('/* GLOBE */'))throw new Error('Missing homepage globe mount');
+homepage=homepage.replace('/* GLOBE */',()=>globeScript);
+homepage=homepage.replace('</head>',()=>`<!-- Three.js license\n${notice}\n-->\n</head>`);
 for (const page of pages) {
   const route=page.output.split('/')[0];
-  if (!gallery.includes(`href="./${route}/"`)) throw new Error(`Missing gallery route: ${route}`);
   const thumbnail=thumbnails.scenes[route];
   if (!thumbnail || thumbnail.file!==`thumbnails/${route}.webp` || thumbnail.source_sha256!==sceneHashes.get(route)) {
     throw new Error(`Missing or stale thumbnail for ${route}; run npm run thumbnails`);
   }
   const bytes=await readFile(thumbnail.file),hash=createHash('sha256').update(bytes).digest('hex');
   if (hash!==thumbnail.sha256 || bytes.length!==thumbnail.bytes || bytes.toString('ascii',0,4)!=='RIFF' || bytes.toString('ascii',8,12)!=='WEBP') throw new Error(`Invalid thumbnail: ${thumbnail.file}`);
-  const source=`src="./${thumbnail.file}"`;
-  if (!gallery.includes(source)) throw new Error(`Missing gallery cover: ${route}`);
-  gallery=gallery.replace(source,()=>`src="./${thumbnail.file}?v=${hash.slice(0,10)}"`);
 }
-await writeFile('index.html',gallery);
+await writeFile('index.html',homepage);
 console.log('Built scene selection at / — all scene routes are self-contained.');

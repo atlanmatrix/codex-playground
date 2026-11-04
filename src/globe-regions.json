@@ -1,0 +1,9 @@
+[
+ {"route":"city","lat":-3,"lon":-32,"size":0.65,"phase":1.2,"color":[109,146,86]},
+ {"route":"rainy","lat":22,"lon":144,"size":0.65,"phase":2.4,"color":[76,116,105]},
+ {"route":"onsen","lat":20,"lon":30,"size":0.65,"phase":3.1,"color":[74,116,69]},
+ {"route":"study","lat":-24,"lon":-143,"size":0.65,"phase":4.2,"color":[145,159,97]},
+ {"route":"summit","lat":62,"lon":-18,"size":0.52,"phase":0.8,"color":[195,208,201]},
+ {"route":"desert","lat":-39,"lon":24,"size":0.65,"phase":5.6,"color":[203,165,102]},
+ {"route":"ocean","lat":-13,"lon":94,"size":0.60,"phase":2.8,"color":[65,155,164]}
+]
