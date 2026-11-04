@@ -1,15 +1,18 @@
 {
   "route": "summit",
   "source_sha256": "e418e529e187d5d31c253ddf8d838f6c2389ba91266ef623706979374c2807d6",
-  "sourceMeshes": 167,
-  "sourceTriangles": 493768,
-  "triangles": 77652,
-  "vertices": 80487,
+  "sourceMeshes": 166,
+  "sourceTriangles": 492232,
+  "triangles": 76116,
+  "vertices": 78927,
   "baseSize": 128,
   "pose": "static-daylight-preview",
   "cell": 0.45,
+  "heightFile": "assets/planet-models/summit.height.bin",
+  "heightDimension": 129,
+  "heightSha256": "a7581e42801c402eb868c90b802b9f5f22447bb72e77a4aac824d6100760dc7d",
   "file": "assets/planet-models/summit.glb.gz",
-  "bytes": 1004044,
-  "uncompressedBytes": 3187608,
-  "sha256": "fe37c92cc9cbf7a6ce55a2b0ac141bf6a73472d418d415d75631d34c5c01262b"
+  "bytes": 996693,
+  "uncompressedBytes": 3125496,
+  "sha256": "ba850e944da6491ba7d2039dfa64d327aad43950336354c28f2e33b46b6b4b5e"
 }

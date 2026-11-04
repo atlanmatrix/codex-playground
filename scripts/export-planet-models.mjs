@@ -33,7 +33,7 @@ const plugin={name:'planet-model-bake',setup(b){
  b.onResolve({filter:/EffectComposer\.js$/},()=>({path:'composer',namespace:'composer'}));
  b.onLoad({filter:/.*/,namespace:'composer'},()=>({contents:'export class EffectComposer{constructor(){this.passes=[]}addPass(p){this.passes.push(p)}setSize(){}setPixelRatio(){}render(){}}',loader:'js',resolveDir:root}));
  b.onResolve({filter:/^file:/},a=>({path:a.path,external:true}));
- b.onLoad({filter:new RegExp(`/src/${spec.entry}\\.js$`)},async a=>({contents:(await readFile(a.path,'utf8'))+'\nexport {model};',loader:'js',resolveDir:join(root,'src')}));
+ b.onLoad({filter:new RegExp(`/src/${spec.entry}\\.js$`)},async a=>({contents:(await readFile(a.path,'utf8'))+'\nexport {model'+(route==='onsen'?',landY':'')+'};',loader:'js',resolveDir:join(root,'src')}));
 }};
 globalThis.innerWidth=960;globalThis.innerHeight=720;globalThis.devicePixelRatio=1;
 globalThis.location={search:'?preview=1&time=day'};
@@ -42,7 +42,8 @@ const context=new Proxy({createLinearGradient(){return{addColorStop(){}}}},{get:
 globalThis.document={body:{appendChild(){},dataset:{},style:{setProperty(){}}},querySelector:()=>null,querySelectorAll:()=>[],createElement:()=>({getContext:()=>context})};
 try{
  await build({entryPoints:[join(root,`src/${spec.entry}.js`)],outfile:join(temp,'model.mjs'),bundle:true,platform:'node',format:'esm',plugins:[plugin]});
- const {model}=await import(pathToFileURL(join(temp,'model.mjs')));
+ const module=await import(pathToFileURL(join(temp,'model.mjs')));
+ const {model}=module;
  model.updateMatrixWorld(true);
  const bins=[{positions:[],normals:[],colors:[],indices:[],vertices:new Map()},{positions:[],normals:[],colors:[],indices:[],vertices:new Map()}];
  let sourceMeshes=0,sourceTriangles=0;
@@ -50,6 +51,7 @@ try{
  const cell=route==='city'?.55:route==='study'?.28:.45;
  model.traverse(o=>{
   if(!o.isMesh||!o.geometry?.attributes.position)return;
+  if(/square-.*section|transparent-ocean-section/.test(o.name))return;
   for(let parent=o;parent;parent=parent.parent)if(!parent.visible)return;
   const geo=o.geometry,pos=geo.attributes.position,norm=geo.attributes.normal,color=geo.attributes.color,index=geo.index;
   sourceMeshes++;const count=o.isInstancedMesh?o.count:1;
@@ -138,7 +140,19 @@ try{
  const bytes=Buffer.concat([head,jh,jsonBytes,bh,binary]);
  const compressed=gzipSync(bytes,{level:9});
  await writeFile(join(out,`${route}.glb.gz`),compressed);
- const record={...metadata,file:`assets/planet-models/${route}.glb.gz`,bytes:compressed.length,uncompressedBytes:bytes.length,sha256:createHash('sha256').update(compressed).digest('hex')};
+ const dimension=129,heights=new Float32Array(dimension*dimension*2);
+ const core=route==='onsen'?module.landY:model.userData.terrainHeight;
+ const expansion=model.userData.expansion.height;
+ for(let j=0;j<dimension;j++)for(let i=0;i<dimension;i++){
+  const x=i-64,z=j-64,at=j*dimension+i,external=expansion(x,z);
+  const original=core?core(x,z):external;
+  const d=Math.hypot(x,z),mix=THREE.MathUtils.smoothstep(d,12,27);
+  heights[at]=core&&Math.max(Math.abs(x),Math.abs(z))<=16?original:external;
+  heights[at+dimension*dimension]=core?THREE.MathUtils.lerp(original,external,mix):external;
+ }
+ const heightBytes=Buffer.from(heights.buffer),heightFile=`assets/planet-models/${route}.height.bin`;
+ await writeFile(join(root,heightFile),heightBytes);
+ const record={...metadata,heightFile,heightDimension:dimension,heightSha256:createHash('sha256').update(heightBytes).digest('hex'),file:`assets/planet-models/${route}.glb.gz`,bytes:compressed.length,uncompressedBytes:bytes.length,sha256:createHash('sha256').update(compressed).digest('hex')};
  await writeFile(join(out,`${route}.json`),JSON.stringify(record,null,2)+'\n');
  console.log(JSON.stringify(record));
 }finally{await rm(temp,{recursive:true,force:true});}

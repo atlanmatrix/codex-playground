@@ -40,6 +40,8 @@ const planetModels=JSON.parse(planetManifest).models;
 for(const s of SCENES){
  const record=planetModels[s.route];
  if(!record||record.source_sha256!==sceneHashes.get(s.route))throw new Error(`Stale planet model: ${s.route}; run npm run planet-models`);
+ const heightBytes=await readFile(record.heightFile);
+ if(createHash('sha256').update(heightBytes).digest('hex')!==record.heightSha256)throw new Error(`Corrupt height field: ${s.route}`);
  const bytes=await readFile(record.file);
  if(bytes.length!==record.bytes||createHash('sha256').update(bytes).digest('hex')!==record.sha256)throw new Error(`Corrupt planet model: ${s.route}`);
 }

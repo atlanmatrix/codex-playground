@@ -25,8 +25,9 @@ with sync_playwright() as p:
   assert page.locator('canvas').count()==1
   assert page.locator('button,.card,.intro,header,footer,img').count()==0
   assert page.evaluate('document.documentElement.scrollWidth===innerWidth && document.documentElement.scrollHeight===innerHeight')
-  info=page.evaluate('''()=>{let meshes=0;__globe.scene.traverse(o=>{if(o.isMesh)meshes++});return {meshes,models:__globe.models.size,triangles:__globe.renderer.info.render.triangles,texture:[__globe.sphere.material.map.image.width,__globe.sphere.material.map.image.height],dpr:__globe.renderer.getPixelRatio(),center:__globe.sphere.position.clone().project(__globe.camera).toArray()}}''')
+  info=page.evaluate('''()=>{let meshes=0;__globe.scene.traverse(o=>{if(o.isMesh)meshes++});return {meshes,models:__globe.models.size,natural:[...__globe.models.values()].every(m=>m.userData.naturalBoundary&&m.userData.removedTriangles>0&&m.userData.retainedTriangles>1000),sea:__globe.water.name,triangles:__globe.renderer.info.render.triangles,texture:[__globe.sphere.material.map.image.width,__globe.sphere.material.map.image.height],dpr:__globe.renderer.getPixelRatio(),center:__globe.sphere.position.clone().project(__globe.camera).toArray()}}''')
   assert info['meshes']>=8 and info['models']==7 and info['texture']==[8192,4096] and info['dpr']>=2,info
+  assert info['natural'] and info['sea']=='continuous-ocean',info
   assert abs(info['center'][0])<.001 and abs(info['center'][1])<.001
   assert not any('/thumbnails/' in path or path.endswith('/scene.js') for path in requested),requested
   page.screenshot(path=str(OUT/f'{width}-texture.png'))

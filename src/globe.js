@@ -3,6 +3,7 @@ import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 import {SCENES} from './scene-registry.js';
 import definitions from './globe-regions.json';
 import {mountPlanetModels} from './planet-models.js';
+import {coastEdge,surfaceRadius} from './planet-terrain.js';
 
 const host=document.querySelector('#globe-view');
 const reduced=matchMedia('(prefers-reduced-motion: reduce)');
@@ -13,7 +14,7 @@ export const regions=definitions.map(r=>{
  const east=new THREE.Vector3(Math.cos(lon),0,-Math.sin(lon));
  return {...r,normal,east,north:new THREE.Vector3().crossVectors(normal,east)};
 });
-const edge=(r,a)=>r.size*(1+.13*Math.sin(3*a+r.phase)+.07*Math.cos(5*a-r.phase)+.035*Math.sin(9*a));
+const edge=coastEdge;
 function regionAt(point){
  for(let i=regions.length-1;i>=0;i--){
   const r=regions[i],dot=point.dot(r.normal);if(dot<=0)continue;
@@ -39,7 +40,13 @@ function start(){
  scene.add(new THREE.HemisphereLight(0xffffff,0x829797,2));
  const sun=new THREE.DirectionalLight(0xfff9eb,2.1);sun.position.set(-5,7,8);scene.add(sun);
  const material=new THREE.MeshStandardMaterial({color:0xffffff,roughness:1,metalness:0});
- const sphere=new THREE.Mesh(new THREE.SphereGeometry(R,192,128),material);scene.add(sphere);
+ const terrainGeometry=new THREE.SphereGeometry(R,384,256),terrainPositions=terrainGeometry.attributes.position;
+ const direction=new THREE.Vector3();
+ for(let i=0;i<terrainPositions.count;i++){direction.fromBufferAttribute(terrainPositions,i).normalize();direction.multiplyScalar(surfaceRadius(direction,regions,R));terrainPositions.setXYZ(i,direction.x,direction.y,direction.z);}
+ terrainGeometry.computeVertexNormals();
+ const sphere=new THREE.Mesh(terrainGeometry,material);scene.add(sphere);
+ const water=new THREE.Mesh(new THREE.SphereGeometry(R-.003,192,128),new THREE.MeshPhysicalMaterial({color:'#67b9c5',transparent:true,opacity:.48,roughness:.32,metalness:.06,depthWrite:false}));
+ water.name='continuous-ocean';water.renderOrder=2;scene.add(water);
  const models=new Map(),pickables=[sphere];
  let modelsReady=false;
  let frame=0,pointer=null,down=null,active=null,loaded=false,frames=0;
@@ -48,7 +55,7 @@ function start(){
   const points=[];
   for(let i=0;i<=512;i++){
    const a=i/512*Math.PI*2,e=edge(r,a);
-   points.push(r.normal.clone().addScaledVector(r.east,Math.cos(a)*e).addScaledVector(r.north,Math.sin(a)*e).normalize().multiplyScalar(R+.006));
+   const point=r.normal.clone().addScaledVector(r.east,Math.cos(a)*e).addScaledVector(r.north,Math.sin(a)*e).normalize();points.push(point.clone().multiplyScalar(Math.max(R,surfaceRadius(point,regions,R))+.009));
   }
   const outline=new THREE.Line(new THREE.BufferGeometry().setFromPoints(points),new THREE.LineBasicMaterial({color:0xffe6a0,transparent:true,opacity:.95}));
   outline.visible=false;scene.add(outline);outlines.set(r.route,outline);
@@ -115,7 +122,10 @@ function start(){
  },undefined,()=>{host.dataset.failed='true';});
  renderer.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();host.dataset.failed='true';cancelAnimationFrame(frame);});
  renderer.domElement.addEventListener('webglcontextrestored',()=>{delete host.dataset.failed;invalidate();});
- mountPlanetModels({scene,regions,radius:R,invalidate,pickables,models}).then(()=>{modelsReady=true;host.dataset.modelsReady='true';invalidate();}).catch(error=>{host.dataset.modelsFailed='true';console.error(error);});
- window.__globe={camera,controls,regions,outlines,renderer,scene,sphere,models,get modelsReady(){return modelsReady;},get loaded(){return loaded;},get frames(){return frames;}};
+ mountPlanetModels({scene,regions,radius:R,invalidate,pickables,models,rebuildTerrain:()=>{
+  for(let i=0;i<terrainPositions.count;i++){direction.fromBufferAttribute(terrainPositions,i).normalize();direction.multiplyScalar(surfaceRadius(direction,regions,R));terrainPositions.setXYZ(i,direction.x,direction.y,direction.z);}
+  terrainPositions.needsUpdate=true;terrainGeometry.computeVertexNormals();terrainGeometry.computeBoundingSphere();invalidate();
+ }}).then(()=>{modelsReady=true;host.dataset.modelsReady='true';invalidate();}).catch(error=>{host.dataset.modelsFailed='true';console.error(error);});
+ window.__globe={camera,controls,regions,outlines,renderer,scene,sphere,water,models,get modelsReady(){return modelsReady;},get loaded(){return loaded;},get frames(){return frames;}};
 }
 try{start();}catch(error){host.dataset.failed='true';console.error(error);}

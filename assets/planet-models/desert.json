@@ -1,15 +1,18 @@
 {
   "route": "desert",
   "source_sha256": "1305eff9eb02b3b170805add1fa6ec4ba1edc67e131e0d27b9c3ffbd74172748",
-  "sourceMeshes": 155,
-  "sourceTriangles": 767326,
-  "triangles": 79029,
-  "vertices": 75725,
+  "sourceMeshes": 154,
+  "sourceTriangles": 765022,
+  "triangles": 77301,
+  "vertices": 73967,
   "baseSize": 128,
   "pose": "static-daylight-preview",
   "cell": 0.45,
+  "heightFile": "assets/planet-models/desert.height.bin",
+  "heightDimension": 129,
+  "heightSha256": "43bf33581203a01995177eec92f82452825dd7a0d14ddfa3afed313574d24e57",
   "file": "assets/planet-models/desert.glb.gz",
-  "bytes": 970283,
-  "uncompressedBytes": 3070852,
-  "sha256": "e23353d683fba1f42eabb12f3bfe0aa260984956c57c7b102ce6b9f7c9f7f204"
+  "bytes": 961883,
+  "uncompressedBytes": 3000892,
+  "sha256": "b6e7e055f1af78183fcf6646b58938e144f22f34f8fa6e0e34a7d13807072f8b"
 }
