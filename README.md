@@ -2,7 +2,7 @@
 
 Seven explorable, toon-shaded Three.js miniatures, each on a complete 128×128 base. Every scene is procedural geometry, with no external assets or runtime CDN requests.
 
-- `/` — scene selection using pre-rendered WebP covers. The gallery contains no iframes or WebGL canvases; its small script only copies embed codes; 3D starts only after following a scene link.
+- `/` — an interactive toon-style terrain planet with seven mapped regions: green city, rainy coast, forest hot springs, afternoon dwelling, polar mountains, golden desert and coral ocean. Hover highlights a region boundary; click enters the corresponding existing scene. Drag to orbit, wheel/pinch to zoom, right-drag or two-finger drag to pan. Buttons provide zoom/reset and named region positioning, with an explicit scene link. The static WebP gallery and embed-copy controls remain below as an accessible fallback, including on devices without WebGL. No individual scene runtime is initialized on the homepage.
 - `/city/` — **被自然收回的城市街角**: a unified 128×128 town retaining its banyan ruin, orange-cat lakeside, seven-station fitness court, cherry railway station, rooftop railway street and a working signal intersection.
 
 - `/rainy/` — **雨夜便利店**: a luminous corner shop with stocked aisles, drink refrigerators and a checkout. Falling rain stops above the roof and canopy; irregular puddles reflect the real scene, with independent expanding raindrop rings. Wet parking bays, vending machines, bicycles, overhead cables and quiet neighbors complete the midnight street.
@@ -183,3 +183,7 @@ npm run serve:screenshots
 The service serves the built gallery/scenes and renders a fresh PNG or WebP for `/api/screenshot/<scene>.png` or `.webp`. Pass the same URL-encoded `view` parameter, optional `time=day|night`, `width`, `height` and `quality`. Each request uses a fresh browser context and returns `Cache-Control: no-store` and a public image CORS header. It only renders registered local scenes, blocks external browser requests, limits concurrent renders to one (429 when busy), and rejects invalid views/dimensions. It does not accept arbitrary remote URLs. Use `python scripts/screenshot-server.py --host 0.0.0.0 --port 4173` behind your normal production reverse proxy to expose it; the existing GitHub Pages deployment remains static and does not deploy this service.
 
 `npm run check:capture` verifies real Chromium rendering, pointer/wheel input, persisted views, desktop/mobile URL replay, PNG/WebP output, day/night backgrounds, cross-origin messaging, blocked storage, invalid inputs and actual local HTTP image responses. These tests use local fixtures/service, not the public deployment.
+
+## Homepage globe
+
+`src/globe.js` builds a separate lightweight procedural planet, not seven embedded scene runtimes. Spherical terrain patches, coastal outlines and miniature landmarks map the existing scene catalogue onto seven regions. `build.mjs` bundles it locally into the homepage; it needs no external assets or CDN. Homepage-only changes do not change scene covers or their source hashes. Run `python scripts/check-globe-browser.py` after `npm run build` for desktop/mobile interaction and fallback checks.

@@ -28,7 +28,14 @@ if (process.argv.includes('--scenes-only')) process.exit(0);
 const thumbnails = JSON.parse(await readFile('thumbnails/manifest.json','utf8'));
 let gallery = await readFile('src/index.html','utf8');
 for (const [, script] of gallery.matchAll(/<script>([\s\S]*?)<\/script>/g)) new Script(script, {filename:'gallery'});
-if (/<(?:iframe|canvas)\b/i.test(gallery.replace(/<script>[\s\S]*?<\/script>/g, ''))) throw new Error('The gallery must use static covers without scene runtimes');
+// The homepage has one dedicated globe; individual scene runtimes remain isolated.
+if (/<iframe\b/i.test(gallery.replace(/<script>[\s\S]*?<\/script>/g, ''))) throw new Error('Do not embed scene runtimes on the homepage');
+const globeBundle=await build({entryPoints:['src/globe.js'],bundle:true,minify:true,write:false,format:'iife',target:'es2020',legalComments:'none'});
+const globeScript=globeBundle.outputFiles[0].text.replaceAll('</script','<\\/script').replace(/[ \t]+$/gm,'');
+new Script(globeScript,{filename:'globe'});
+if(!gallery.includes('/* GLOBE */'))throw new Error('Missing homepage globe mount');
+gallery=gallery.replace('/* GLOBE */',()=>globeScript);
+gallery=gallery.replace('</head>',()=>`<!-- Three.js license\n${notice}\n-->\n</head>`);
 const cardRoutes=[...gallery.matchAll(/class="card-link" href="\.\/([^/]+)\//g)].map(m=>m[1]);
 const cardNumbers=[...gallery.matchAll(/class="number">(\d{2}) \//g)].map(m=>m[1]);
 if(cardRoutes.length!==SCENES.length||SCENES.some((s,i)=>cardRoutes[i]!==s.route||cardNumbers[i]!==s.number))throw new Error('Gallery routes and numbers must match the seven-scene catalogue');
