@@ -8,3 +8,9 @@ export const SCENES=[
  {number:'06',route:'desert',entry:'desert',title:'沙海来风'},
  {number:'07',route:'ocean',entry:'ocean',title:'蓝海跃影'}
 ];
+
+// Fullscreen optical experiences have their own camera and no miniature base.
+// Keep them out of the planet's geometry/biome export pipeline.
+export const EXPERIENCES=[
+ {route:'glass',entry:'glass',title:'光隙 · 磨砂玻璃'}
+];

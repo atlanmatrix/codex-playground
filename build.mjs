@@ -1,11 +1,11 @@
-import {SCENES} from './src/scene-registry.js';
+import {SCENES,EXPERIENCES} from './src/scene-registry.js';
 import { build } from 'esbuild';
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { Script } from 'node:vm';
 import { createHash } from 'node:crypto';
 
 const notice = await readFile('node_modules/three/LICENSE', 'utf8');
-const pages=SCENES.map(({route,entry})=>({entry:`src/${entry}.js`,template:`src/${route}.html`,output:`${route}/index.html`}));
+const pages=[...SCENES,...EXPERIENCES].map(({route,entry})=>({entry:`src/${entry}.js`,template:`src/${route}.html`,output:`${route}/index.html`}));
 
 const sceneHashes = new Map();
 for (const page of pages) {

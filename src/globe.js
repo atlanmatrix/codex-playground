@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
-import {SCENES} from './scene-registry.js';
+import {SCENES,EXPERIENCES} from './scene-registry.js';
 import definitions from './globe-regions.json';
 import {mountPlanetModels} from './planet-models.js';
 import {coastEdge,surfaceRadius} from './planet-terrain.js';
@@ -24,7 +24,7 @@ function regionAt(point){
  return 'ocean';
 }
 // Accessible navigation remains available to assistive technology without visible UI.
-for(const s of SCENES){const a=document.createElement('a');a.href=`./${s.route}/`;a.textContent=s.title;document.querySelector('#scene-access').append(a);}
+for(const s of [...SCENES,...EXPERIENCES]){const a=document.createElement('a');a.href=`./${s.route}/`;a.textContent=s.title;document.querySelector('#scene-access').append(a);}
 
 function start(){
  const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});

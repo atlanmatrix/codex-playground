@@ -2,6 +2,12 @@
 
 Seven explorable, toon-shaded Three.js miniatures, each on a complete 128×128 base. Every scene is procedural geometry, with no external assets or runtime CDN requests.
 
+An additional standalone optical experience is available at **`/glass/`** (public project route: `https://atlanmatrix.github.io/codex-playground/glass/`). It fills the screen with a greenhouse behind textured frosted glass: curved, veined foliage at several depths, aluminum mullions, soft shadows and warm moving highlights. The glass samples a real garden render and depth texture, so distant leaves diffuse more than nearby leaves. This experience intentionally has no square base or orbit controls; the seven miniature routes and the globe terrain are unchanged. The shared catalogue registers it separately in `EXPERIENCES`, the gallery's accessible navigation, build, versioned covers and Pages deployment.
+
+On supported Android browsers, device orientation begins automatically over HTTPS. On iOS, the first tap anywhere on the picture requests orientation permission within that gesture. The initial device pose is the neutral position; screen rotation, returning to the tab and releasing a drag recalibrate it. Mouse movement, touch dragging and arrow keys also move the viewpoint; Space/Home recenters it. No text or controls are drawn. No sensor readings leave the browser. If permission is denied or sensors are absent, pointer input remains available. Mobile sensor access requires HTTPS (or a browser-trusted local origin). Hardware sensor behavior and Safari's native permission dialog still need a real device check.
+
+`npm run check:glass` checks real Chromium rendering at desktop, portrait and landscape sizes; synthetic orientation and rotation; touch, mouse and keyboard input; permission grant and denial; tab suspension and resume; reduced motion; frozen previews; viewport coverage and errors. These are local browser checks, not physical-device validation. `?preview=1` freezes the experience for covers, and `?inspect=1` exposes an opt-in state snapshot for verification. The scene pauses when hidden and reduces rendering and motion with the system preference.
+
 - `/` — one continuous miniature Earth with shared land relief, joined biomes, irregular coastlines and a translucent global ocean. Original scene landmarks grow out of this terrain; the homepage does not display square scene slabs or cutaway soil/water sidewalls. City, forest/onsen, snow and desert transitions share the same smooth height and colour field. The study and rainy shop retain their core architecture within natural surroundings, while marine life sits beneath the common sea surface. Hover/select any of the seven regions or its landmarks to open the unchanged standalone scene URL. No visible text, cards or controls; drag/orbit, zoom and pan remain available.
 - `/city/` — **被自然收回的城市街角**: a unified 128×128 town retaining its banyan ruin, orange-cat lakeside, seven-station fitness court, cherry railway station, rooftop railway street and a working signal intersection.
 
@@ -35,7 +41,7 @@ npm run build
 npm run dev
 ```
 
-Open http://localhost:4173. Sources are in `src/`. The build generates `index.html` and the seven registered scene routes: `city`, `rainy`, `onsen`, `study`, `summit`, `desert` and `ocean`. `src/scene-registry.js` is the build catalogue. Each scene embeds its bundled JavaScript using literal replacement and validates the final script before writing HTML.
+Open http://localhost:4173. Sources are in `src/`. The build generates `index.html`, the seven miniature routes (`city`, `rainy`, `onsen`, `study`, `summit`, `desert`, `ocean`) and the standalone `glass` experience. `src/scene-registry.js` is the shared build catalogue. Each scene embeds its bundled JavaScript using literal replacement and validates the final script before writing HTML.
 
 `npm run check` exercises real Three.js geometry and animation with browser I/O stubbed. It checks finite geometry, framing on desktop and mobile, water coverage and diagonal shoreline, fish containment and direction changes, section depth, breathing, ear timing, courtyard equipment, foliage motion, stable base sections, hollow tunnel clearance, railcar/barrier timing, rooftop rail/slab alignment, train wheel alignment, rain coverage over roofs, independent ripple timing, stocked store interiors, mountainside elevation and terraces, enlarged bath area, dim amber night lighting, independently timed steam, roof tiles and drifting leaves, the furnished editing desk, book counts, open window, anchored curtain tops and moving hems, four-way traffic spacing, stop-line compliance, cross-traffic clearance, sustained vehicle recycling, static previews, and reduced motion. The checks also validate 128×128 world bounds, new fish-school containment, additional animation/reduced-motion behavior and grade-separated traffic clearance. `python scripts/check-browser.py <scene>` verifies real Chromium/WebGL rendering, orbit/zoom and mobile framing using local HTTP fixtures, and captures day/night views for the study and onsen. Local fixtures do not verify the public deployment.
 
@@ -53,7 +59,7 @@ This requires Python with `playwright` and `Pillow`, plus Chromium (`CHROMIUM_PA
 
 ## Publishing
 
-Pushing to `main` runs `.github/workflows/pages.yml`, publishing the single-globe homepage, `assets/`, `thumbnails/`, and all seven route directories to GitHub Pages. Folder routes also support direct navigation and refresh under a GitHub project path.
+Pushing to `main` runs `.github/workflows/pages.yml`, publishing the single-globe homepage, `assets/`, `thumbnails/`, the seven miniature directories and `glass/` to GitHub Pages. Folder routes also support direct navigation and refresh under a GitHub project path.
 
 Three.js is MIT licensed; its notice is embedded in every generated scene page.
 

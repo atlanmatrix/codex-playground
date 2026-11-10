@@ -58,6 +58,14 @@
       "width": 1280,
       "height": 720,
       "bytes": 15916
+    },
+    "glass": {
+      "file": "thumbnails/glass.webp",
+      "source_sha256": "7b5d203837f894a524034f09b5846776f4be3f090ca641f8a0e24ba1a3338f5d",
+      "sha256": "ac13266251c17b4ad770c28e1a0f4afa2abeb8edea7e343e10470b0c875e3d42",
+      "width": 1280,
+      "height": 720,
+      "bytes": 66108
     }
   }
 }

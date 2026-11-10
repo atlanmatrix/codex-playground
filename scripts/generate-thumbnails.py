@@ -3,7 +3,6 @@
 Requires Python with Playwright + Pillow and Chromium. Run `npm run thumbnails`.
 All page requests are fulfilled from the local build; external requests fail.
 """
-from html.parser import HTMLParser
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from urllib.parse import urlsplit, unquote
@@ -12,6 +11,7 @@ import io
 import json
 import os
 import shutil
+import subprocess
 from PIL import Image
 from playwright.sync_api import sync_playwright
 
@@ -20,25 +20,14 @@ WIDTH, HEIGHT = 1280, 720
 ORIGIN = 'http://127.0.0.1:4173/codex-playground'
 
 
-class Gallery(HTMLParser):
-    def __init__(self):
-        super().__init__()
-        self.routes = []
-
-    def handle_starttag(self, tag, attrs):
-        attrs = dict(attrs)
-        if tag == 'a' and {'card', 'card-link'}.intersection(attrs.get('class', '').split()):
-            href = attrs['href']
-            route = href.removeprefix('./').removesuffix('/')
-            if href != f'./{route}/' or not route.isalpha():
-                raise ValueError(f'Invalid scene route: {href}')
-            self.routes.append(route)
-
-
 def main():
-    gallery = Gallery()
-    gallery.feed((ROOT / 'src/index.html').read_text())
-    if not gallery.routes or len(set(gallery.routes)) != len(gallery.routes):
+    # The gallery is a globe now, with its accessible links created at runtime.
+    # Read the shared catalogue instead of relying on retired card markup.
+    routes = json.loads(subprocess.check_output([
+        'node', '--input-type=module', '-e',
+        "import {SCENES,EXPERIENCES} from './src/scene-registry.js';console.log(JSON.stringify([...SCENES,...EXPERIENCES].map(s=>s.route)))"
+    ], cwd=ROOT, text=True))
+    if not routes or len(set(routes)) != len(routes) or any(not route.isalpha() for route in routes):
         raise ValueError('Expected unique gallery scene routes')
     executable = os.environ.get('CHROMIUM_PATH') or shutil.which('chromium') or shutil.which('google-chrome')
     previous_path = ROOT / 'thumbnails/manifest.json'
@@ -76,7 +65,7 @@ def main():
                 route.fulfill(status=200, body=path.read_bytes(), content_type='text/html; charset=utf-8')
 
             context.route('**/*', fixture)
-            for scene in gallery.routes:
+            for scene in routes:
                 path = ROOT / scene / 'index.html'
                 source_hash = hashlib.sha256(path.read_bytes()).hexdigest()
                 old = previous['scenes'].get(scene)
