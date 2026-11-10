@@ -79,10 +79,72 @@ with sync_playwright() as p:
         assert not result['lost'] and result['error'] == 0 and not page.errors, (result, page.errors)
         return result
 
+    def structure(page):
+        # Measure the rendered meshes, not a duplicate list of intended sizes.
+        return page.evaluate("""() => {
+          const {floor,bench,plants,windowAssembly,glass}=__glass.objects;
+          function bounds(mesh){
+            mesh.updateWorldMatrix(true,false);
+            mesh.geometry.computeBoundingBox();
+            const b=mesh.geometry.boundingBox.clone().applyMatrix4(mesh.matrixWorld);
+            return {min:b.min.toArray(),max:b.max.toArray()};
+          }
+          function canopy(group){
+            const max=[-Infinity,-Infinity,-Infinity];
+            group.traverse(o=>{if(o.isMesh){const b=bounds(o);for(let i=0;i<3;i++)max[i]=Math.max(max[i],b.max[i]);}});
+            return max;
+          }
+          const vertical=windowAssembly.gaskets.filter(m=>m.name.startsWith('vertical')).map(bounds);
+          const horizontal=windowAssembly.gaskets.filter(m=>m.name.startsWith('horizontal')).map(bounds);
+          const pos=glass.geometry.attributes.position;
+          let uncoveredCorners=0;
+          for(let i=0;i<pos.count;i++){
+            const x=pos.getX(i),y=pos.getY(i),z=glass.position.z;
+            const inRange=(v,a,b,t=.004)=>v>=a-t&&v<=b+t;
+            const v=vertical.some(b=>inRange(x,b.min[0],b.max[0])&&inRange(y,b.min[1],b.max[1])&&inRange(z,b.min[2],b.max[2]));
+            const h=horizontal.some(b=>inRange(x,b.min[0],b.max[0])&&inRange(y,b.min[1],b.max[1])&&inRange(z,b.min[2],b.max[2]));
+            if(!v||!h)uncoveredCorners++;
+          }
+          return {floor:bounds(floor),slab:bounds(bench.slab),
+            legs:bench.legs.map(bounds),feet:bench.feet.map(bounds),glassZ:glass.position.z,
+            pots:plants.map(p=>({pot:bounds(p.pot),saucer:bounds(p.saucer),soil:bounds(p.soil),
+              canopy:canopy(p.foliage),root:p.group.matrixWorld.toArray(),foliage:p.foliage.quaternion.toArray()})),
+            posts:windowAssembly.posts.map(bounds),transoms:windowAssembly.transoms.map(bounds),
+            uncoveredPaneCorners:uncoveredCorners};
+        }""")
+
+    def check_structure(s):
+        top = s['slab']['max'][1]
+        floor = s['floor']['max'][1]
+        assert len(s['pots']) == 7
+        for pot in s['pots']:
+            assert abs(pot['saucer']['min'][1] - top) < .00001, ('floating saucer', pot)
+            assert abs(pot['pot']['min'][1] - pot['saucer']['max'][1]) < .00001, ('pot/saucer gap', pot)
+            for axis in [0, 2]:
+                assert pot['saucer']['min'][axis] > s['slab']['min'][axis] + .03, ('unsupported footprint', pot)
+                assert pot['saucer']['max'][axis] < s['slab']['max'][axis] - .03, ('unsupported footprint', pot)
+            assert pot['canopy'][2] < s['glassZ'] - .04, ('foliage crosses glass', pot)
+        for foot, leg in zip(s['feet'], s['legs']):
+            assert abs(foot['min'][1] - floor) < .00001, ('floating bench foot', foot)
+            assert abs(leg['min'][1] - foot['max'][1]) < .00001, ('unsupported bench leg', leg)
+            assert abs(leg['max'][1] - s['slab']['min'][1]) < .00001, ('unsupported slab', leg)
+        for post in s['posts']:
+            assert post['max'][0] - post['min'][0] > .10
+            assert post['max'][2] - post['min'][2] > .2
+            assert post['min'][2] < s['glassZ'] < post['max'][2]
+        for bar in s['transoms']:
+            left = min(s['posts'], key=lambda p: abs(p['max'][0] - bar['min'][0]))
+            right = min(s['posts'], key=lambda p: abs(p['min'][0] - bar['max'][0]))
+            assert 0 < bar['min'][0] - left['max'][0] < .005, ('bad T joint', bar)
+            assert 0 < right['min'][0] - bar['max'][0] < .005, ('bad T joint', bar)
+            assert bar['max'][2] < left['max'][2], ('unrecessed transom', bar)
+        assert s['uncoveredPaneCorners'] == 0, ('exposed pane edges', s['uncoveredPaneCorners'])
+
     # Preview must stay still; the same scene must fill tall and wide viewports.
     ctx = context(reduced=True)
     page = open_page(ctx, preview=True)
     first = shot(page, 'desktop')
+    check_structure(structure(page))
     assert sum(ImageStat.Stat(first).stddev) > 30, 'Blank or featureless frame'
     page.wait_for_timeout(300)
     assert difference(first, shot(page, 'desktop-static')) == 0
@@ -180,7 +242,12 @@ with sync_playwright() as p:
     ctx = context()
     page = open_page(ctx)
     count = state(page)['frames']
+    rigid_before = structure(page)
     page.wait_for_function(f'window.__glass.state.frames>{count + 2}')
+    rigid_after = structure(page)
+    check_structure(rigid_after)
+    assert [p['root'] for p in rigid_before['pots']] == [p['root'] for p in rigid_after['pots']], 'Pots must stay rigidly planted during foliage animation'
+    assert [p['foliage'] for p in rigid_before['pots']] != [p['foliage'] for p in rigid_after['pots']], 'Foliage animation missing'
     page.evaluate("Object.defineProperty(document,'hidden',{value:true,configurable:true});document.dispatchEvent(new Event('visibilitychange'))")
     count = state(page)['frames']
     page.wait_for_timeout(300)
@@ -189,7 +256,7 @@ with sync_playwright() as p:
     page.wait_for_function(f'window.__glass.state.frames>{count}')
     page.emulate_media(reduced_motion='reduce')
     page.wait_for_function('window.__glass.state.reduced')
-    page.wait_for_timeout(300)
+    page.evaluate('() => new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))')
     count = state(page)['frames']
     page.wait_for_timeout(300)
     assert state(page)['frames'] == count
@@ -201,5 +268,7 @@ with sync_playwright() as p:
                       'checks': ['desktop/mobile/landscape/320px', 'no visible text or overflow', 'WebGL',
                                  'static preview', 'mouse/keyboard/touch', 'iOS permission grant/denial',
                                  'absent sensors', '30/70/90 degree neutral pose', 'landscape sensor mapping',
-                                 'invalid sensor samples', 'bounded tilt', 'ambient motion', 'tab suspension/resume', 'reduced motion'],
+                                 'invalid sensor samples', 'bounded tilt', 'ambient motion', 'tab suspension/resume', 'reduced motion',
+                                 'supported pot footprints', 'pot/saucer/slab contact', 'grounded bench legs',
+                                 'stationary pots during sway', 'foliage behind glass', 'frame T joints and depth', 'gasket-held pane edges'],
                       'errors': []}, ensure_ascii=False))

@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import {createGlassMotion} from './glass-motion.js';
+import {BENCH_TOP, FLOOR_TOP, GLASS_Z, createPottingBench, createPlantPot, createWindowFrame} from './glass-structure.js';
 
 const host = document.querySelector('#glass-view');
 const preview = new URLSearchParams(location.search).get('preview') === '1';
@@ -52,11 +53,20 @@ function box(parent, name, size, position, mat) {
   return mesh;
 }
 box(garden, 'plaster-wall', [28, 20, .2], [0, 3, -6.1], material('#cccdb0'));
-box(garden, 'floor', [28, .18, 18], [0, -2.9, -4.5], material('#969a79'));
+const floor = box(garden, 'floor', [28, .18, 18], [0, FLOOR_TOP - .09, -4.5], material('#969a79'));
 box(garden, 'right-shadow-wall', [.3, 15, 14], [7.5, 2, -6], material('#6a7560'));
-const bench = material('#686e51');
-box(garden, 'stone-plant-shelf', [14, .16, 1.2], [0, -2, -2.5], bench);
-for (const x of [-5, 0, 5]) box(garden, 'shelf-leg', [.09, 1, .8], [x, -2.5, -2.5], bench);
+const bench = createPottingBench(garden);
+const shadowCanvas = document.createElement('canvas');
+shadowCanvas.width = shadowCanvas.height = 128;
+const shadowContext = shadowCanvas.getContext('2d');
+const shadowGradient = shadowContext.createRadialGradient(64, 64, 12, 64, 64, 64);
+shadowGradient.addColorStop(0, 'rgba(28,32,20,.48)');
+shadowGradient.addColorStop(.6, 'rgba(28,32,20,.28)');
+shadowGradient.addColorStop(1, 'rgba(28,32,20,0)');
+shadowContext.fillStyle = shadowGradient;
+shadowContext.fillRect(0, 0, 128, 128);
+const contactTexture = new THREE.CanvasTexture(shadowCanvas);
+const contactMaterial = new THREE.MeshBasicMaterial({map: contactTexture, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1});
 
 // The blades are curved geometry with per-vertex veins and irregular lobes.
 const leafMaterial = new THREE.MeshStandardMaterial({vertexColors: true, side: THREE.DoubleSide, roughness: .52, metalness: .02});
@@ -101,31 +111,39 @@ function stem(group, a, b, bend = 0) {
 function plant(x, z, scale, count, hue = .25, type = 'broad') {
   const group = new THREE.Group();
   group.name = `plant-${plants.length}`;
-  group.position.set(x, -1.89, z);
+  group.position.set(x, BENCH_TOP, z);
   group.scale.setScalar(scale);
   garden.add(group);
-  plants.push({group, phase: random() * Math.PI * 2});
-  const pot = new THREE.Mesh(new THREE.CylinderGeometry(.33, .24, .54, 32), material(random() > .5 ? '#a39b78' : '#a87951'));
-  pot.position.y = .26;
-  pot.castShadow = true;
-  group.add(pot);
-  const soil = new THREE.Mesh(new THREE.CircleGeometry(.3, 24), material('#353c27'));
-  soil.rotation.x = -Math.PI / 2;
-  soil.position.y = .535;
-  group.add(soil);
+  const phase = random() * Math.PI * 2;
+  const {pot, saucer, soil} = createPlantPot(group, plants.length, random() > .5 ? '#a39b78' : '#a87951');
+  const foliage = new THREE.Group();
+  foliage.name = `anchored-foliage-${plants.length}`;
+  foliage.position.y = soil.position.y;
+  group.add(foliage);
+  plants.push({group, pot, saucer, soil, foliage, phase});
   for (let i = 0; i < count; i++) {
     const angle = i * 2.39996 + random() * .45;
     const height = .75 + random() * 1.7;
     const radius = .25 + random() * .55;
-    const end = new THREE.Vector3(Math.cos(angle) * radius, height, Math.sin(angle) * radius);
-    stem(group, new THREE.Vector3(0, .5, 0), end, Math.cos(angle) * .12);
+    const end = new THREE.Vector3(Math.cos(angle) * radius, height - .5, Math.sin(angle) * radius);
+    stem(foliage, new THREE.Vector3(), end, Math.cos(angle) * .12);
     const leaf = new THREE.Mesh(leafGeometry(type === 'slender' ? 1.35 : .8 + random() * .65, type === 'slender' ? .13 : .25 + random() * .19, hue + random() * .03, type === 'broad'), leafMaterial);
     leaf.position.copy(end);
     leaf.rotation.set(-.45 + random() * 1.4, -angle + .7, -Math.cos(angle) * (.35 + random() * .7));
     leaf.castShadow = true;
     leaf.receiveShadow = true;
-    group.add(leaf);
+    foliage.add(leaf);
   }
+  // Keep the complete leaf canopy behind the glass, allowing for its small
+  // sway. Moving the rooted plant also keeps stalks and pots connected.
+  group.updateMatrixWorld(true);
+  const canopy = new THREE.Box3().setFromObject(foliage);
+  group.position.z -= Math.max(0, canopy.max.z - (GLASS_Z - .12));
+  const contact = new THREE.Mesh(new THREE.PlaneGeometry(.82, .82), contactMaterial);
+  contact.name = `pot-contact-shadow-${plants.length - 1}`;
+  contact.rotation.x = -Math.PI / 2;
+  contact.position.y = .0015 / scale;
+  group.add(contact);
   return group;
 }
 plant(-2.5, -.42, 1.55, 15, .235);
@@ -180,6 +198,9 @@ const glassMaterial = new THREE.ShaderMaterial({
       float stripe=exp(-pow((p.x*.72+p.y*.42+1.1-uTilt.x*.8-uTilt.y*.4)*2.3,2.));
       float grain=(fine-.5)*.027+(coarse-.5)*.011;
       c=mix(c,vec3(.61,.66,.52),.075);
+      float dx=abs(mod(p.x+2.5,2.5)-1.25)-.09;
+      float dy=abs(mod(p.y+1.5,2.4)-1.2)-.083;
+      c*=1.-.13*exp(-max(min(dx,dy),0.)*48.);
       c+=vec3(1.,.91,.68)*(glow*.30+stripe*.022)*( .88+fine*.24);
       c+=grain;
       gl_FragColor=vec4(c,1.);
@@ -187,26 +208,16 @@ const glassMaterial = new THREE.ShaderMaterial({
       #include <colorspace_fragment>
     }`
 });
-const glass = new THREE.Mesh(new THREE.PlaneGeometry(30, 24), glassMaterial);
+const windowAssembly = createWindowFrame(foreground, garden);
+const glass = new THREE.Mesh(windowAssembly.panes, glassMaterial);
 glass.name = 'depth-frosted-glass';
-glass.position.z = .55;
+glass.position.z = GLASS_Z;
 foreground.add(glass);
 
 foreground.add(new THREE.HemisphereLight('#fff4d1', '#293326', 2.1));
 const rimLight = new THREE.DirectionalLight('#fff2c5', 3.2);
 rimLight.position.set(-5, 7, 7);
 foreground.add(rimLight);
-const frameMaterial = new THREE.MeshStandardMaterial({color: '#343b32', metalness: .72, roughness: .38});
-const lipMaterial = new THREE.MeshStandardMaterial({color: '#9b9d80', metalness: .7, roughness: .32});
-for (let i = -5; i <= 5; i++) {
-  const x = i * 2.5 - 1.25;
-  box(foreground, 'vertical-mullion', [.042, 24, .13], [x, 0, .63], frameMaterial);
-  box(foreground, 'vertical-rim', [.008, 24, .014], [x - .022, 0, .708], lipMaterial);
-}
-for (const y of [-5.1, -2.7, -.3, 2.1, 4.5, 6.9]) {
-  box(foreground, 'horizontal-mullion', [30, .042, .13], [0, y, .63], frameMaterial);
-  box(foreground, 'horizontal-rim', [30, .007, .014], [0, y + .025, .708], lipMaterial);
-}
 
 let frame = 0, disposed = false, contextLost = false, previousTime = 0, elapsed = 0, frames = 0;
 const motion = createGlassMotion(host, {preview, onChange: invalidate});
@@ -237,9 +248,9 @@ function render(time) {
   rimLight.position.set(-5 + x * 2, 7 - y, 7);
   if (!preview && !motion.reduced.matches) {
     elapsed += dt;
-    for (const {group, phase} of plants) {
-      group.rotation.z = Math.sin(elapsed * .38 + phase) * .008;
-      group.rotation.y = Math.sin(elapsed * .23 + phase) * .012;
+    for (const {foliage, phase} of plants) {
+      foliage.rotation.z = Math.sin(elapsed * .38 + phase) * .008;
+      foliage.rotation.y = Math.sin(elapsed * .23 + phase) * .012;
     }
   }
   renderer.setRenderTarget(sceneTarget);
@@ -271,6 +282,7 @@ function dispose() {
   });
   geometries.forEach(geometry => geometry.dispose());
   materials.forEach(mat => mat.dispose());
+  contactTexture.dispose();
   sceneTarget.dispose();
   renderer.dispose();
 }
@@ -279,6 +291,7 @@ renderer.domElement.addEventListener('webglcontextlost', event => { event.preven
 renderer.domElement.addEventListener('webglcontextrestored', () => { contextLost = false; previousTime = 0; resize(); });
 // Opt-in inspection only; the viewing page contains no debug overlay or text.
 if (new URLSearchParams(location.search).has('inspect')) window.__glass = {
+  objects: {floor, bench, plants, windowAssembly, glass},
   get state() { return {...motion.state, frames, preview, reduced: motion.reduced.matches, plants: plants.length, resolution: size.toArray(), camera: camera.position.toArray()}; }
 };
 resize();

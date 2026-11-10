@@ -61,11 +61,11 @@
     },
     "glass": {
       "file": "thumbnails/glass.webp",
-      "source_sha256": "7b5d203837f894a524034f09b5846776f4be3f090ca641f8a0e24ba1a3338f5d",
-      "sha256": "ac13266251c17b4ad770c28e1a0f4afa2abeb8edea7e343e10470b0c875e3d42",
+      "source_sha256": "3aa17ff121caf49fc7e7f25dbe689d01fc5996932257beefb3a6766b5f739fa4",
+      "sha256": "fb246adc7e855de0635fd964d13792292f49ca40bd06399300da6ab8467532e1",
       "width": 1280,
       "height": 720,
-      "bytes": 66108
+      "bytes": 62714
     }
   }
 }
