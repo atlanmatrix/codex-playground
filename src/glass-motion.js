@@ -11,17 +11,30 @@ export function createGlassMotion(host, {preview = false, onChange = () => {}} =
   const relative = new Quaternion();
   const euler = new Euler();
   const direction = new Vector3();
+  const gravity = new Vector3();
+  const gravitySample = new Vector3();
   const cleanup = [];
   let calibrated = false;
   let listening = false;
   let sensorActive = false;
   let permissionPending = false;
   let permission = 'idle';
+  let permissionError = null;
+  let sensorSource = null;
+  let lastOrientation = -Infinity;
+  let lastTouchEnd = -Infinity;
+  let hasGravity = false;
+  let disposed = false;
   let dragging = null;
 
   function listen(node, type, fn, options) {
-    node.addEventListener(type, fn, options);
-    cleanup.push(() => node.removeEventListener(type, fn, options));
+    if (node.addEventListener) {
+      node.addEventListener(type, fn, options);
+      cleanup.push(() => node.removeEventListener(type, fn, options));
+    } else if (type === 'change' && node.addListener) {
+      node.addListener(fn);
+      cleanup.push(() => node.removeListener(fn));
+    }
   }
 
   function set(x, y) {
@@ -30,61 +43,118 @@ export function createGlassMotion(host, {preview = false, onChange = () => {}} =
     onChange();
   }
 
-  function onOrientation(event) {
-    if (preview || document.hidden || !Number.isFinite(event.beta) || !Number.isFinite(event.gamma)) return;
-    const alpha = Number.isFinite(event.alpha) ? event.alpha : 0;
-    euler.set(MathUtils.degToRad(event.beta), MathUtils.degToRad(alpha), -MathUtils.degToRad(event.gamma), 'YXZ');
-    orientation.setFromEuler(euler);
+  function screenAngle() {
+    const angle = screen.orientation?.angle ?? window.orientation ?? 0;
+    return Number.isFinite(angle) ? MathUtils.degToRad(angle) : 0;
+  }
+
+  function applyPose(source, angle) {
+    if (sensorSource !== source) calibrated = false;
+    sensorSource = source;
     if (!calibrated) {
       basis.copy(orientation).invert();
       calibrated = true;
     }
     relative.copy(basis).multiply(orientation);
     direction.set(0, 0, 1).applyQuaternion(relative);
-    const angle = MathUtils.degToRad(screen.orientation?.angle ?? window.orientation ?? 0);
     const x = direction.x * Math.cos(angle) + direction.y * Math.sin(angle);
     const y = direction.y * Math.cos(angle) - direction.x * Math.sin(angle);
     sensorActive = true;
     if (!dragging) set(x / .38, -y / .38);
   }
 
+  function onOrientation(event) {
+    if (preview || document.hidden || !Number.isFinite(event.beta) || !Number.isFinite(event.gamma)) return;
+    const alpha = Number.isFinite(event.alpha) ? event.alpha : 0;
+    // Device Orientation specifies Z(alpha), X(beta), Y(gamma). Treating gamma
+    // as a Z rotation leaves the forward vector unchanged on sideways tilt.
+    euler.set(MathUtils.degToRad(event.beta), MathUtils.degToRad(event.gamma), MathUtils.degToRad(alpha), 'ZXY');
+    orientation.setFromEuler(euler);
+    lastOrientation = performance.now();
+    applyPose('orientation', screenAngle());
+  }
+
+  function onMotion(event) {
+    if (preview || document.hidden || performance.now() - lastOrientation < 1000) return;
+    const g = event.accelerationIncludingGravity;
+    if (!g || ![g.x, g.y, g.z].every(Number.isFinite)) return;
+    gravitySample.set(g.x, g.y, g.z);
+    const acceleration = event.acceleration;
+    if (acceleration && [acceleration.x, acceleration.y, acceleration.z].every(Number.isFinite)) {
+      gravitySample.x -= acceleration.x;
+      gravitySample.y -= acceleration.y;
+      gravitySample.z -= acceleration.z;
+    }
+    if (gravitySample.length() < 1) return;
+    if (hasGravity) gravity.lerp(gravitySample, .22); else gravity.copy(gravitySample);
+    hasGravity = true;
+    // Some WebKit hosts supply motion without valid orientation samples.
+    // Remove user acceleration where available and work in screen coordinates,
+    // so a landscape iPad has the same gravity-based fallback as portrait.
+    const angle = screenAngle(), c = Math.cos(angle), s = Math.sin(angle);
+    const x = gravity.x * c + gravity.y * s;
+    const y = gravity.y * c - gravity.x * s;
+    const beta = Math.atan2(-y, -gravity.z);
+    const gamma = Math.atan2(x, Math.hypot(y, gravity.z));
+    orientation.setFromEuler(euler.set(beta, gamma, 0, 'ZXY'));
+    applyPose('motion', 0);
+  }
+
   function attachSensor() {
     if (listening || preview) return;
     listen(window, 'deviceorientation', onOrientation, {passive: true});
+    listen(window, 'devicemotion', onMotion, {passive: true});
     listening = true;
   }
 
   function activate() {
-    if (preview || permissionPending || permission === 'granted' || permission === 'denied') return;
-    const api = window.DeviceOrientationEvent;
-    if (!window.isSecureContext || !api) { permission = 'unavailable'; return; }
-    if (typeof api.requestPermission !== 'function') {
+    if (disposed || preview || permissionPending || permission === 'granted' || permission === 'denied') return;
+    const orientationAPI = window.DeviceOrientationEvent;
+    const motionAPI = window.DeviceMotionEvent;
+    if (!window.isSecureContext || (!orientationAPI && !motionAPI)) { permission = 'unavailable'; return; }
+    const api = typeof orientationAPI?.requestPermission === 'function' ? orientationAPI
+      : typeof motionAPI?.requestPermission === 'function' ? motionAPI : null;
+    if (!api) {
       permission = 'granted';
       attachSensor();
       return;
     }
-    // Call synchronously inside the gesture: Safari requires user activation.
+    // Touch pointerdown is NOT an activation-triggering event in WebKit. The
+    // caller must be a native touchend/click/keydown handler, without an await.
+    if (navigator.userActivation?.isActive === false) {
+      permissionError = 'UserActivationRequired';
+      return;
+    }
     permissionPending = true;
     permission = 'pending';
+    permissionError = null;
+    const failed = error => {
+      if (disposed) return;
+      // A rejected promise (e.g. missing transient activation) is different
+      // from the user explicitly returning "denied". Let the next tap retry.
+      permission = 'idle';
+      permissionError = error?.name || 'PermissionRequestFailed';
+    };
     try {
       Promise.resolve(api.requestPermission()).then(result => {
-        permission = result === 'granted' ? 'granted' : 'denied';
+        if (disposed) return;
+        permission = result === 'granted' ? 'granted' : result === 'denied' ? 'denied' : 'idle';
         if (permission === 'granted') attachSensor();
-      }).catch(() => { permission = 'denied'; }).finally(() => { permissionPending = false; });
-    } catch {
-      permission = 'denied';
+      }).catch(failed).finally(() => { permissionPending = false; });
+    } catch (error) {
+      failed(error);
       permissionPending = false;
     }
   }
 
   function recenter() {
     calibrated = false;
+    hasGravity = false;
     set(0, 0);
   }
 
   listen(host, 'pointerdown', event => {
     if (preview || event.isPrimary === false || event.button > 0) return;
-    activate();
     dragging = {id: event.pointerId, x: event.clientX, y: event.clientY, startX: target.x, startY: target.y};
     host.setPointerCapture?.(event.pointerId);
     host.focus({preventScroll: true});
@@ -105,6 +175,21 @@ export function createGlassMotion(host, {preview = false, onChange = () => {}} =
   listen(host, 'pointerup', release);
   listen(host, 'pointercancel', release);
   listen(host, 'lostpointercapture', release);
+  listen(window, 'pointerup', release);
+  listen(window, 'pointercancel', release);
+  listen(host, 'touchend', event => {
+    if (event.touches.length) return;
+    dragging = null;
+    lastTouchEnd = performance.now();
+    activate();
+  }, {passive: true});
+  listen(host, 'click', event => {
+    // The compatibility click following touchend belongs to the same gesture.
+    // Keyboard clicks and pointer devices without touch events still work.
+    if (event.detail !== 0 && performance.now() - lastTouchEnd < 500) return;
+    dragging = null;
+    activate();
+  });
   listen(host, 'pointerleave', event => { if (event.pointerType === 'mouse' && !dragging && !sensorActive) set(0, 0); });
   listen(host, 'keydown', event => {
     if (preview) return;
@@ -117,9 +202,12 @@ export function createGlassMotion(host, {preview = false, onChange = () => {}} =
   });
   listen(window, 'orientationchange', recenter, {passive: true});
   if (screen.orientation) listen(screen.orientation, 'change', recenter);
-  listen(document, 'visibilitychange', () => { if (!document.hidden) recenter(); });
+  listen(window, 'blur', () => { dragging = null; });
+  listen(window, 'pageshow', event => { if (event.persisted) recenter(); });
+  listen(document, 'visibilitychange', () => { dragging = null; if (!document.hidden) recenter(); });
   listen(reduced, 'change', onChange);
-  if (!preview && typeof window.DeviceOrientationEvent?.requestPermission !== 'function') activate();
+  if (!preview && typeof window.DeviceOrientationEvent?.requestPermission !== 'function'
+      && typeof window.DeviceMotionEvent?.requestPermission !== 'function') activate();
 
   return {
     current,
@@ -131,7 +219,7 @@ export function createGlassMotion(host, {preview = false, onChange = () => {}} =
       return Math.abs(target.x - current.x) + Math.abs(target.y - current.y) > .0001;
     },
     recenter,
-    get state() { return {permission, sensorActive, calibrated, target: {...target}, current: {...current}}; },
-    dispose() { cleanup.forEach(fn => fn()); }
+    get state() { return {permission, permissionError, sensorActive, sensorSource, calibrated, target: {...target}, current: {...current}}; },
+    dispose() { disposed = true; cleanup.forEach(fn => fn()); }
   };
 }

@@ -217,11 +217,38 @@ with sync_playwright() as p:
     coverage(page)
     ctx.close()
 
+    # A landscape iPad must visibly respond to either physical tilt axis on
+    # its own, after one native tap grants sensor permission.
+    ctx = context(1024, 768, mobile=True, reduced=True, permission='granted')
+    page = open_page(ctx)
+    page.touchscreen.tap(512, 384)
+    page.wait_for_function("window.__glass.state.permission==='granted'")
+    page.evaluate("Object.defineProperty(screen.orientation,'angle',{value:90,configurable:true});screen.orientation.dispatchEvent(new Event('change'))")
+    page.evaluate('() => new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))')
+    sensor(page, 70, 0)
+    neutral = shot(page, 'ipad-neutral')
+    sensor(page, 82, 0)
+    settle(page)
+    t = state(page)['target']
+    assert abs(t['x']) > .5 and abs(t['y']) < .001, ('iPad beta-only', t)
+    assert difference(neutral, shot(page, 'ipad-beta')) > .7
+    page.locator('#glass-view').focus()
+    page.keyboard.press('Home')
+    sensor(page, 70, 0)
+    sensor(page, 70, 15)
+    settle(page)
+    t = state(page)['target']
+    assert abs(t['y']) > .5 and abs(t['x']) < .001, ('iPad gamma-only', t)
+    assert difference(neutral, shot(page, 'ipad-gamma')) > .7
+    assert page.evaluate('window.__permissionCalls') == 1
+    coverage(page)
+    ctx.close()
+
     # Denial and missing sensors must preserve touch input with no custom overlay.
     for permission in ['denied', 'unavailable']:
         ctx = context(390, 844, mobile=True, reduced=True, permission=permission if permission == 'denied' else None)
         if permission == 'unavailable':
-            ctx.add_init_script('window.DeviceOrientationEvent=undefined')
+            ctx.add_init_script('window.DeviceOrientationEvent=undefined;window.DeviceMotionEvent=undefined')
         page = open_page(ctx)
         page.touchscreen.tap(190, 420)
         page.wait_for_function("['denied','unavailable'].includes(window.__glass.state.permission)")
@@ -269,6 +296,7 @@ with sync_playwright() as p:
                                  'static preview', 'mouse/keyboard/touch', 'iOS permission grant/denial',
                                  'absent sensors', '30/70/90 degree neutral pose', 'landscape sensor mapping',
                                  'invalid sensor samples', 'bounded tilt', 'ambient motion', 'tab suspension/resume', 'reduced motion',
+                                 'landscape iPad rendering with each tilt axis separately',
                                  'supported pot footprints', 'pot/saucer/slab contact', 'grounded bench legs',
                                  'stationary pots during sway', 'foliage behind glass', 'frame T joints and depth', 'gasket-held pane edges'],
                       'errors': []}, ensure_ascii=False))
